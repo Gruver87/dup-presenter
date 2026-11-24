@@ -1,0 +1,136 @@
+{
+  "slug": "dup_labs",
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "silero_v4_ru",
+    "speaker": "xenia",
+    "rate": "95%",
+    "ambient_volume": 0.16
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "ECOSYSTEM",
+      "type": "hero_3d",
+      "title": "DUP Labs",
+      "subtitle": "Открытая инженерная экосистема: гибридный L1 блокчейн, спотовый радар и Telegram-инструменты",
+      "pills": [
+        { "name": "DUP Protocol", "color": "#00f5d4" },
+        { "name": "Market Radar", "color": "#38bdf8" },
+        { "name": "Market Ping", "color": "#c084fc" }
+      ],
+      "cube_faces": ["DUP", "L1", "RUST", "SPOT", "MESH", "EVM"],
+      "voice_ssml": "<speak><prosody rate=\"95%\">Добр+о пож+аловать в Дап Лабс.<break time=\"300ms\"/> Экосист+ема с откр+ытым к+одом:<break time=\"200ms\"/> гибр+идный блокч+ейн, сп+отовый рад+ар и Телегр+ам-инструм+енты.</prosody></speak>"
+    },
+    {
+      "id": "s2",
+      "tag": "L1 PROTOCOL",
+      "type": "code_split",
+      "title": "DUP Protocol",
+      "subtitle": "Гибридная архитектура L1 (ADR 0009)",
+      "bullets": [
+        { "title": "Rust на горячем пути", "desc": "Криптография, state roots, RocksDB и EVM kernels — без узких мест.", "accent": "#00f5d4" },
+        { "title": "Fail-Closed по умолчанию", "desc": "Явная ошибка вместо тихого фоллбэка. Порты и адаптеры без обходов.", "accent": "#38bdf8" },
+        { "title": "Живой 3-нодовый кластер", "desc": "Приёмка только через docker_prod_3node + probe_prod_mesh.", "accent": "#c084fc" }
+      ],
+      "code": {
+        "filename": "abs_native/src/state_root.rs · fail-closed",
+        "lines": [
+          { "text": "// Rust hot path: deterministic state root", "color": "#64748b" },
+          { "text": "pub fn verify_tip_root(root: &[u8; 32],", "color": "#38bdf8" },
+          { "text": "                       expected: &[u8; 32]) -> Result<()> {", "color": "#38bdf8" },
+          { "text": "    if root != expected {", "color": "#f8fafc" },
+          { "text": "        bail!(\"state root mismatch — fail closed\");", "color": "#f472b6" },
+          { "text": "    }", "color": "#f8fafc" },
+          { "text": "    Ok(())", "color": "#00f5d4" },
+          { "text": "}", "color": "#f8fafc" },
+          { "text": "", "color": "#f8fafc" },
+          { "text": "# L1 Integration Gate (3-node Docker mesh)", "color": "#64748b" },
+          { "text": "$ .\\scripts\\probe_prod_mesh.ps1 -Quick", "color": "#c084fc" },
+          { "text": "  nodes=3/3  ports=18180..18182  RESULT: PASS", "color": "#00f5d4" }
+        ]
+      },
+      "voice_ssml": "<speak><prosody rate=\"95%\">В осн+ове — Дап Проток+ол.<break time=\"300ms\"/> П+айтон управл+яет л+огикой, а Раст держит гор+ячий путь:<break time=\"200ms\"/> криптогр+афию, состо+яние и вирту+альную маш+ину.<break time=\"250ms\"/> Принцип ф+ейл-кл+оузд: ник+аких т+ихих сб+оев.</prosody></speak>"
+    },
+    {
+      "id": "s3",
+      "tag": "SPOT RADAR",
+      "type": "screen_split",
+      "title": "DUP Market Radar",
+      "subtitle": "Спотовый сканер и автоторговля KuCoin",
+      "bullets": [
+        { "title": "4 472 монеты онлайн", "desc": "Нативный Rust-ингест по Binance, Bybit, KuCoin, MEXC.", "accent": "#00f5d4" },
+        { "title": "Только спот · без фьючерсов", "desc": "Авто-фьючерсы заблокированы на уровне политики.", "accent": "#38bdf8" },
+        { "title": "Paper-First (dry_run=true)", "desc": "Сначала статистика на бумаге, реальный капитал — по чеклисту.", "accent": "#f472b6" }
+      ],
+      "screens": [
+        { "src": "screens/radar_watchlist.png", "caption": "DUP Market Radar — Watchlist · dry_run=true" },
+        { "src": "screens/radar_markets.png", "caption": "DUP Market Radar — Markets · топ-100 · ~6м" }
+      ],
+      "voice_ssml": "<speak><prosody rate=\"95%\">Дап М+аркет Рад+ар.<break time=\"300ms\"/> Скан+ирует бол+ее чет+ырёх т+ысяч мон+ет в ре+альном вр+емени.<break time=\"250ms\"/> Т+олько спот, без фь+ючерсов.<break time=\"200ms\"/> Снач+ала бум+ажный тест — и т+олько п+осле пров+ерки ре+альный капит+ал.</prosody></speak>"
+    },
+    {
+      "id": "s4",
+      "tag": "TELEGRAM LAYER",
+      "type": "code_split",
+      "title": "DUP Market Ping",
+      "subtitle": "Честный Telegram-слой поверх Radar",
+      "bullets": [
+        { "title": "Дайджесты и алерты", "desc": "Движения за 1ч, funding, листинги, отслеживание цен.", "accent": "#00f5d4" },
+        { "title": "Ноль выдуманных цифр", "desc": "Если локальный Radar недоступен — честный отказ.", "accent": "#38bdf8" },
+        { "title": "Утилита, не «сигналы»", "desc": "Без копитрейда, плечей и обещаний гарантированной прибыли.", "accent": "#c084fc" }
+      ],
+      "code": {
+        "filename": "src/market_ping/radar_client.py",
+        "lines": [
+          { "text": "# Honest fail-closed client over DUP Market Radar", "color": "#64748b" },
+          { "text": "async def fetch_live_status(base_url: str) -> dict:", "color": "#38bdf8" },
+          { "text": "    resp = await http_get(f\"{base_url}/api/live\")", "color": "#f8fafc" },
+          { "text": "    if not resp.get(\"ok\"):", "color": "#f8fafc" },
+          { "text": "        raise RadarOfflineError(\"Radar unavailable\")", "color": "#f472b6" },
+          { "text": "    return resp", "color": "#00f5d4" },
+          { "text": "", "color": "#f8fafc" },
+          { "text": "# Telegram panel (@dup_market_ping_bot)", "color": "#64748b" },
+          { "text": "/start  ->  [ Рынок ]  [ Слежение ]", "color": "#c084fc" },
+          { "text": "            [ Алерты ] [ Статус Radar ]", "color": "#c084fc" },
+          { "text": "# Spot-only · no futures auto · live != soak", "color": "#00f5d4" }
+        ]
+      },
+      "voice_ssml": "<speak><prosody rate=\"95%\">Дап М+аркет Пинг — ч+естный Телегр+ам-слой.<break time=\"300ms\"/> Д+айджесты, ал+ерты по цен+е и слеж+ение за мон+етами.<break time=\"250ms\"/> Если Рад+ар недост+упен — бот ч+естно молч+ит и не выд+умывает ц+ифры.</prosody></speak>"
+    },
+    {
+      "id": "s5",
+      "tag": "HONESTY & OPS",
+      "type": "screen_split",
+      "title": "Честность и инженерия",
+      "subtitle": "R&D и prod-профиль — не аудированный mainnet",
+      "bullets": [
+        { "title": "Деньги только в целых", "desc": "Satoshi / USDT micros (int) — никаких ошибок округления float.", "accent": "#00f5d4" },
+        { "title": "Атомарные журналы", "desc": "Запись состояния с SHA-256 контрольной суммой и бэкапами.", "accent": "#38bdf8" },
+        { "title": "Секреты под защитой", "desc": "Ключи замаскированы в UI и никогда не попадают в Git.", "accent": "#f472b6" }
+      ],
+      "screens": [
+        { "src": "screens/radar_ops.png", "caption": "DUP Market Radar — Ops · Paper PnL journal · ключ замаскирован" }
+      ],
+      "voice_ssml": "<speak><prosody rate=\"95%\">Наш главн+ый пр+инцип — ч+естность.<break time=\"300ms\"/> Все д+еньги в к+оде — т+олько ц+елые ч+исла.<break time=\"200ms\"/> К+аждое «раб+отает» подтв+ерждено жив+ыми л+огами и пров+еркой с+ети.</prosody></speak>"
+    },
+    {
+      "id": "s6",
+      "tag": "OPEN SOURCE",
+      "type": "outro_3d",
+      "title": "Открытый код",
+      "url": "github.com/Gruver87",
+      "tagline": "DUP Labs — инженерия без иллюзий",
+      "badges": [
+        { "name": "dup-protocol", "color": "#00f5d4" },
+        { "name": "dup-market-radar", "color": "#38bdf8" },
+        { "name": "dup-market-ping", "color": "#c084fc" }
+      ],
+      "cube_faces": ["DUP", "L1", "RUST", "SPOT", "MESH", "EVM"],
+      "voice_ssml": "<speak><prosody rate=\"95%\">Весь код откр+ыт на Гитх+аб.<break time=\"250ms\"/> Пр+офиль Гр+увер в+осемьдесят семь.<break time=\"250ms\"/> Дап Лабс — инженери+я без иллюз+ий.</prosody></speak>"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+node_modules/
+out/
+models/
+public/voice/*.wav
+src/generated/deck_resolved.json
+.env
+*.log
