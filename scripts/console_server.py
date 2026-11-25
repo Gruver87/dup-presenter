@@ -500,6 +500,16 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 self._json(404, {"ok": False, "error": str(exc)})
             return
 
+        if path == "/api/pronunciation":
+            from ru_speech import get_latin_ru, load_pronunciation_overrides  # noqa: E402
+
+            self._json(200, {
+                "ok": True,
+                "overrides": load_pronunciation_overrides(),
+                "merged": get_latin_ru(),
+            })
+            return
+
         if path.startswith("/video/") and path.endswith(".mp4"):
             slug = path[len("/video/"):-4]
             self._serve_video(slug)
@@ -507,7 +517,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
 
         if path.startswith("/out/"):
             fname = path[len("/out/"):]
-            if not re.match(r"^[A-Za-z0-9_-]+(?:\.srt|\.vtt|_thumb\.png)$", fname):
+            if not re.match(r"^[A-Za-z0-9_-]+(?:\.srt|\.vtt|_thumb\.png|_chapters\.txt|_post_copy\.md|_metadata\.json|_qa\.json)$", fname):
                 self._json(400, {"ok": False, "error": "Invalid asset name"})
                 return
             fpath = OUT_DIR / fname
@@ -746,10 +756,97 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 deck_path.write_text(json.dumps(deck, ensure_ascii=False, indent=2), encoding="utf-8")
 
             cmd = [sys.executable, str(SCRIPTS / "build_deck.py"), str(deck_path), "--render"]
+            only_slide = str(body.get("only_slide") or "").strip()
+            if only_slide:
+                if not re.match(r"^[A-Za-z0-9_-]+$", only_slide):
+                    self._json(400, {"ok": False, "error": "Invalid only_slide id"})
+                    return
+                cmd += ["--only-slide", only_slide]
+            if body.get("offline_only"):
+                cmd.append("--offline-only")
             if not JOBS.start("render", slug, cmd):
                 self._json(409, {"ok": False, "error": "Уже идёт другая сборка. Дождись её завершения."})
                 return
-            self._json(202, {"ok": True, "slug": slug, "step": "render"})
+            self._json(202, {"ok": True, "slug": slug, "step": "render", "only_slide": only_slide or None})
+            return
+
+        if path == "/api/pronunciation":
+            from ru_speech import get_latin_ru, save_pronunciation_overrides  # noqa: E402
+
+            raw = body.get("overrides")
+            if not isinstance(raw, dict):
+                self._json(400, {"ok": False, "error": "Expected JSON object 'overrides'"})
+                return
+            save_pronunciation_overrides({str(k): str(v) for k, v in raw.items()})
+            self._json(200, {"ok": True, "overrides": raw, "total_entries": len(get_latin_ru())})
+            return
+
+        if path == "/api/cutdown":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            src_deck = DECKS_DIR / f"{slug}.json"
+            if not src_deck.is_file():
+                self._json(404, {"ok": False, "error": f"Deck not found: {slug}"})
+                return
+            from make_cutdown import build_short_cutdown  # noqa: E402
+
+            try:
+                deck_data = json.loads(src_deck.read_text(encoding="utf-8"))
+                short = build_short_cutdown(deck_data, max_slides=int(body.get("max_slides") or 4))
+                out_p = DECKS_DIR / f"{short['slug']}.json"
+                out_p.write_text(json.dumps(short, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            except Exception as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "slug": short["slug"], "slides": len(short["slides"]), "aspect": short["aspect"]})
+            return
+
+        if path == "/api/qa":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            mp4 = OUT_DIR / f"{slug}.mp4"
+            if not mp4.is_file():
+                self._json(404, {"ok": False, "error": f"MP4 not found: out/{slug}.mp4"})
+                return
+            from media_qa import run_media_qa  # noqa: E402
+
+            try:
+                rep = run_media_qa(mp4, expect_loudnorm=bool(body.get("expect_loudnorm", True)))
+            except Exception as exc:
+                self._json(500, {"ok": False, "error": str(exc)})
+                return
+            self._json(200 if rep["ok"] else 422, rep)
+            return
+
+        if path == "/api/github-release":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            mp4 = OUT_DIR / f"{slug}.mp4"
+            if not mp4.is_file():
+                self._json(404, {"ok": False, "error": f"MP4 not found: out/{slug}.mp4"})
+                return
+            cmd = [sys.executable, str(SCRIPTS / "github_release_uploader.py"), "--mp4", str(mp4)]
+            repo = str(body.get("repo") or "").strip()
+            tag = str(body.get("tag") or "").strip()
+            if repo:
+                cmd += ["--repo", repo]
+            if tag:
+                cmd += ["--tag", tag]
+            if body.get("dry_run", True):
+                cmd.append("--dry-run")
+            if not JOBS.start("github-release", slug, cmd):
+                self._json(409, {"ok": False, "error": "Уже идёт другая задача. Дождись её завершения."})
+                return
+            self._json(202, {"ok": True, "slug": slug, "step": "github-release", "dry_run": bool(body.get("dry_run", True))})
             return
 
         if path == "/api/bootstrap":

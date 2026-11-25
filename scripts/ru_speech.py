@@ -6,7 +6,12 @@ We respell them deterministically. SSML tags and XML entities are passed through
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+PRONUNCIATION_CONFIG = ROOT / "config" / "pronunciation.json"
 
 # Known terms from DUP projects. Keys are lowercase; matching is case-insensitive.
 LATIN_RU: dict[str, str] = {
@@ -62,11 +67,49 @@ _LATIN_TO_CYR = {
 _TOKEN_RE = re.compile(r"<[^>]+>|&[#A-Za-z0-9]+;|[A-Za-z][A-Za-z0-9_]*")
 
 
+def load_pronunciation_overrides() -> dict[str, str]:
+    """Load user-editable pronunciation overrides from config/pronunciation.json (if present)."""
+    if not PRONUNCIATION_CONFIG.is_file():
+        return {}
+    try:
+        data = json.loads(PRONUNCIATION_CONFIG.read_text(encoding="utf-8"))
+        raw = data.get("overrides") if isinstance(data, dict) else {}
+        if not isinstance(raw, dict):
+            return {}
+        return {str(k).strip().lower(): str(v).strip() for k, v in raw.items() if str(k).strip() and str(v).strip()}
+    except Exception:
+        return {}
+
+
+def save_pronunciation_overrides(overrides: dict[str, str]) -> Path:
+    """Persist validated user pronunciation overrides to config/pronunciation.json."""
+    clean = {
+        str(k).strip().lower(): str(v).strip()
+        for k, v in overrides.items()
+        if str(k).strip() and str(v).strip()
+    }
+    PRONUNCIATION_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "_comment": "Custom Russian TTS pronunciation overrides (lowercase token -> Cyrillic phonetic spelling). Edited via console or directly.",
+        "overrides": dict(sorted(clean.items())),
+    }
+    PRONUNCIATION_CONFIG.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return PRONUNCIATION_CONFIG
+
+
+def get_latin_ru() -> dict[str, str]:
+    """Merged pronunciation dictionary (built-in LATIN_RU + live config/pronunciation.json overrides)."""
+    merged = dict(LATIN_RU)
+    merged.update(load_pronunciation_overrides())
+    return merged
+
+
 def transliterate(token: str) -> str:
     """Known term -> dictionary spelling; unknown token -> letter-by-letter phonetic fallback."""
     key = token.lower()
-    if key in LATIN_RU:
-        return LATIN_RU[key]
+    table = get_latin_ru()
+    if key in table:
+        return table[key]
     parts = token.replace("_", " ").split(" ")
     out = []
     for part in parts:

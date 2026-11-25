@@ -2,6 +2,7 @@ node_modules/
 out/
 models/
 public/voice/*.wav
+public/sfx/*.wav
 src/generated/deck_resolved.json
 .env
 secrets/

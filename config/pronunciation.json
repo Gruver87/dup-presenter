@@ -1,0 +1,20 @@
+{
+  "_comment": "Custom Russian TTS pronunciation overrides (lowercase token -> Cyrillic phonetic spelling). Edited via console or directly.",
+  "overrides": {
+    "remotion": "ремоушн",
+    "playwright": "плейрайт",
+    "websocket": "вебсокет",
+    "websockets": "вебсокеты",
+    "binance": "бинанс",
+    "bybit": "байбит",
+    "okx": "о кей экс",
+    "bitget": "битгет",
+    "mexc": "мекс",
+    "usdtm": "ю эс ди ти эм",
+    "lufs": "луфс",
+    "sfx": "эс эф икс",
+    "mcp": "эм си пи",
+    "ci": "си ай",
+    "cd": "си ди"
+  }
+}

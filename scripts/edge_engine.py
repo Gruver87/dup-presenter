@@ -67,8 +67,39 @@ def _decode_mp3(path: Path, sr: int) -> np.ndarray:
     return np.concatenate(parts).astype(np.float32)
 
 
-def synth_edge(speaker: str, text: str, sr: int, rate: str = "95%", attempts: int = 5) -> np.ndarray:
-    """Synthesize one utterance with an Edge neural voice. Returns mono float32 at sr. Raises EdgeEngineError."""
+async def _stream_edge(voice: str, text: str, rel_rate: str, out_mp3: Path) -> list[dict]:
+    """Stream MP3 audio and capture real SentenceBoundary timings in one Edge TTS request."""
+    import edge_tts
+
+    comm = edge_tts.Communicate(text, voice, rate=rel_rate, boundary="SentenceBoundary")
+    boundaries: list[dict] = []
+    with out_mp3.open("wb") as f:
+        async for chunk in comm.stream():
+            ctype = chunk.get("type")
+            if ctype == "audio":
+                data = chunk.get("data")
+                if data:
+                    f.write(data)
+            elif ctype in ("SentenceBoundary", "WordBoundary"):
+                # Edge TTS offsets/durations are in 100-nanosecond ticks (1e7 ticks = 1 sec).
+                start_s = float(chunk.get("offset", 0)) / 10_000_000.0
+                dur_s = float(chunk.get("duration", 0)) / 10_000_000.0
+                boundaries.append({
+                    "start_sec": round(start_s, 3),
+                    "end_sec": round(start_s + dur_s, 3),
+                    "text": str(chunk.get("text") or ""),
+                })
+    return boundaries
+
+
+def synth_edge_with_timings(
+    speaker: str,
+    text: str,
+    sr: int,
+    rate: str = "95%",
+    attempts: int = 5,
+) -> tuple[np.ndarray, list[dict]]:
+    """Synthesize one utterance with Edge neural voice. Returns (mono float32 at sr, sentence boundaries)."""
     voice = EDGE_RU_VOICES.get(speaker)
     if voice is None:
         raise EdgeEngineError(f"unknown Edge speaker {speaker!r}; allowed: {sorted(EDGE_RU_VOICES)}")
@@ -77,7 +108,6 @@ def synth_edge(speaker: str, text: str, sr: int, rate: str = "95%", attempts: in
 
     import aiohttp.connector
     import aiohttp.resolver
-    import edge_tts
 
     # aiodns (c-ares) cannot reach DNS on some Windows hosts; the system resolver works. Process-wide for aiohttp.
     aiohttp.connector.DefaultResolver = aiohttp.resolver.ThreadedResolver
@@ -90,10 +120,10 @@ def synth_edge(speaker: str, text: str, sr: int, rate: str = "95%", attempts: in
         last_exc: Exception | None = None
         for attempt in range(1, attempts + 1):
             try:
-                asyncio.run(edge_tts.Communicate(text, voice, rate=rel_rate).save(str(tmp)))
+                boundaries = asyncio.run(_stream_edge(voice, text, rel_rate, tmp))
                 if tmp.stat().st_size == 0:
                     raise EdgeEngineError("Edge TTS wrote an empty file")
-                return _decode_mp3(tmp, sr)
+                return _decode_mp3(tmp, sr), boundaries
             except Exception as exc:  # network/service errors: retry, then raise EdgeEngineError below
                 last_exc = exc
                 print(f"[edge] {speaker} attempt {attempt}/{attempts} failed: {type(exc).__name__}: {exc}")
@@ -101,3 +131,9 @@ def synth_edge(speaker: str, text: str, sr: int, rate: str = "95%", attempts: in
         raise EdgeEngineError(f"Edge TTS failed after {attempts} attempts: {last_exc}") from last_exc
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def synth_edge(speaker: str, text: str, sr: int, rate: str = "95%", attempts: int = 5) -> np.ndarray:
+    """Synthesize one utterance with an Edge neural voice. Returns mono float32 at sr. Raises EdgeEngineError."""
+    audio, _ = synth_edge_with_timings(speaker, text, sr, rate=rate, attempts=attempts)
+    return audio

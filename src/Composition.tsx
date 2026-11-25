@@ -1,3 +1,4 @@
+import React from "react";
 import {
   AbsoluteFill,
   Audio,
@@ -11,9 +12,13 @@ import {
   useVideoConfig,
 } from "remotion";
 import { CalculateMetadataFunction, Composition } from "remotion";
+import { TransitionSeries, linearTiming } from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
+import { slide as slideTransition } from "@remotion/transitions/slide";
+import { wipe } from "@remotion/transitions/wipe";
 import rawDeck from "./generated/deck_resolved.json";
 import { resolveTheme } from "./themes";
-import type { CaptionCue, ResolvedDeck, ResolvedSlide } from "./types";
+import type { CaptionCue, ResolvedDeck, ResolvedSlide, ScreenFocus } from "./types";
 
 const DECK = rawDeck as unknown as ResolvedDeck;
 const THEME = resolveTheme(DECK.theme);
@@ -21,7 +26,59 @@ const FPS = DECK.fps || 30;
 const WIDTH = DECK.width || 1920;
 const HEIGHT = DECK.height || 1080;
 const IS_PORTRAIT = HEIGHT > WIDTH;
-const DURATION = Math.max(1, (DECK.total_seconds || 1) * FPS);
+const TRANSITION_STYLE = DECK.transition_style ?? "fade";
+const TRANSITION_FRAMES =
+  TRANSITION_STYLE === "none" || DECK.slides.length < 2
+    ? 0
+    : Math.max(0, Math.min(24, DECK.transition_frames ?? 12));
+const COMPUTED_TOTAL_FRAMES =
+  DECK.slides.reduce((acc, s) => acc + Math.max(1, Math.round(s.duration_sec * FPS)), 0) -
+  Math.max(0, DECK.slides.length - 1) * TRANSITION_FRAMES;
+const DURATION = Math.max(1, DECK.total_frames ?? COMPUTED_TOTAL_FRAMES);
+
+// Precompute global [startSec, endSec] speech intervals across all slides for smooth music ducking.
+const GLOBAL_SPEECH_WINDOWS: [number, number][] = (() => {
+  const out: [number, number][] = [];
+  let cursorFrames = 0;
+  for (let i = 0; i < DECK.slides.length; i++) {
+    const s = DECK.slides[i];
+    const slideStartSec = s.start_sec ?? cursorFrames / FPS;
+    const wins = s.speech_windows;
+    if (wins && wins.length > 0) {
+      for (const [w0, w1] of wins) {
+        out.push([slideStartSec + w0, slideStartSec + w1]);
+      }
+    } else if (s.captions && s.captions.length > 0) {
+      for (const c of s.captions) {
+        out.push([slideStartSec + c.start_sec, slideStartSec + c.end_sec]);
+      }
+    }
+    cursorFrames += Math.max(1, Math.round(s.duration_sec * FPS)) - TRANSITION_FRAMES;
+  }
+  return out;
+})();
+
+const computeDuckFactor = (frame: number, duckRatio: number): number => {
+  if (GLOBAL_SPEECH_WINDOWS.length === 0 || duckRatio >= 0.999) return 1.0;
+  const t = frame / FPS;
+  const attack = 0.22;
+  const release = 0.42;
+  let maxDepth = 0;
+  for (let i = 0; i < GLOBAL_SPEECH_WINDOWS.length; i++) {
+    const [s, e] = GLOBAL_SPEECH_WINDOWS[i];
+    if (t >= s && t <= e) {
+      return duckRatio;
+    }
+    if (t >= s - attack && t < s) {
+      const p = (t - (s - attack)) / attack;
+      if (p > maxDepth) maxDepth = p;
+    } else if (t > e && t <= e + release) {
+      const p = 1 - (t - e) / release;
+      if (p > maxDepth) maxDepth = p;
+    }
+  }
+  return 1.0 - maxDepth * (1.0 - duckRatio);
+};
 
 type Props = Record<string, unknown>;
 
@@ -510,12 +567,15 @@ const SlideChrome: React.FC<{
   num: string;
   tag: string;
   dur: number;
+  hasTransition?: boolean;
   children: React.ReactNode;
-}> = ({ brand, num, tag, dur, children }) => {
+}> = ({ brand, num, tag, dur, hasTransition = false, children }) => {
   const frame = useCurrentFrame();
-  const fadeIn = interpolate(frame, [0, 14], [0, 1], { extrapolateRight: "clamp" });
-  const fadeOut = interpolate(frame, [dur - 14, dur], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const slideX = interpolate(frame, [0, 14], [28, 0], { extrapolateRight: "clamp" });
+  const fadeIn = hasTransition ? 1 : interpolate(frame, [0, 14], [0, 1], { extrapolateRight: "clamp" });
+  const fadeOut = hasTransition
+    ? 1
+    : interpolate(frame, [dur - 14, dur], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const slideX = interpolate(frame, [0, 14], [hasTransition ? 14 : 28, 0], { extrapolateRight: "clamp" });
   const opacity = Math.min(fadeIn, fadeOut);
   const pad = IS_PORTRAIT ? "48px 54px 160px 54px" : "40px 78px 110px 78px";
 
@@ -671,9 +731,16 @@ const CodeWindow3D: React.FC<{ filename: string; lines: { text: string; color?: 
   );
 };
 
-const ScreenWindow3D: React.FC<{ src: string; caption: string; maxHeight?: number; delay?: number }> = ({
+const ScreenWindow3D: React.FC<{
+  src: string;
+  caption: string;
+  focus?: ScreenFocus;
+  maxHeight?: number;
+  delay?: number;
+}> = ({
   src,
   caption,
+  focus,
   maxHeight = IS_PORTRAIT ? 640 : 610,
   delay = 10,
 }) => {
@@ -683,7 +750,15 @@ const ScreenWindow3D: React.FC<{ src: string; caption: string; maxHeight?: numbe
   const rotY = IS_PORTRAIT ? 0 : interpolate(s, [0, 1], [-22, -7]) + Math.sin(frame / 46) * 2.4;
   const rotX = IS_PORTRAIT ? 0 : 3.5 + Math.cos(frame / 54) * 1.6;
   const floatY = Math.sin(frame / 34) * 6;
-  const scale = interpolate(frame, [0, 360], [1.0, 1.045], { extrapolateRight: "clamp" });
+  // Virtual Director Camera auto-zoom toward focus point when provided (Screen Studio style)
+  const targetZoom = focus ? Math.min(2.2, Math.max(1.1, focus.zoom ?? 1.48)) : 1.045;
+  const zoomIn = focus ? spring({ frame: Math.max(0, frame - 28), fps, config: { damping: 130, stiffness: 80 } }) : 0;
+  const scale = focus
+    ? interpolate(zoomIn, [0, 1], [1.0, targetZoom], { extrapolateRight: "clamp" })
+    : interpolate(frame, [0, 360], [1.0, 1.045], { extrapolateRight: "clamp" });
+  const fxPct = focus ? Math.min(92, Math.max(8, focus.x * 100)) : 50;
+  const fyPct = focus ? Math.min(92, Math.max(8, focus.y * 100)) : 0;
+  const origin = focus ? `${fxPct.toFixed(1)}% ${fyPct.toFixed(1)}%` : "center top";
   // Subtle glass reflection sweep every 120 frames
   const sweepPct = ((frame * 1.9) % 240) - 40;
 
@@ -758,7 +833,25 @@ const ScreenWindow3D: React.FC<{ src: string; caption: string; maxHeight?: numbe
             </div>
           </div>
           <div style={{ overflow: "hidden", maxHeight, position: "relative" }}>
-            <Img src={staticFile(src)} style={{ width: "100%", height: "auto", display: "block", transform: `scale(${scale})`, transformOrigin: "center top" }} />
+            <Img src={staticFile(src)} style={{ width: "100%", height: "auto", display: "block", transform: `scale(${scale})`, transformOrigin: origin }} />
+            {focus && zoomIn > 0.15 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: `${fxPct}%`,
+                  top: `${fyPct}%`,
+                  width: 52,
+                  height: 52,
+                  marginLeft: -26,
+                  marginTop: -26,
+                  borderRadius: "50%",
+                  border: `2.5px solid ${CYAN}`,
+                  boxShadow: `0 0 24px ${CYAN}, inset 0 0 14px ${CYAN}55`,
+                  opacity: Math.min(0.85, zoomIn) * (0.65 + 0.35 * Math.sin(frame / 8)),
+                  pointerEvents: "none",
+                }}
+              />
+            )}
             {/* Animated subtle glass sweep sheen */}
             <div
               style={{
@@ -1001,7 +1094,7 @@ const ScreenSplitSlide: React.FC<{ slide: ResolvedSlide; dur: number }> = ({ sli
         ))}
       </div>
       <div style={{ flex: 1.32, width: "100%" }}>
-        {active && <ScreenWindow3D key={active.src} src={active.src} caption={active.caption} delay={activeIdx === 0 ? 8 : 0} />}
+        {active && <ScreenWindow3D key={active.src} src={active.src} caption={active.caption} focus={active.focus} delay={activeIdx === 0 ? 8 : 0} />}
       </div>
     </div>
   );
@@ -1405,7 +1498,33 @@ const CaptionOverlay: React.FC<{ captions?: CaptionCue[] }> = ({ captions }) => 
             [{active.speaker}]
           </span>
         )}
-        {active.text}
+        {active.words && active.words.length > 0 ? (
+          <span>
+            {active.words.map((wd, idx) => {
+              const isCurrent = sec >= wd.start && sec <= wd.end;
+              const isSpoken = sec > wd.end;
+              return (
+                <span
+                  key={`${idx}-${wd.w}`}
+                  style={{
+                    display: "inline-block",
+                    marginRight: 7,
+                    padding: isCurrent ? "1px 7px" : "1px 1px",
+                    borderRadius: 7,
+                    background: isCurrent ? `${CYAN}2e` : "transparent",
+                    color: isCurrent ? CYAN : isSpoken ? THEME.captionText : `${THEME.captionText}b8`,
+                    textShadow: isCurrent ? `0 0 14px ${CYAN}88` : "none",
+                    transform: isCurrent ? "scale(1.04)" : "scale(1)",
+                  }}
+                >
+                  {wd.w}
+                </span>
+              );
+            })}
+          </span>
+        ) : (
+          active.text
+        )}
       </div>
     </div>
   );
@@ -1453,53 +1572,140 @@ const StockBackdrop: React.FC<{ slide: ResolvedSlide; dur: number }> = ({ slide,
   );
 };
 
+const renderSlideTransition = (idx: number, key: string) => {
+  const timing = linearTiming({ durationInFrames: TRANSITION_FRAMES });
+  if (TRANSITION_STYLE === "slide") {
+    return (
+      <TransitionSeries.Transition
+        key={key}
+        presentation={slideTransition({ direction: idx % 2 === 0 ? "from-right" : "from-bottom" })}
+        timing={timing}
+      />
+    );
+  }
+  if (TRANSITION_STYLE === "wipe") {
+    return <TransitionSeries.Transition key={key} presentation={wipe({ direction: "from-left" })} timing={timing} />;
+  }
+  return <TransitionSeries.Transition key={key} presentation={fade()} timing={timing} />;
+};
+
 export const DupPresenter: React.FC<Props> = () => {
-  let offset = 0;
   const showCaptions = DECK.burn_captions !== false;
+  const sfxEnabled = DECK.sfx_enabled !== false;
+  const sfxVolume = DECK.sfx_volume ?? 0.22;
+  const duckRatio = DECK.music_duck_ratio ?? 0.36;
+
+  // Transition SFX trigger frames on the master timeline
+  const transitionSoundFrames: number[] = [];
+  if (sfxEnabled && DECK.sfx_transition_file && TRANSITION_FRAMES > 0) {
+    let cursor = 0;
+    for (let i = 0; i < DECK.slides.length - 1; i++) {
+      cursor += Math.max(1, Math.round(DECK.slides[i].duration_sec * FPS)) - TRANSITION_FRAMES;
+      transitionSoundFrames.push(Math.max(0, cursor - 2));
+    }
+  }
+
+  const renderSlideBody = (slide: ResolvedSlide, durationInFrames: number): React.ReactNode => {
+    if (slide.type === "hero_3d") return <Hero3DSlide slide={slide} />;
+    if (slide.type === "code_split") return <CodeSplitSlide slide={slide} />;
+    if (slide.type === "screen_split") return <ScreenSplitSlide slide={slide} dur={durationInFrames} />;
+    if (slide.type === "arch_flow") return <ArchFlowSlide slide={slide} />;
+    if (slide.type === "outro_3d") return <Outro3DSlide slide={slide} />;
+    if (slide.type === "timeline") return <TimelineSlide slide={slide} />;
+    if (slide.type === "terminal") return <TerminalSlide slide={slide} />;
+    if (slide.type === "kpi") return <KpiSlide slide={slide} />;
+    return null;
+  };
+
+  const renderSlideContent = (slide: ResolvedSlide, durationInFrames: number, hasTransition: boolean) => {
+    const voiceDelayFrames = Math.max(0, Math.round((slide.voice_delay_sec ?? 0) * FPS));
+    const wantsPop =
+      sfxEnabled &&
+      Boolean(DECK.sfx_pop_file) &&
+      (slide.type === "kpi" || slide.type === "terminal" || slide.type === "hero_3d");
+    return (
+      <>
+        <StockBackdrop slide={slide} dur={durationInFrames} />
+        <SlideChrome
+          brand={DECK.brand}
+          num={slide.num}
+          tag={slide.tag}
+          dur={durationInFrames}
+          hasTransition={hasTransition}
+        >
+          {renderSlideBody(slide, durationInFrames)}
+        </SlideChrome>
+        {showCaptions && <CaptionOverlay captions={slide.captions} />}
+        <Sequence from={voiceDelayFrames}>
+          <Audio src={staticFile(slide.voice_file)} startFrom={0} />
+        </Sequence>
+        {wantsPop && DECK.sfx_pop_file && (
+          <Sequence from={Math.min(8, Math.max(0, durationInFrames - 6))} durationInFrames={15}>
+            <Audio src={staticFile(DECK.sfx_pop_file)} volume={sfxVolume * 0.7} />
+          </Sequence>
+        )}
+      </>
+    );
+  };
 
   return (
     <AbsoluteFill style={{ backgroundColor: BG }}>
       <Aurora3DBackdrop />
-      <Audio src={staticFile(DECK.ambient_file)} volume={DECK.voice?.ambient_volume ?? 0.16} />
+      <Audio
+        src={staticFile(DECK.ambient_file)}
+        volume={(f) => (DECK.voice?.ambient_volume ?? 0.16) * computeDuckFactor(f, Math.max(0.55, duckRatio))}
+      />
       {DECK.music_file && (
         <Audio
           src={staticFile(DECK.music_file)}
           volume={(f) => {
             const v = DECK.music_volume ?? 0.12;
-            const fade = 2 * FPS;
-            return interpolate(f, [0, fade, DURATION - fade, DURATION], [0, v, v, 0], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            });
+            const fadeLen = Math.min(2 * FPS, Math.floor(DURATION / 3));
+            const env =
+              fadeLen > 0
+                ? interpolate(f, [0, fadeLen, DURATION - fadeLen, DURATION], [0, v, v, 0], {
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  })
+                : v;
+            return env * computeDuckFactor(f, duckRatio);
           }}
         />
       )}
-      {DECK.slides.map((slide) => {
-        const from = offset * FPS;
-        const durationInFrames = slide.duration_sec * FPS;
-        offset += slide.duration_sec;
-
-        let body: React.ReactNode = null;
-        if (slide.type === "hero_3d") body = <Hero3DSlide slide={slide} />;
-        else if (slide.type === "code_split") body = <CodeSplitSlide slide={slide} />;
-        else if (slide.type === "screen_split") body = <ScreenSplitSlide slide={slide} dur={durationInFrames} />;
-        else if (slide.type === "arch_flow") body = <ArchFlowSlide slide={slide} />;
-        else if (slide.type === "outro_3d") body = <Outro3DSlide slide={slide} />;
-        else if (slide.type === "timeline") body = <TimelineSlide slide={slide} />;
-        else if (slide.type === "terminal") body = <TerminalSlide slide={slide} />;
-        else if (slide.type === "kpi") body = <KpiSlide slide={slide} />;
-
-        return (
-          <Sequence key={slide.id} from={from} durationInFrames={durationInFrames}>
-            <StockBackdrop slide={slide} dur={durationInFrames} />
-            <SlideChrome brand={DECK.brand} num={slide.num} tag={slide.tag} dur={durationInFrames}>
-              {body}
-            </SlideChrome>
-            {showCaptions && <CaptionOverlay captions={slide.captions} />}
-            <Audio src={staticFile(slide.voice_file)} startFrom={0} />
-          </Sequence>
-        );
-      })}
+      {transitionSoundFrames.map((tf, idx) => (
+        <Sequence key={`sfx-tr-${idx}`} from={tf} durationInFrames={Math.max(12, TRANSITION_FRAMES + 6)}>
+          <Audio src={staticFile(DECK.sfx_transition_file!)} volume={sfxVolume} />
+        </Sequence>
+      ))}
+      {TRANSITION_FRAMES > 0 ? (
+        <TransitionSeries>
+          {DECK.slides.map((slide, idx) => {
+            const durationInFrames = Math.max(TRANSITION_FRAMES * 2 + 1, Math.round(slide.duration_sec * FPS));
+            return (
+              <React.Fragment key={slide.id}>
+                <TransitionSeries.Sequence durationInFrames={durationInFrames}>
+                  {renderSlideContent(slide, durationInFrames, true)}
+                </TransitionSeries.Sequence>
+                {idx < DECK.slides.length - 1 && renderSlideTransition(idx, `tr-${slide.id}`)}
+              </React.Fragment>
+            );
+          })}
+        </TransitionSeries>
+      ) : (
+        (() => {
+          let offset = 0;
+          return DECK.slides.map((slide) => {
+            const from = offset;
+            const durationInFrames = Math.max(1, Math.round(slide.duration_sec * FPS));
+            offset += durationInFrames;
+            return (
+              <Sequence key={slide.id} from={from} durationInFrames={durationInFrames}>
+                {renderSlideContent(slide, durationInFrames, false)}
+              </Sequence>
+            );
+          });
+        })()
+      )}
       <ProgressBar />
     </AbsoluteFill>
   );

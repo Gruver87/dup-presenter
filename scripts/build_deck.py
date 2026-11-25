@@ -39,7 +39,14 @@ SR = 48000
 
 ALLOWED_TYPES = {"hero_3d", "code_split", "screen_split", "arch_flow", "outro_3d", "timeline", "terminal", "kpi"}
 from theme_catalog import THEME_IDS  # noqa: E402
-from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_available, synth_edge  # noqa: E402
+from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_available, synth_edge_with_timings  # noqa: E402
+from audio_fx import (  # noqa: E402
+    AudioFXError,
+    build_word_captions,
+    detect_speech_windows,
+    ensure_sfx_files,
+    normalize_mp4_loudness,
+)
 from voice_clean import deess  # noqa: E402
 from ru_speech import normalize_ru_ssml  # noqa: E402
 from tts_engines import (  # noqa: E402
@@ -54,6 +61,7 @@ from tts_engines import (  # noqa: E402
 )
 
 ALLOWED_THEMES = set(THEME_IDS)
+ALLOWED_TRANSITIONS = {"fade", "slide", "wipe", "none"}
 ASPECT_DIMS = {"16:9": (1920, 1080), "9:16": (1080, 1920)}
 ALLOWED_SPEAKERS_BY_LANG = {
     "ru": {"xenia", "eugene", "aidar", "baya", "kseniya"} | set(EDGE_RU_VOICES),
@@ -107,6 +115,24 @@ def validate_deck(deck: dict) -> None:
             raise DeckValidationError(f"music.volume must be in (0, 0.3], got {vol}")
         if music.get("file") and Path(str(music["file"])).name != str(music["file"]):
             raise DeckValidationError("music.file must be a plain file name inside assets/music")
+    if "duck_db" in music:
+        duck_db = float(music["duck_db"])
+        if not -24.0 <= duck_db <= 0.0:
+            raise DeckValidationError(f"music.duck_db must be in [-24, 0], got {duck_db}")
+
+    transition = deck.get("transition") or {}
+    tr_style = str(transition.get("style", "fade"))
+    if tr_style not in ALLOWED_TRANSITIONS:
+        raise DeckValidationError(f"Unsupported transition.style {tr_style!r}; allowed: {sorted(ALLOWED_TRANSITIONS)}")
+    tr_frames = int(transition.get("frames", 12))
+    if tr_style != "none" and not (6 <= tr_frames <= 24):
+        raise DeckValidationError(f"transition.frames must be in [6, 24], got {tr_frames}")
+
+    sfx = deck.get("sfx") or {}
+    if "volume" in sfx:
+        sv = float(sfx["volume"])
+        if not 0.0 <= sv <= 0.5:
+            raise DeckValidationError(f"sfx.volume must be in [0, 0.5], got {sv}")
 
     voice = deck.get("voice") or {}
     lang = deck_lang(deck)
@@ -300,8 +326,9 @@ def write_subtitles(resolved: dict) -> tuple[Path, Path]:
     srt_lines: list[str] = []
     vtt_lines: list[str] = ["WEBVTT", ""]
     idx = 1
-    offset = 0.0
+    running_offset = 0.0
     for slide in resolved["slides"]:
+        offset = float(slide.get("start_sec", running_offset))
         for cue in slide.get("captions") or []:
             start = offset + float(cue["start_sec"])
             end = offset + float(cue["end_sec"])
@@ -310,7 +337,7 @@ def write_subtitles(resolved: dict) -> tuple[Path, Path]:
             srt_lines += [str(idx), f"{_fmt_ts(start, ',')} --> {_fmt_ts(end, ',')}", text, ""]
             vtt_lines += [f"{_fmt_ts(start, '.')} --> {_fmt_ts(end, '.')}", text, ""]
             idx += 1
-        offset += float(slide["duration_sec"])
+        running_offset = offset + float(slide["duration_sec"])
 
     srt_path.write_text("\n".join(srt_lines), encoding="utf-8")
     vtt_path.write_text("\n".join(vtt_lines), encoding="utf-8")
@@ -386,33 +413,41 @@ class VoiceSynth:
             self._silero[lang] = model
         return self._silero[lang]
 
-    def synth(self, speaker: str, plain: str, ssml: str | None = None) -> np.ndarray:
-        """Return mono float32 audio at SR for one utterance."""
+    def synth_with_timings(
+        self, speaker: str, plain: str, ssml: str | None = None
+    ) -> tuple[np.ndarray, list[dict]]:
+        """Return (mono float32 audio at SR, sentence boundary timings) for one utterance."""
         if speaker in EDGE_RU_VOICES:
             # Edge reads plain text; apply the same Latin->Cyrillic respelling as Silero so brand names are voiced.
-            audio = synth_edge(speaker, normalize_ru_ssml(plain), SR, rate=self.rate)
+            audio, boundaries = synth_edge_with_timings(speaker, normalize_ru_ssml(plain), SR, rate=self.rate)
             # Edge voices measured -10..-13 dB sibilance/speech (Silero -19..-20 dB). Gentle de-essing:
             # only peaks above the file's 75th percentile are reduced, by at most 4 dB; loudness unchanged.
-            return deess(audio, SR, max_cut_db=4.0, over_db=3.0, ratio=2.0)
+            return deess(audio, SR, max_cut_db=4.0, over_db=3.0, ratio=2.0), boundaries
         engine = speaker_engine(speaker)
         if engine == "kokoro_v1":
             if self._kokoro is None:
                 self._kokoro = KokoroEngine()
-            return self._kokoro.synth(plain, speaker, self.rate, SR)
+            return self._kokoro.synth(plain, speaker, self.rate, SR), []
         model = self._silero_model("en" if engine == "silero_v3_en" else "ru")
         payload = ssml or f'<speak><prosody rate="{self.rate}">{escape(plain)}</prosody></speak>'
         if engine == "silero_v5_ru":
             # Silero v5 RU cannot voice Latin letters; respell them (tags and entities untouched).
             payload = normalize_ru_ssml(payload)
         raw = model.apply_tts(ssml_text=payload, speaker=speaker, sample_rate=SR).detach().cpu().numpy()
-        return raw.astype(np.float32)
+        return raw.astype(np.float32), []
+
+    def synth(self, speaker: str, plain: str, ssml: str | None = None) -> np.ndarray:
+        """Return mono float32 audio at SR for one utterance."""
+        audio, _ = self.synth_with_timings(speaker, plain, ssml)
+        return audio
 
 
-def synthesize_deck(deck: dict) -> dict:
+def synthesize_deck(deck: dict, offline_only: bool = False) -> dict:
     """Synthesize with the deck's online voice when Edge TTS is reachable; otherwise the offline fallback.
 
     The engine is chosen once for the WHOLE deck (never mixes voices). If Edge fails mid-deck, the deck is
-    re-synthesized with the fallback. The voice actually used is recorded as resolved["voice_used"].
+    re-synthesized with the fallback. When offline_only=True, no network calls are made (Privacy Lock).
+    The voice actually used is recorded as resolved["voice_used"].
     """
     voice = deck.get("voice") or {}
     lang = deck_lang(deck)
@@ -421,6 +456,13 @@ def synthesize_deck(deck: dict) -> dict:
     speaker_b = voice.get("speaker_b") or DEFAULT_PARTNER.get(speaker_a, default_speaker)
     fallback = voice.get("fallback_speaker") or OFFLINE_FALLBACK_BY_LANG.get(lang, speaker_a)
     online = speaker_a in EDGE_RU_VOICES or speaker_b in EDGE_RU_VOICES
+    if offline_only:
+        if (deck.get("background") or {}).get("enabled"):
+            raise DeckValidationError("--offline-only forbids online stock background downloads (background.enabled=true)")
+        if online:
+            print(f"[offline-only] skipping online Edge TTS -> local offline voice '{fallback}'")
+            return _synthesize_deck_with(deck, fallback, fallback, voice_used=fallback)
+        return _synthesize_deck_with(deck, speaker_a, speaker_b, voice_used=speaker_a)
     if not online:
         return _synthesize_deck_with(deck, speaker_a, speaker_b, voice_used=speaker_a)
     if not edge_available():
@@ -446,16 +488,26 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
     voice = deck.get("voice") or {}
     mode = voice.get("mode", "single")
     rate = voice.get("rate", "95%")
+    fps = int(deck.get("fps", 30))
+    transition = deck.get("transition") or {}
+    tr_style = str(transition.get("style", "fade"))
+    total_slides = len(deck["slides"])
+    tr_frames = 0 if (tr_style == "none" or total_slides < 2) else int(transition.get("frames", 12))
+    sfx_cfg = deck.get("sfx") or {}
+    sfx_enabled = bool(sfx_cfg.get("enabled", True))
+    sfx_volume = float(sfx_cfg.get("volume", 0.22))
+    sfx_files = ensure_sfx_files(SR) if sfx_enabled else {}
+
     synther = VoiceSynth(rate)
 
-    total_sec = 0
+    cursor_frames = 0
     resolved_slides = []
-    total_slides = len(deck["slides"])
     gap = np.zeros(int(0.18 * SR), dtype=np.float32)
 
     for idx, slide in enumerate(deck["slides"], start=1):
         sid = slide["id"]
         plain = _plain_spoken_text(slide)
+        voice_delay_sec = round((tr_frames / float(fps)) * 0.55, 3) if (idx > 1 and tr_frames > 0) else 0.0
 
         if mode == "podcast":
             turns = slide.get("dialogue") or [
@@ -471,11 +523,14 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
                 txt = " ".join(str(turn.get("text", "")).split())
                 if not txt:
                     continue
-                clip = postprocess_voice(synther.synth(sp_id, txt))
+                raw_clip, bounds = synther.synth_with_timings(sp_id, txt)
+                clip = postprocess_voice(raw_clip)
                 seg_dur = len(clip) / float(SR)
                 if seg_dur < 0.4 and len(txt) > 30:
                     raise DeckValidationError(f"Slide {sid}: TTS produced {seg_dur:.2f}s for {len(txt)} chars ({sp_id})")
-                captions.append({"start_sec": round(cur_t, 2), "end_sec": round(cur_t + seg_dur, 2), "text": txt, "speaker": sp_tag})
+                captions.extend(
+                    build_word_captions(txt, seg_dur, boundaries=bounds, offset_sec=voice_delay_sec + cur_t, speaker=sp_tag)
+                )
                 chunks.append(clip)
                 cur_t += seg_dur
                 if t_i + 1 < len(turns):
@@ -483,17 +538,22 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
                     cur_t += len(gap) / float(SR)
             audio = np.concatenate(chunks) if chunks else np.zeros(SR, dtype=np.float32)
             dur = len(audio) / float(SR)
-            print(f"[tts] {sid} (podcast {speaker_a}+{speaker_b}): {dur:.2f}s -> slide {math.ceil(dur) + 1}s")
+            scene_s = max(2, math.ceil(voice_delay_sec + dur) + 1)
+            print(f"[tts] {sid} (podcast {speaker_a}+{speaker_b}): {dur:.2f}s -> slide {scene_s}s")
         else:
-            audio = postprocess_voice(synther.synth(speaker_a, plain, slide.get("voice_ssml") or None))
+            raw_audio, bounds = synther.synth_with_timings(speaker_a, plain, slide.get("voice_ssml") or None)
+            audio = postprocess_voice(raw_audio)
             dur = len(audio) / float(SR)
             if dur < 1.0 and len(plain) > 40:
                 raise DeckValidationError(
                     f"Slide {sid}: TTS produced {dur:.2f}s for {len(plain)} chars; text is not voiceable by {speaker_a}"
                 )
-            captions = _build_proportional_captions(plain, dur)
-            print(f"[tts] {sid} ({speaker_a}): {dur:.2f}s -> slide {math.ceil(dur) + 1}s")
+            captions = build_word_captions(plain, dur, boundaries=bounds, offset_sec=voice_delay_sec)
+            scene_s = max(2, math.ceil(voice_delay_sec + dur) + 1)
+            b_tag = f" ({len(bounds)} real bounds)" if bounds else ""
+            print(f"[tts] {sid} ({speaker_a}): {dur:.2f}s{b_tag} -> slide {scene_s}s")
 
+        speech_windows = detect_speech_windows(audio, SR, offset_sec=voice_delay_sec)
         pcm = (np.clip(audio, -1.0, 1.0) * 32767.0).astype(np.int16).tobytes()
         wav_name = f"{deck['slug']}_{sid}.wav"
         wav_path = VOICE_DIR / wav_name
@@ -503,15 +563,24 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
             wf.setframerate(SR)
             wf.writeframes(pcm)
 
-        scene_s = math.ceil(dur) + 1
-        total_sec += scene_s
+        start_sec = round(cursor_frames / float(fps), 3)
+        slide_frames = max(tr_frames * 2 + 1, int(round(scene_s * fps)))
+        cursor_frames += slide_frames - (tr_frames if idx < total_slides else 0)
 
         item = dict(slide)
         item["duration_sec"] = scene_s
-        item["num"] = f"{idx:02d} / {total_slides:02d}"
+        item["start_sec"] = start_sec
+        item["voice_delay_sec"] = voice_delay_sec
+        item["speech_windows"] = speech_windows
+        item["num"] = slide.get("_override_num") or f"{idx:02d} / {total_slides:02d}"
+        item.pop("_override_num", None)
         item["voice_file"] = f"voice/{wav_name}"
         item["captions"] = captions
         resolved_slides.append(item)
+
+    total_frames = max(1, cursor_frames)
+    total_sec = round(total_frames / float(fps), 3)
+    pad_sec = int(math.ceil(total_sec)) + 2
 
     pad_name = f"{deck['slug']}_bg_pad.wav"
     pad_path = VOICE_DIR / pad_name
@@ -519,21 +588,36 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
         wf.setnchannels(1)
         wf.setsampwidth(2)
         wf.setframerate(SR)
-        wf.writeframes(build_ambient_bed(total_sec + 2, SR))
+        wf.writeframes(build_ambient_bed(pad_sec, SR))
 
     aspect = deck.get("aspect", "16:9")
     w, h = ASPECT_DIMS[aspect]
+    music_cfg = deck.get("music") or {}
+    duck_db = float(music_cfg.get("duck_db", -9.0))
     resolved = dict(deck)
     resolved["aspect"] = aspect
+    resolved["fps"] = fps
     resolved["width"] = w
     resolved["height"] = h
     resolved["theme"] = deck.get("theme", "neon_cyber")
     resolved["burn_captions"] = deck.get("burn_captions", True)
+    resolved["transition_style"] = tr_style
+    resolved["transition_frames"] = tr_frames
+    resolved["sfx_enabled"] = sfx_enabled
+    resolved["sfx_volume"] = sfx_volume
+    if sfx_files:
+        resolved["sfx_transition_file"] = sfx_files["transition"]
+        resolved["sfx_pop_file"] = sfx_files["pop"]
+    resolved["music_duck_ratio"] = round(10.0 ** (duck_db / 20.0), 4)
     resolved["slides"] = resolved_slides
+    resolved["total_frames"] = total_frames
     resolved["total_seconds"] = total_sec
     resolved["ambient_file"] = f"voice/{pad_name}"
     resolved["voice_used"] = voice_used
-    print(f"[voice] deck voiced by '{voice_used}'")
+    print(
+        f"[voice] deck voiced by '{voice_used}' | transition={tr_style}({tr_frames}f) "
+        f"| sfx={'on' if sfx_enabled else 'off'} | duck={duck_db:+.1f}dB"
+    )
     credits = attach_stock_media(deck, resolved_slides)
     attach_music(deck, resolved)
     if credits:
@@ -542,7 +626,7 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
         cpath = write_credits(deck["slug"], credits)
         print(f"[media] credits -> {cpath}")
     RESOLVED_JSON.write_text(json.dumps(resolved, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[deck] wrote {RESOLVED_JSON} (total={total_sec}s, {w}x{h}, theme={resolved['theme']})")
+    print(f"[deck] wrote {RESOLVED_JSON} (total={total_sec:.2f}s / {total_frames}f, {w}x{h}, theme={resolved['theme']})")
     write_subtitles(resolved)
     return resolved
 
@@ -557,8 +641,15 @@ def run_cmd(args: list[str]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="DUP Presenter deck builder")
     parser.add_argument("deck", help="Path to deck JSON (e.g. decks/dup_labs.json)")
-    parser.add_argument("--render", action="store_true", help="Also type-check, render MP4 & thumbnail")
+    parser.add_argument("--render", action="store_true", help="Also type-check, render MP4, QA & publish pack")
     parser.add_argument("--skip-tts", action="store_true", help="Reuse existing WAV files")
+    parser.add_argument("--only-slide", default="", help="Fast preview: build/render only this slide id (e.g. s5)")
+    parser.add_argument("--preview-stills", action="store_true", help="Render 1 PNG frame per slide to out/<slug>_stills/")
+    parser.add_argument("--no-loudnorm", action="store_true", help="Skip -16 LUFS broadcast loudness normalization")
+    parser.add_argument("--no-qa", action="store_true", help="Skip post-render Media QA Gate")
+    parser.add_argument("--offline-only", action="store_true", help="Privacy Lock: block all network TTS/stock calls")
+    parser.add_argument("--audit-repo", default="", help="Run Claim Audit against this source repo before build")
+    parser.add_argument("--strict-audit", action="store_true", help="Fail build on any unverified number in Claim Audit")
     args = parser.parse_args()
 
     deck_path = Path(args.deck)
@@ -570,21 +661,80 @@ def main() -> int:
 
     deck = json.loads(deck_path.read_text(encoding="utf-8"))
     validate_deck(deck)
+
+    if args.audit_repo:
+        from claim_audit import audit_deck  # noqa: E402
+
+        audit = audit_deck(deck, repo_root=Path(args.audit_repo))
+        print(
+            f"[audit] verified={audit['verified_hits']} "
+            f"evidence_err={len(audit['evidence_errors'])} "
+            f"safety_warn={len(audit['safety_warnings'])} "
+            f"unverified_sym={len(audit['unverified_symbols'])} "
+            f"unverified_num={len(audit['unverified_numbers'])}"
+        )
+        passed = audit["ok"] if args.strict_audit else audit["hard_ok"]
+        if not passed:
+            print(json.dumps(audit, ensure_ascii=False, indent=2), file=sys.stderr)
+            print("[ERROR] Claim Audit failed — fix unverified claims before rendering", file=sys.stderr)
+            return 3
+
+    only_sid = args.only_slide.strip()
+    if only_sid:
+        all_slides = deck["slides"]
+        match_idx = next((i for i, s in enumerate(all_slides, start=1) if s.get("id") == only_sid), None)
+        if match_idx is None:
+            ids = [s.get("id") for s in all_slides]
+            print(f"[ERROR] --only-slide {only_sid!r} not found; available: {ids}", file=sys.stderr)
+            return 2
+        slide_copy = dict(all_slides[match_idx - 1])
+        slide_copy["_override_num"] = f"{match_idx:02d} / {len(all_slides):02d}"
+        deck = dict(deck)
+        deck["slug"] = f"{deck['slug']}_{only_sid}"
+        deck["slides"] = [slide_copy]
+        deck["transition"] = {"style": "none", "frames": 0}
+        print(f"[only-slide] isolated slide {only_sid!r} ({slide_copy['_override_num']}) -> slug={deck['slug']}")
+
     if not args.skip_tts:
-        resolved = synthesize_deck(deck)
+        resolved = synthesize_deck(deck, offline_only=args.offline_only)
     else:
         if not RESOLVED_JSON.is_file():
             print("[ERROR] --skip-tts used but deck_resolved.json does not exist", file=sys.stderr)
             return 2
         resolved = json.loads(RESOLVED_JSON.read_text(encoding="utf-8"))
-        # Apply theme/aspect/caption switches from deck even on --skip-tts
+        # Apply theme/aspect/caption/transition/sfx switches from deck even on --skip-tts
         aspect = deck.get("aspect", resolved.get("aspect", "16:9"))
         resolved["aspect"] = aspect
         resolved["width"], resolved["height"] = ASPECT_DIMS[aspect]
         resolved["theme"] = deck.get("theme", resolved.get("theme", "neon_cyber"))
         resolved["burn_captions"] = deck.get("burn_captions", resolved.get("burn_captions", True))
+        tr = deck.get("transition") or {}
+        if tr:
+            resolved["transition_style"] = tr.get("style", resolved.get("transition_style", "fade"))
+            resolved["transition_frames"] = 0 if resolved["transition_style"] == "none" else int(tr.get("frames", 12))
+        sfx_cfg = deck.get("sfx") or {}
+        if sfx_cfg:
+            resolved["sfx_enabled"] = bool(sfx_cfg.get("enabled", True))
+            resolved["sfx_volume"] = float(sfx_cfg.get("volume", 0.22))
+            if resolved["sfx_enabled"]:
+                sf = ensure_sfx_files(SR)
+                resolved["sfx_transition_file"] = sf["transition"]
+                resolved["sfx_pop_file"] = sf["pop"]
         RESOLVED_JSON.write_text(json.dumps(resolved, ensure_ascii=False, indent=2), encoding="utf-8")
         write_subtitles(resolved)
+
+    if args.preview_stills:
+        stills_dir = ROOT / "out" / f"{resolved['slug']}_stills"
+        stills_dir.mkdir(parents=True, exist_ok=True)
+        run_cmd(["npx", "tsc", "--noEmit"])
+        fps = int(resolved.get("fps", 30))
+        total_frames = int(resolved.get("total_frames") or round(resolved["total_seconds"] * fps))
+        for s in resolved["slides"]:
+            mid_sec = float(s.get("start_sec", 0.0)) + min(2.5, float(s["duration_sec"]) * 0.4)
+            frame = min(max(0, total_frames - 1), max(0, int(round(mid_sec * fps))))
+            out_png = stills_dir / f"{s['id']}.png"
+            run_cmd(["npx", "remotion", "still", "DupPresenter", str(out_png), f"--frame={frame}"])
+        print(f"[OK] Rendered {len(resolved['slides'])} slide stills -> {stills_dir}")
 
     if args.render:
         out_mp4 = ROOT / "out" / f"{resolved['slug']}.mp4"
@@ -595,8 +745,41 @@ def main() -> int:
             "npx", "remotion", "render", "DupPresenter", str(out_mp4),
             "--audio-codec=aac", "--audio-bitrate=320K",
         ])
-        thumb_frame = min(45, max(0, resolved["total_seconds"] * resolved.get("fps", 30) - 1))
+        loudnorm_applied = False
+        if not args.no_loudnorm and (deck.get("audio") or {}).get("loudnorm", True):
+            lufs = normalize_mp4_loudness(out_mp4, target_lufs=-16.0, true_peak=-1.5)
+            loudnorm_applied = True
+            print(
+                f"[audio] loudnorm: {lufs['input_lufs']} LUFS (TP {lufs['input_tp_db']} dB) "
+                f"-> {lufs['output_lufs']} LUFS (TP {lufs['output_tp_db']} dB)"
+            )
+
+        qa_report = None
+        if not args.no_qa:
+            from media_qa import run_media_qa  # noqa: E402
+
+            qa_report = run_media_qa(out_mp4, resolved=resolved, expect_loudnorm=loudnorm_applied)
+            qa_path = out_mp4.parent / f"{resolved['slug']}_qa.json"
+            qa_path.write_text(json.dumps(qa_report, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(
+                f"[qa] {'PASS' if qa_report['ok'] else 'FAIL'} | "
+                f"{qa_report['width']}x{qa_report['height']} {qa_report['duration_sec']}s | "
+                f"LUFS={qa_report['audio'].get('integrated_lufs')} TP={qa_report['audio'].get('true_peak_dbtp')} dBTP | "
+                f"max_silence={qa_report['audio'].get('max_interior_silence_sec')}s"
+            )
+            if not qa_report["ok"]:
+                raise RuntimeError(f"Media QA Gate FAILED ({qa_report['hard_fails']} hard fail(s)); see {qa_path}")
+
+        total_frames = int(resolved.get("total_frames") or round(resolved["total_seconds"] * resolved.get("fps", 30)))
+        thumb_frame = min(45, max(0, total_frames - 1))
         run_cmd(["npx", "remotion", "still", "DupPresenter", str(out_thumb), f"--frame={thumb_frame}"])
+
+        from publish_pack import build_publish_pack  # noqa: E402
+
+        pack = build_publish_pack(resolved, mp4_path=out_mp4, qa_report=qa_report, out_dir=out_mp4.parent)
+        print(
+            f"[pack] wrote {pack['chapters'].name}, {pack['post_copy'].name}, {pack['metadata'].name}"
+        )
         print(f"[OK] Rendered: {out_mp4} ({out_mp4.stat().st_size / 1_048_576:.2f} MB) + {out_thumb.name}")
     return 0
 
