@@ -54,6 +54,7 @@ from build_deck import (  # noqa: E402
     validate_deck,
 )
 from fetch_repo import RepoFetchError, looks_like_remote, normalize_git_url  # noqa: E402
+from idea_engine import GENRE_CATALOG, IdeaDeckExistsError, IdeaEngineError, generate_ideas, write_idea_deck  # noqa: E402
 from md_deck import MarkdownDeckError, MarkdownDeckExists, MarkdownImportError, write_deck_from_markdown  # noqa: E402
 from plan_deck import voice_ssml  # noqa: E402
 from tiktok_uploader import refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
@@ -490,6 +491,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 "decks": list_decks(),
                 "videos": list_videos(),
                 "provider": provider_info(),
+                "genres": GENRE_CATALOG,
                 "job": JOBS.snapshot(),
             })
             return
@@ -663,6 +665,40 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 self._json(400, {"ok": False, "error": f"Markdown не разобран: {exc}"})
                 return
             self._json(200, {"ok": True, "slug": deck["slug"]})
+            return
+
+        if path == "/api/ideas":
+            topic = str(body.get("topic") or "").strip()
+            lang = str(body.get("lang") or "ru").strip().lower()
+            genre = str(body.get("genre") or "all").strip().lower()
+            mode = str(body.get("mode") or "template").strip().lower()
+            model = str(body.get("model") or "").strip()
+            try:
+                count = int(body.get("count") or 5)
+            except (TypeError, ValueError):
+                self._json(400, {"ok": False, "error": "count должен быть числом от 1 до 7"})
+                return
+            try:
+                res = generate_ideas(topic, lang=lang, genre=genre, count=count, mode=mode, model=model)
+            except IdeaEngineError as exc:
+                self._json(400 if mode == "template" else 502, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/ideas/to-deck":
+            idea = body.get("idea")
+            slug = str(body.get("slug") or "").strip()
+            overwrite = bool(body.get("overwrite", False))
+            try:
+                deck, deck_path = write_idea_deck(idea, DECKS_DIR, slug=slug, overwrite=overwrite)
+            except IdeaDeckExistsError as exc:
+                self._json(409, {"ok": False, "error": str(exc)})
+                return
+            except (IdeaEngineError, DeckValidationError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "slug": deck["slug"], "path": str(deck_path)})
             return
 
         if path == "/api/save-deck":

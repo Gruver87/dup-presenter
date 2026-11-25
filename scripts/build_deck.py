@@ -51,6 +51,10 @@ ALLOWED_TYPES = {
     "tx_journey",
     "mesh_network",
     "protocol_cosmos",
+    "versus_split",
+    "chart_story",
+    "stat_burst",
+    "broll_cinematic",
 }
 QUOTE_MAX_CHARS = 220
 # ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
@@ -369,6 +373,62 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
                 for req in ("badge", "title", "detail", "metric", "color"):
                     if not isinstance(st.get(req), str) or not st[req].strip():
                         raise DeckValidationError(f"Slide {sid}: cosmos station {stid!r} missing {req!r}")
+        if stype == "versus_split":
+            vs = slide.get("versus")
+            if not isinstance(vs, dict):
+                raise DeckValidationError(f"Slide {sid}: versus_split requires a versus object")
+            for side_key in ("left", "right"):
+                side = vs.get(side_key)
+                if not isinstance(side, dict):
+                    raise DeckValidationError(f"Slide {sid}: versus.{side_key} must be an object")
+                if not isinstance(side.get("label"), str) or not side["label"].strip():
+                    raise DeckValidationError(f"Slide {sid}: versus.{side_key}.label must be a non-empty string")
+                pts = side.get("points")
+                if not isinstance(pts, list) or not (2 <= len(pts) <= 5) or not all(
+                    isinstance(p, str) and p.strip() for p in pts
+                ):
+                    raise DeckValidationError(f"Slide {sid}: versus.{side_key}.points must be 2..5 non-empty strings")
+        if stype == "chart_story":
+            ch = slide.get("chart")
+            if not isinstance(ch, dict):
+                raise DeckValidationError(f"Slide {sid}: chart_story requires a chart object")
+            if ch.get("kind") not in {"bar", "line", "donut"}:
+                raise DeckValidationError(f"Slide {sid}: chart.kind must be 'bar', 'line', or 'donut'")
+            series = ch.get("series")
+            if not isinstance(series, list) or not (2 <= len(series) <= 8):
+                raise DeckValidationError(f"Slide {sid}: chart.series must contain 2..8 items")
+            for c_idx, pt in enumerate(series):
+                if not isinstance(pt, dict) or not isinstance(pt.get("label"), str) or not pt["label"].strip():
+                    raise DeckValidationError(f"Slide {sid}: chart.series[{c_idx}] requires a non-empty label")
+                val = pt.get("value")
+                if isinstance(val, bool) or not isinstance(val, (int, float)) or val < 0:
+                    raise DeckValidationError(f"Slide {sid}: chart.series[{c_idx}].value must be a non-negative number")
+        if stype == "stat_burst":
+            sb = slide.get("stat_burst")
+            if not isinstance(sb, dict):
+                raise DeckValidationError(f"Slide {sid}: stat_burst requires a stat_burst object")
+            if not isinstance(sb.get("headline"), str) or not (1 <= len(sb["headline"].strip()) <= 24):
+                raise DeckValidationError(f"Slide {sid}: stat_burst.headline must be 1..24 chars")
+            if not isinstance(sb.get("caption"), str) or not sb["caption"].strip():
+                raise DeckValidationError(f"Slide {sid}: stat_burst.caption must be a non-empty string")
+            chips = sb.get("chips")
+            if chips is not None:
+                if not isinstance(chips, list) or len(chips) > 3:
+                    raise DeckValidationError(f"Slide {sid}: stat_burst.chips must have at most 3 items")
+        if stype == "broll_cinematic":
+            br = slide.get("broll")
+            if not isinstance(br, dict):
+                raise DeckValidationError(f"Slide {sid}: broll_cinematic requires a broll object")
+            img = br.get("image")
+            if img is not None:
+                if not isinstance(img, str) or not img.strip() or ".." in img:
+                    raise DeckValidationError(f"Slide {sid}: broll.image must be a safe relative path")
+            callouts = br.get("callouts")
+            if callouts is not None:
+                if not isinstance(callouts, list) or len(callouts) > 3 or not all(
+                    isinstance(c, str) and c.strip() for c in callouts
+                ):
+                    raise DeckValidationError(f"Slide {sid}: broll.callouts must be 0..3 non-empty strings")
         if stype == "kpi":
             kpis = slide.get("kpis") or []
             if not (1 <= len(kpis) <= 4):

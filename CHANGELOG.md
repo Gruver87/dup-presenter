@@ -2,6 +2,18 @@
 
 All notable changes to **DUP Presenter** are documented in this file. Dates and versions match actual commits and verified runs on disk.
 
+## [Unreleased / 1.3.0-dev] — 2026-11-25
+
+### Added (Universal Studio Roadmap A–D)
+- **Phase A — Built-in Idea Engine (`scripts/idea_engine.py`, `console_server.py`, `console_ui.html`, `mcp_server.py`):** 7 video genres (`tech_explainer`, `versus_battle`, `short_60s`, `news_digest`, `investor_pitch`, `case_study`, `tutorial`), honest offline template mode vs fail-closed Ollama/Cloud LLM mode, and 1-click conversion into validated `decks/<slug>.json`.
+- **Phase B — 4 Universal Slide Templates (`src/UniversalSlides.tsx`, `src/types.ts`, `scripts/build_deck.py`):** `versus_split` (A vs B 3D comparison + verdict), `chart_story` (`bar` / `line` / `donut`), `stat_burst` (high-impact hook slide), and `broll_cinematic` (Ken Burns full-bleed storytelling) — total **18 slide types**.
+- **Phase C — Director Presets, Thumbnail Studio & Duo Speaker Indicator:**
+  - `scripts/director_presets.py` (`cinema_cosmos`, `fast_shorts`, `documentary`, `news_flash`, `tech_pitch`).
+  - `scripts/thumbnail_studio.py` + Remotion `DupThumbnail` (`src/Thumbnail.tsx`, `1280×720`).
+  - Upgraded `duo` active-speaker badge (`HOST` / `EXPERT`) in `src/Composition.tsx`.
+- **Phase D — Multi-Format Video Pack (`scripts/video_pack.py` + MCP `plan_video_pack` / `render_thumbnail`):** builds coordinated 16:9 + 9:16 Short + optional translation + 1280×720 cover + unified fail-closed `out/<slug>_pack_manifest.json`.
+- **Tests:** `tests/test_idea_engine.py`, `tests/test_universal_slides.py`, `tests/test_director_thumb_pack.py` (**153 total tests passing**).
+
 ## [1.2.0] — 2026-11-25
 
 ### Added

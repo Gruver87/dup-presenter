@@ -24,10 +24,13 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from build_deck import validate_deck  # noqa: E402
 from claim_audit import audit_deck  # noqa: E402
 from deck_doctor import load_and_diagnose  # noqa: E402
+from idea_engine import generate_ideas, write_idea_deck  # noqa: E402
 from make_cutdown import build_short_cutdown  # noqa: E402
 from media_qa import run_media_qa  # noqa: E402
 from publish_pack import build_publish_pack  # noqa: E402
 from ru_speech import get_latin_ru, load_pronunciation_overrides, save_pronunciation_overrides  # noqa: E402
+from thumbnail_studio import build_thumbnail_props, render_thumbnail  # noqa: E402
+from video_pack import plan_video_pack  # noqa: E402
 
 PREVIEW_TIMEOUT_SEC = 900
 
@@ -39,6 +42,69 @@ TOOLS = [
         "name": "list_decks",
         "description": "List available presentation deck JSON files in dup-presenter/decks with slide count, language, and aspect.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "generate_ideas",
+        "description": "Generate 1..7 diverse video concepts (hook, genre, aspect, theme, slide blueprint) using offline templates or LLM (fail-closed).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "topic": {"type": "string", "description": "Topic, product name, or short brief"},
+                "lang": {"type": "string", "enum": ["ru", "en"], "default": "ru"},
+                "genre": {"type": "string", "default": "all"},
+                "count": {"type": "integer", "default": 5},
+                "mode": {"type": "string", "enum": ["template", "ollama", "cloud"], "default": "template"},
+            },
+            "required": ["topic"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "idea_to_deck",
+        "description": "Convert a generated idea object into a validated DUP Presenter deck JSON in decks/<slug>.json.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "idea": {"type": "object", "description": "Idea object returned by generate_ideas"},
+                "slug": {"type": "string", "default": ""},
+                "overwrite": {"type": "boolean", "default": False},
+            },
+            "required": ["idea"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "plan_video_pack",
+        "description": "Validate a deck and return a multi-format Video Pack build plan (16:9 + 9:16 Short + optional translation + 1280x720 thumbnail).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "deck": {"type": "string", "description": "Source deck path"},
+                "include_short": {"type": "boolean", "default": True},
+                "include_thumbnail": {"type": "boolean", "default": True},
+                "translate_to": {"type": "string", "enum": ["", "ru", "en"], "default": ""},
+                "preset": {"type": "string", "default": ""},
+            },
+            "required": ["deck"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "render_thumbnail",
+        "description": "Render a 1280x720 clickable cover PNG via Remotion DupThumbnail composition.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "deck": {"type": "string", "default": ""},
+                "title": {"type": "string", "default": ""},
+                "subtitle": {"type": "string", "default": ""},
+                "accent_badge": {"type": "string", "default": ""},
+                "theme": {"type": "string", "default": ""},
+                "out": {"type": "string", "description": "Output PNG path under out/"},
+            },
+            "required": ["out"],
+            "additionalProperties": False,
+        },
     },
     {
         "name": "audit_deck_claims",
@@ -238,6 +304,47 @@ def handle_tool_call(name: str, arguments: dict) -> dict:
             only_slide=str(arguments.get("only_slide") or "").strip(),
             skip_tts=bool(arguments.get("skip_tts", False)),
         )
+
+    if name == "generate_ideas":
+        return generate_ideas(
+            str(arguments["topic"]),
+            lang=str(arguments.get("lang") or "ru"),
+            genre=str(arguments.get("genre") or "all"),
+            count=int(arguments.get("count") or 5),
+            mode=str(arguments.get("mode") or "template"),
+        )
+
+    if name == "idea_to_deck":
+        deck, deck_path = write_idea_deck(
+            arguments["idea"],
+            ROOT / "decks",
+            slug=str(arguments.get("slug") or ""),
+            overwrite=bool(arguments.get("overwrite", False)),
+        )
+        return {"ok": True, "slug": deck["slug"], "path": str(deck_path), "slides": len(deck["slides"])}
+
+    if name == "plan_video_pack":
+        return plan_video_pack(
+            _resolve_path(arguments["deck"]),
+            include_short=bool(arguments.get("include_short", True)),
+            include_thumbnail=bool(arguments.get("include_thumbnail", True)),
+            translate_to=str(arguments.get("translate_to") or ""),
+            preset=str(arguments.get("preset") or ""),
+        )
+
+    if name == "render_thumbnail":
+        deck_data = None
+        if arguments.get("deck"):
+            deck_data = json.loads(_resolve_path(arguments["deck"]).read_text(encoding="utf-8"))
+        props = build_thumbnail_props(
+            deck=deck_data,
+            title=str(arguments.get("title") or ""),
+            subtitle=str(arguments.get("subtitle") or ""),
+            accent_badge=str(arguments.get("accent_badge") or ""),
+            theme=str(arguments.get("theme") or ""),
+        )
+        out_p = _resolve_path(arguments["out"])
+        return render_thumbnail(out_p, props, dry_run=False)
 
     raise ValueError(f"Unknown tool: {name}")
 

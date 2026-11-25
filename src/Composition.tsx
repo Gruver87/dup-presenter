@@ -21,6 +21,7 @@ import rawDeck from "./generated/deck_resolved.json";
 import { resolveTheme } from "./themes";
 import { QuantumWarpBackdrop } from "./CosmosBackdrop";
 import { LedgerLayersSlide, MeshNetworkSlide, ProtocolCosmosSlide, TxJourneySlide } from "./StorySlides";
+import { BRollCinematicSlide, ChartStorySlide, StatBurstSlide, VersusSplitSlide } from "./UniversalSlides";
 import type { CaptionCue, ResolvedDeck, ResolvedSlide, ScreenFocus } from "./types";
 
 const DECK = rawDeck as unknown as ResolvedDeck;
@@ -2232,8 +2233,33 @@ const CaptionKaraokeLayer: React.FC<{ cue: CaptionCue; sec: number }> = ({ cue, 
         }}
       >
         {cue.speaker && (
-          <span style={{ color: cue.speaker === "B" ? PINK : CYAN, marginRight: 10, fontFamily: "Consolas, monospace" }}>
-            [{cue.speaker}]
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "2px 10px",
+              borderRadius: 999,
+              marginRight: 10,
+              background: cue.speaker === "B" ? `${PINK}28` : `${CYAN}24`,
+              border: `1px solid ${cue.speaker === "B" ? PINK : CYAN}`,
+              color: cue.speaker === "B" ? PINK : CYAN,
+              fontFamily: "Consolas, monospace",
+              fontSize: IS_PORTRAIT ? 20 : 17,
+              fontWeight: 900,
+              verticalAlign: "middle",
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: cue.speaker === "B" ? PINK : CYAN,
+                boxShadow: `0 0 10px ${cue.speaker === "B" ? PINK : CYAN}`,
+              }}
+            />
+            {cue.speaker === "A" ? "HOST" : cue.speaker === "B" ? "EXPERT" : cue.speaker}
           </span>
         )}
         {words.map((w, i) => {
@@ -2437,6 +2463,18 @@ export const DupPresenter: React.FC<Props> = () => {
     }
     if (slide.type === "protocol_cosmos") {
       return <ProtocolCosmosSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
+    if (slide.type === "versus_split") {
+      return <VersusSplitSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
+    if (slide.type === "chart_story") {
+      return <ChartStorySlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
+    if (slide.type === "stat_burst") {
+      return <StatBurstSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
+    if (slide.type === "broll_cinematic") {
+      return <BRollCinematicSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
     }
     return null;
   };

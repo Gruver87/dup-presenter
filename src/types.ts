@@ -112,6 +112,47 @@ export interface ProtocolCosmosData {
   stations: CosmosStationItem[];
 }
 
+export interface VersusSide {
+  label: string;
+  badge?: string;
+  points: string[];
+  accent?: string;
+}
+
+export interface VersusSplitData {
+  left: VersusSide;
+  right: VersusSide;
+  verdict?: string;
+}
+
+export interface ChartSeriesItem {
+  label: string;
+  value: number;
+  display?: string;
+  color?: string;
+}
+
+export interface ChartStoryData {
+  kind: "bar" | "line" | "donut";
+  unit?: string;
+  source_note?: string;
+  series: ChartSeriesItem[];
+}
+
+export interface StatBurstData {
+  headline: string;
+  kicker?: string;
+  caption: string;
+  chips?: { label: string; color?: string }[];
+}
+
+export interface BRollCinematicData {
+  image?: string;
+  badge?: string;
+  caption?: string;
+  callouts?: string[];
+}
+
 export interface CaptionWord {
   w: string;
   start: number;
@@ -152,7 +193,11 @@ export interface ResolvedSlide {
     | "ledger_layers"
     | "tx_journey"
     | "mesh_network"
-    | "protocol_cosmos";
+    | "protocol_cosmos"
+    | "versus_split"
+    | "chart_story"
+    | "stat_burst"
+    | "broll_cinematic";
   // quote: title = the quote text (<= 220 chars), subtitle = attribution (optional)
   // ui_recording: MP4 from scripts/record_ui.py under public/ui_recordings/ (played muted inside the 3D frame)
   recording?: { src: string; caption?: string; focus?: ScreenFocus; duration_sec?: number };
@@ -185,6 +230,10 @@ export interface ResolvedSlide {
   journey?: TxJourneyData;
   mesh?: MeshNetworkData;
   cosmos?: ProtocolCosmosData;
+  versus?: VersusSplitData;
+  chart?: ChartStoryData;
+  stat_burst?: StatBurstData;
+  broll?: BRollCinematicData;
   captions?: CaptionCue[];
 }
 

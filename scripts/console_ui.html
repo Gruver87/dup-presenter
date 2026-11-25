@@ -198,6 +198,54 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
           <span id="genMsg" style="font-size:0.84rem;color:var(--muted);"></span>
         </div>
       </div>
+
+      <div class="panel" id="ideaEnginePanel">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+          <h2 style="margin:0;">Генератор идей (Idea Engine)</h2>
+          <span style="font-size:0.8rem;color:var(--muted);">7 жанров · Офлайн-шаблоны / Ollama / Cloud · 1 клик → черновик де́ка</span>
+        </div>
+        <div class="grid3">
+          <div style="grid-column:span 2;">
+            <label>Тема, продукт или короткий бриф</label>
+            <input id="ideaTopicInput" type="text" placeholder="Например: Как работает DUP Protocol, Python vs Rust, Дайджест рынков..." />
+          </div>
+          <div>
+            <label>Жанр видео</label>
+            <select id="ideaGenreSelect">
+              <option value="all">Все жанры (микс)</option>
+              <option value="tech_explainer">Разбор технологии</option>
+              <option value="versus_battle">Сравнение A vs B</option>
+              <option value="short_60s">60s Short / Reels (9:16)</option>
+              <option value="news_digest">Новостной дайджест</option>
+              <option value="investor_pitch">Питч продукта</option>
+              <option value="case_study">Кейс-стади</option>
+              <option value="tutorial">Пошаговый гайд</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid3" style="margin-top:8px;">
+          <div>
+            <label>Язык</label>
+            <select id="ideaLangSelect">
+              <option value="ru">Русский (RU)</option>
+              <option value="en">English (EN)</option>
+            </select>
+          </div>
+          <div>
+            <label>Источник идей</label>
+            <select id="ideaModeSelect">
+              <option value="template">Офлайн-шаблоны (мгновенно)</option>
+              <option value="ollama">Local Ollama LLM</option>
+              <option value="cloud">Cloud LLM (API Key)</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:10px;">
+            <button class="btn primary" id="ideaGenBtn" style="width:100%;">Придумать 5 идей</button>
+          </div>
+        </div>
+        <div id="ideaMsg" style="font-size:0.84rem;color:var(--muted);margin-top:8px;"></div>
+        <div id="ideaCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px;"></div>
+      </div>
     </section>
 
     <section id="tab-edit" class="tab hidden">
@@ -679,6 +727,61 @@ $("saveRenderBtn").onclick = async () => {
   $("saveMsg").textContent = d.ok ? "OK" : `Error: ${d.error}`;
   if (d.ok) document.querySelector('[data-tab="logs"]').click();
   poll();
+};
+
+/* ---------- IDEA ENGINE ---------- */
+let LAST_IDEAS = [];
+$("ideaGenBtn").onclick = async () => {
+  const topic = ($("ideaTopicInput").value || "").trim();
+  if (topic.length < 2) { $("ideaMsg").textContent = "Введите тему (минимум 2 символа)."; return; }
+  $("ideaMsg").textContent = "Генерирую идеи...";
+  $("ideaCards").innerHTML = "";
+  const r = await fetch("/api/ideas", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      topic,
+      lang: $("ideaLangSelect").value,
+      genre: $("ideaGenreSelect").value,
+      mode: $("ideaModeSelect").value,
+      count: 5,
+    }),
+  });
+  const d = await r.json();
+  if (!d.ok) { $("ideaMsg").textContent = `Ошибка: ${d.error}`; return; }
+  LAST_IDEAS = d.ideas || [];
+  $("ideaMsg").textContent = `Готово: ${LAST_IDEAS.length} идей (источник: ${d.source}).`;
+  $("ideaCards").innerHTML = LAST_IDEAS.map((idea, idx) => `
+    <div class="slide-card">
+      <div class="head">
+        <span>${esc(idea.genre)} · ${esc(idea.aspect)} · ${esc(idea.theme)}</span>
+        <span>~${esc(String(idea.duration_hint_sec))}s</span>
+      </div>
+      <div style="font-weight:700;font-size:0.98rem;margin-bottom:4px;">${esc(idea.title)}</div>
+      <div style="font-size:0.84rem;color:var(--muted);margin-bottom:8px;">${esc(idea.hook)}</div>
+      <div style="font-size:0.76rem;color:var(--muted);margin-bottom:10px;">Слайды: ${(idea.slides || []).map((s) => esc(s.type)).join(" → ")}</div>
+      <button class="btn sm primary" onclick="createDeckFromIdea(${idx})">Создать черновик де́ка</button>
+    </div>
+  `).join("");
+};
+
+window.createDeckFromIdea = async (idx) => {
+  const idea = LAST_IDEAS[idx];
+  if (!idea) return;
+  $("ideaMsg").textContent = "Создаю черновик де́ка...";
+  const r = await fetch("/api/ideas/to-deck", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idea, overwrite: false }),
+  });
+  const d = await r.json();
+  if (!d.ok) { $("ideaMsg").textContent = `Ошибка: ${d.error}`; return; }
+  $("ideaMsg").textContent = `Дек создан: ${d.slug}.json — открываю в редакторе.`;
+  CURRENT_SLUG = d.slug;
+  await poll();
+  $("deckSelect").value = d.slug;
+  loadDeck(d.slug);
+  document.querySelector('[data-tab="edit"]').click();
 };
 
 /* ---------- MARKDOWN IMPORT ---------- */

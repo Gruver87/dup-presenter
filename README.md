@@ -54,7 +54,7 @@ decks/<slug>.json  (или examples/*.md -> scripts/md_deck.py)
 
 ---
 
-## 14 шаблонов слайдов (`type`)
+## 18 шаблонов слайдов (`type`)
 
 | Шаблон | Описание |
 |--------|----------|
@@ -63,6 +63,10 @@ decks/<slug>.json  (или examples/*.md -> scripts/md_deck.py)
 | `ledger_layers` | 3D-стек слоёв архитектуры (3–6 слоёв) с пошаговым фокусом и локализованной плашкой `ГАРАНТИЯ:` / `GUARANTEE:` |
 | `tx_journey` | Жизненный цикл транзакции: сворачивание дерева Меркла, `prev_hash`-связка блоков и печать `SEALED ✓` |
 | `mesh_network` | 3D-топология 3–4 узлов сети с импульсами распространения блока, зондами согласованности и карточками восстановления |
+| `versus_split` | Сравнение **A vs B** (две дутые вогнутые 3D-колонки, пульсирующий центр `VS` и плашка `VERDICT`) |
+| `chart_story` | Анимированные графики (`bar`, `line`, `donut`) с пружинным ростом значений и подписями |
+| `stat_burst` | Динамический слайд-хук для первых 3–5 секунд (гигантская парящая цифра/тезис + энергетическое кольцо) |
+| `broll_cinematic` | Полноэкранный кинематографичный слайд с Ken Burns, виньетированием и карточками-тезисами |
 | `code_split` | Split-screen: слева тезисы, справа 3D-окно реального кода с построчной анимацией |
 | `screen_split` | Split-screen с реальными скриншотами и виртуальной камерой авто-зума (`focus: {x, y, zoom}`) |
 | `ui_recording` | Живая запись сценария UI через Playwright (`scripts/record_ui.py`) с авто-подгонкой длительности через `ffprobe` |
@@ -72,6 +76,19 @@ decks/<slug>.json  (или examples/*.md -> scripts/md_deck.py)
 | `terminal` | Анимированный вывод терминала |
 | `quote` | Цитата в 3D-карточке (`title`, до 220 символов) с атрибуцией в `subtitle` |
 | `outro_3d` | Финальный слайд со ссылкой на репозиторий, бейджами, теглайном и 3D-кубом |
+
+## Новые инструменты студии (Idea Engine, Presets, Thumbnail Studio, Video Pack)
+
+```powershell
+# A) Встроенный Генератор Идей (7 жанров, офлайн-шаблоны / Ollama / Cloud, 1 шаг -> черновик де́ка)
+python scripts/idea_engine.py --topic "Python vs Rust в 2026" --genre versus_battle --lang ru --write-first
+
+# C) Генератор кликабельных обложек 1280x720 (Thumbnail Studio)
+python scripts/thumbnail_studio.py --deck decks/dup-protocol-cosmos.json --badge "0 FLOAT · 48H PASS" --out out/cover.png
+
+# D) Мультиформатная сборка Video Pack (16:9 + 9:16 Short + перевод + обложка + сводный QA-манифест)
+python scripts/video_pack.py decks/radar-pro.json --translate-to en --preset cinema_cosmos --plan-only
+```
 
 ## 12 визуальных тем (`theme`)
 
@@ -165,7 +182,7 @@ python scripts/console_server.py --port 8790 --no-auto-ollama
 python scripts/console_ui_check.py --url http://127.0.0.1:8790/
 ```
 
-Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **137 Python unit/gate тестов** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **153 Python unit/gate тестов** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Документация и экосистема DUP Labs
 
