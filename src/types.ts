@@ -46,6 +46,54 @@ export interface KpiItem {
   label: string;
 }
 
+export interface LedgerLayerItem {
+  id: string;
+  name: string;
+  tech: string;
+  desc: string;
+  guarantee: string;
+  accent?: string;
+}
+
+export interface JourneyBlock {
+  height: string;
+  hash: string;
+  tx_count: string;
+  sealed?: boolean;
+}
+
+export interface JourneyStep {
+  title: string;
+  badge: string;
+  detail: string;
+  accent?: string;
+}
+
+export interface TxJourneyData {
+  tx_label: string;
+  amount_label: string;
+  signature_label: string;
+  merkle_leaves?: string[];
+  blocks: JourneyBlock[];
+  steps: JourneyStep[];
+}
+
+export interface MeshNodeItem {
+  id: string;
+  role: string;
+  endpoint: string;
+  status: string;
+  height?: string;
+}
+
+export interface MeshNetworkData {
+  protocol_label: string;
+  chain_id: string;
+  probe_label: string;
+  nodes: MeshNodeItem[];
+  recovery_steps: BulletData[];
+}
+
 export interface CaptionWord {
   w: string;
   start: number;
@@ -72,7 +120,20 @@ export interface ResolvedSlide {
   id: string;
   num: string;
   tag: string;
-  type: "hero_3d" | "code_split" | "screen_split" | "ui_recording" | "arch_flow" | "outro_3d" | "timeline" | "terminal" | "kpi" | "quote";
+  type:
+    | "hero_3d"
+    | "code_split"
+    | "screen_split"
+    | "ui_recording"
+    | "arch_flow"
+    | "outro_3d"
+    | "timeline"
+    | "terminal"
+    | "kpi"
+    | "quote"
+    | "ledger_layers"
+    | "tx_journey"
+    | "mesh_network";
   // quote: title = the quote text (<= 220 chars), subtitle = attribution (optional)
   // ui_recording: MP4 from scripts/record_ui.py under public/ui_recordings/ (played muted inside the 3D frame)
   recording?: { src: string; caption?: string; focus?: ScreenFocus; duration_sec?: number };
@@ -101,6 +162,9 @@ export interface ResolvedSlide {
     edges: ArchEdge[];
   };
   kpis?: KpiItem[];
+  layers?: LedgerLayerItem[];
+  journey?: TxJourneyData;
+  mesh?: MeshNetworkData;
   captions?: CaptionCue[];
 }
 

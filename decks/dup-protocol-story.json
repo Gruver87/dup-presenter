@@ -1,0 +1,428 @@
+{
+  "slug": "dup-protocol-story",
+  "lang": "ru",
+  "theme": "deep_ocean",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 14,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "music": {
+    "enabled": true,
+    "file": "sub_clair-dark-background-639175.mp3",
+    "volume": 0.1,
+    "duck_db": -10.0
+  },
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "voice": {
+    "engine": "edge_tts",
+    "lang": "ru",
+    "speaker": "dmitry",
+    "rate": "97%",
+    "ambient_volume": 0.1,
+    "mode": "single",
+    "fallback_speaker": "eugene"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "ПРОЛОГ",
+      "type": "hero_3d",
+      "title": "Книга, которая не умеет врать",
+      "subtitle": "DUP Protocol — гибридный L1 блокчейн на Python и Rust",
+      "voice_text": "Представьте финансовую книгу, из которой невозможно вырвать страницу и в которой ни один рубль не потеряется при округлении. Именно для этого создаётся DUP Protocol — гибридный L1 блокчейн, где Python управляет логикой, а Rust отвечает за скорость и криптографию.",
+      "pills": [
+        {
+          "name": "Fail-closed по умолчанию",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Только целые сатоши",
+          "color": "#2dd4bf"
+        },
+        {
+          "name": "Python + Rust ядро",
+          "color": "#818cf8"
+        }
+      ],
+      "cube_faces": [
+        "DUP L1",
+        "RUST",
+        "LEDGER",
+        "MERKLE",
+        "NOISE",
+        "INT64"
+      ]
+    },
+    {
+      "id": "s2",
+      "tag": "ЗАЧЕМ",
+      "type": "quote",
+      "title": "Лучше честно остановить запись, чем молча испортить состояние книги.",
+      "subtitle": "Принцип fail-closed · DUP Protocol · без тихих подмен и округления денег",
+      "voice_text": "Обычные системы часто скрывают сбой и продолжают показывать зелёный статус. DUP Protocol устроен иначе: если проверка не прошла, запись останавливается. Деньги хранятся только в целых сатоши, а каждый статус подтверждается реальным зондом.",
+      "bullets": []
+    },
+    {
+      "id": "s3",
+      "tag": "СЛОИ КНИГИ",
+      "type": "ledger_layers",
+      "title": "Пять слоёв живой книги",
+      "subtitle": "Данные идут строго сверху вниз — каждый слой отвечает за свой рубеж",
+      "voice_text": "Как эта книга всё записывает и ничего не теряет? Она разделена на пять строгих слоёв. Внешний API и консоль принимают запрос на границе. Python ведёт оркестрацию и правила консенсуса. Сеть libp2p и мемпул на Rust отсекают спам и неверные подписи. Слой исполнения считает балансы строго в целых сатоши. А внизу криптоядро и RocksDB ставят печать и вшивают страницу на диск.",
+      "layers": [
+        {
+          "id": "api",
+          "name": "API и Ops Console",
+          "tech": "REST :8080 · JSON-RPC :8545",
+          "desc": "Точка входа и наблюдение за живым узлом без обхода портов.",
+          "guarantee": "Внешний ввод проверяется на границе; запись без подписи невозможна.",
+          "accent": "#38bdf8"
+        },
+        {
+          "id": "orch",
+          "name": "Оркестрация и консенсус",
+          "tech": "Python · LMD-GHOST · TipSafety",
+          "desc": "Правила выбора ветки, контроль вершины цепи и управление секретами.",
+          "guarantee": "Ни один модуль не обходит порты домена и не подменяет политику.",
+          "accent": "#0ea5e9"
+        },
+        {
+          "id": "net",
+          "name": "Сеть и мемпул",
+          "tech": "Rust · rust-libp2p Noise · ADR 0021",
+          "desc": "Шифрованные каналы между узлами и быстрая очередь транзакций.",
+          "guarantee": "Лимиты трафика и ранняя фильтрация отбрасывают мусор до блока.",
+          "accent": "#2dd4bf"
+        },
+        {
+          "id": "exec",
+          "name": "Исполнение и учёт",
+          "tech": "StateService · TxPipeline · EVM",
+          "desc": "Применение транзакций, смарт-контракты и обновление балансов.",
+          "guarantee": "Ноль чисел с плавающей точкой — все суммы строго в целых сатоши.",
+          "accent": "#818cf8"
+        },
+        {
+          "id": "persist",
+          "name": "Крипто-печать и книга",
+          "tech": "Rust abs_native · Merkle · RocksDB",
+          "desc": "Вычисление корня состояния, хеш-связка блоков и запись на диск.",
+          "guarantee": "Атомарный коммит в RocksDB — ни одна принятая запись не теряется.",
+          "accent": "#38bdf8"
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "tag": "ПУТЬ ТРАНЗАКЦИИ",
+      "type": "tx_journey",
+      "title": "Как транзакция проходит цепочку",
+      "subtitle": "От подписи отправителя до неразрывного звена в книге RocksDB",
+      "voice_text": "Проследим путь одной транзакции. Сначала отправитель подписывает перевод в сатоши. Затем мемпул на Rust проверяет подпись, порядок и баланс. После этого все транзакции блока сворачиваются попарно в дерево Меркла и единый корень состояния. Новый блок забирает хеш предыдущего и защёлкивается в цепочку, а RocksDB фиксирует страницу на диске. Изменить прошлое незаметно невозможно — сломается вся цепь.",
+      "journey": {
+        "tx_label": "TX #7a9f",
+        "amount_label": "100 000 sat",
+        "signature_label": "ECDSA ✓",
+        "merkle_leaves": [
+          "tx·a41f",
+          "tx·9c02",
+          "tx·e718",
+          "TX* 7a9f"
+        ],
+        "blocks": [
+          {
+            "height": "#49343",
+            "hash": "0x2b91c...8a1f",
+            "tx_count": "11 tx"
+          },
+          {
+            "height": "#49344",
+            "hash": "0x445ec...7db2",
+            "tx_count": "16 tx"
+          },
+          {
+            "height": "#49345",
+            "hash": "0x5465a...6194",
+            "tx_count": "14 tx"
+          },
+          {
+            "height": "#49346",
+            "hash": "0x9fd8a...2867",
+            "tx_count": "15 tx",
+            "sealed": true
+          }
+        ],
+        "steps": [
+          {
+            "title": "Подпись",
+            "badge": "ECDSA",
+            "detail": "Отправитель подписывает сумму в сатоши приватным ключом.",
+            "accent": "#38bdf8"
+          },
+          {
+            "title": "Мемпул",
+            "badge": "RUST",
+            "detail": "Проверка подписи, nonce и баланса; невалидное отклоняется.",
+            "accent": "#0ea5e9"
+          },
+          {
+            "title": "Дерево Меркла",
+            "badge": "SHA-256",
+            "detail": "Транзакции сворачиваются в Merkle Root и State Root.",
+            "accent": "#818cf8"
+          },
+          {
+            "title": "Связка блока",
+            "badge": "PREV_HASH",
+            "detail": "Новый блок вшивает хеш предыдущего — цепь неразрывна.",
+            "accent": "#2dd4bf"
+          },
+          {
+            "title": "Запись на диск",
+            "badge": "ROCKSDB",
+            "detail": "Атомарная фиксация страницы в хранилище узла.",
+            "accent": "#38bdf8"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s5",
+      "tag": "СЕТЬ МЕШ",
+      "type": "mesh_network",
+      "title": "Три узла — одна правда",
+      "subtitle": "Зашифрованный транспорт rust-libp2p Noise и живые зонды согласованности",
+      "voice_text": "Один узел — ещё не сеть. Как только блок записан, он летит к двум соседним узлам по шифрованным каналам libp2p Noise. Узлы постоянно обмениваются живыми зондами и сверяют высоту и корень состояния. А если один узел перезагрузился или отстал, модули догона и сверки веток подтягивают недостающие блоки и перепроверяют каждый заголовок.",
+      "mesh": {
+        "protocol_label": "rust-libp2p Noise · ADR 0020",
+        "chain_id": "778888",
+        "probe_label": "wire_probe_ok · state_consistent",
+        "nodes": [
+          {
+            "id": "node1",
+            "role": "Prod-mesh leader",
+            "endpoint": "127.0.0.1:18180",
+            "status": "ALIGNED",
+            "height": "49347"
+          },
+          {
+            "id": "node2",
+            "role": "Prod-mesh peer",
+            "endpoint": "127.0.0.1:18181",
+            "status": "ALIGNED",
+            "height": "49347"
+          },
+          {
+            "id": "node3",
+            "role": "Prod-mesh peer",
+            "endpoint": "127.0.0.1:18182",
+            "status": "ALIGNED",
+            "height": "49347"
+          }
+        ],
+        "recovery_steps": [
+          {
+            "title": "Живой зонд вместо догадок",
+            "desc": "Узлы проверяют связь и корень состояния напрямую: wire_probe_ok и state_consistent.",
+            "accent": "#38bdf8"
+          },
+          {
+            "title": "Автодогон и сверка веток",
+            "desc": "CatchUpPathA и ForkReconcile восстанавливают отставший узел без ручного вмешательства.",
+            "accent": "#2dd4bf"
+          },
+          {
+            "title": "Честный отказ при сбое",
+            "desc": "Если пиров не хватает или состояние не совпало, готовность снимается — статус не красится в зелёный.",
+            "accent": "#818cf8"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s6",
+      "tag": "КРИПТОЯДРО",
+      "type": "code_split",
+      "title": "Горячий путь на Rust",
+      "subtitle": "Модуль abs_native: хеши, дерево Меркла и канонизация через PyO3",
+      "voice_text": "Почему именно гибрид? Python делает оркестрацию и правила прозрачными для аудита, а вся тяжёлая математика вынесена в нативный модуль abs_native на Rust. Хеширование, корни Меркла, проверка подписей и работа с RocksDB выполняются детерминированно и быстро.",
+      "bullets": [
+        {
+          "title": "Единое криптоядро",
+          "desc": "SHA-256, ECDSA, Keccak и Merkle-доказательства внутри Rust crate abs_native.",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Канонический формат",
+          "desc": "Одинаковая сериализация блоков гарантирует совпадение хешей на всех узлах.",
+          "accent": "#2dd4bf"
+        },
+        {
+          "title": "Разделение ответственности",
+          "desc": "ADR 0009: Rust держит горячий путь, Python управляет политикой и портами.",
+          "accent": "#818cf8"
+        }
+      ],
+      "code": {
+        "filename": "native/abs_native/src/lib.rs · L56-68",
+        "lines": [
+          {
+            "text": "fn sha256_hex_bytes(data: &[u8]) -> String {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    hex::encode(Sha256::digest(data))",
+            "color": "#e0f2fe"
+          },
+          {
+            "text": "}",
+            "color": "#e0f2fe"
+          },
+          {
+            "text": "",
+            "color": "#e0f2fe"
+          },
+          {
+            "text": "pub(crate) fn hash_string(data: &str) -> String {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    sha256_hex_bytes(data.as_bytes())",
+            "color": "#e0f2fe"
+          },
+          {
+            "text": "}",
+            "color": "#e0f2fe"
+          },
+          {
+            "text": "",
+            "color": "#e0f2fe"
+          },
+          {
+            "text": "// Deterministic state roots & Merkle proofs in Rust",
+            "color": "#2dd4bf"
+          },
+          {
+            "text": "// Hot path via PyO3 -> RocksDB chainstore",
+            "color": "#818cf8"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s7",
+      "tag": "ЖИВОЙ УЗЕЛ",
+      "type": "screen_split",
+      "title": "Живая консоль трёх узлов",
+      "subtitle": "Реальные снимки Ops Console: chain 778888, prod-профиль, мост выключен",
+      "voice_text": "А вот как вся система выглядит в работе прямо сейчас. В веб-консоли видны обзор живого узла, синхронизация трёх узлов меша, запечатанные пакеты доказательств, справочный экран рынков и живые метрики Prometheus. Мост на меше выключен, а консоль честно напоминает, что она не заменяет аудит.",
+      "bullets": [
+        {
+          "title": "Обзор и сеть",
+          "desc": "Высота цепи, два подключённых пира, выравнивание и зонд wire_probe_ok.",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Доказательства",
+          "desc": "Реестр запечатанных STRICT-пакетов на диске с явной границей честности.",
+          "accent": "#2dd4bf"
+        },
+        {
+          "title": "Живые метрики",
+          "desc": "Полный скрейп узла: задержки, память, мемпул на Rust и счётчики отказов.",
+          "accent": "#818cf8"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/dup-protocol/console-overview.png",
+          "caption": "Ops Console · Обзор живого узла · 127.0.0.1:18180"
+        },
+        {
+          "src": "screens/dup-protocol/console-mesh-sync.png",
+          "caption": "Ops Console · Сетка и синхронизация · aligned"
+        },
+        {
+          "src": "screens/dup-protocol/console-evidence.png",
+          "caption": "Ops Console · Пакеты доказательств (STRICT)"
+        },
+        {
+          "src": "screens/dup-protocol/console-markets.png",
+          "caption": "Ops Console · Рынки (только ориентация, не оракул)"
+        },
+        {
+          "src": "screens/dup-protocol/console-metrics.png",
+          "caption": "Ops Console · Живые метрики узла"
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "tag": "ДОКАЗАТЕЛЬСТВА",
+      "type": "kpi",
+      "title": "Доказано пакетами на диске",
+      "subtitle": "Реальные артефакты из EVIDENCE_MATRIX — не обещания из презентации",
+      "voice_text": "Вместо громких слов — цифры из сохранённых отчётов. Сорок восемь часов непрерывных строгих прогонов на приватном меше для сети, EVM и мемпула на Rust. Ноль жёстких сбоев и ноль чисел с плавающей точкой в деньгах. Три узла в prod-профиле и два раздельных репозитория: промышленный пин и песочница исследований.",
+      "kpis": [
+        {
+          "value": "48 ч",
+          "label": "STRICT soak-пакеты: libp2p, EVM, Rust Mempool"
+        },
+        {
+          "value": "0",
+          "label": "hard_fails в прогонах и ноль float в деньгах"
+        },
+        {
+          "value": "3 узла",
+          "label": "приватный prod-profile mesh (chain 778888)"
+        },
+        {
+          "value": "2 репо",
+          "label": "аудит-пин dup-protocol и R&D experimental"
+        }
+      ]
+    },
+    {
+      "id": "s9",
+      "tag": "ФИНАЛ",
+      "type": "outro_3d",
+      "title": "Сначала доказательства, потом мейннет",
+      "subtitle": "DUP Protocol — честный R&D и промышленный профиль меша",
+      "voice_text": "Мы честно называем границы проекта. Сейчас DUP Protocol — это рабочий приватный меш с проверяемыми пакетами, а публичный мейннет и внешний аудит безопасности ещё впереди. Весь исходный код и отчёты открыты на GitHub в репозиториях DUP Labs.",
+      "url": "github.com/Gruver87/dup-protocol",
+      "tagline": "R&D и prod-profile mesh · внешний аудит впереди · не публичный мейннет",
+      "badges": [
+        {
+          "name": "Fail-Closed L1",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "48h STRICT Packs",
+          "color": "#2dd4bf"
+        },
+        {
+          "name": "Open Source · MIT",
+          "color": "#818cf8"
+        }
+      ],
+      "cube_faces": [
+        "DUP LABS",
+        "PYTHON",
+        "RUST",
+        "ROCKSDB",
+        "LIBP2P",
+        "HONEST"
+      ]
+    }
+  ]
+}

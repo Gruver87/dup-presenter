@@ -36,7 +36,21 @@ VOICE_DIR = PUBLIC_DIR / "voice"
 RESOLVED_JSON = ROOT / "src" / "generated" / "deck_resolved.json"
 SR = 48000
 
-ALLOWED_TYPES = {"hero_3d", "code_split", "screen_split", "ui_recording", "arch_flow", "outro_3d", "timeline", "terminal", "kpi", "quote"}
+ALLOWED_TYPES = {
+    "hero_3d",
+    "code_split",
+    "screen_split",
+    "ui_recording",
+    "arch_flow",
+    "outro_3d",
+    "timeline",
+    "terminal",
+    "kpi",
+    "quote",
+    "ledger_layers",
+    "tx_journey",
+    "mesh_network",
+}
 QUOTE_MAX_CHARS = 220
 # ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
 UI_RECORDING_SRC_RE = re.compile(r"ui_recordings/[a-z0-9][a-z0-9_-]{0,60}\.mp4")
@@ -251,6 +265,79 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
                 raise DeckValidationError(f"Slide {sid}: quote title must be 1..{QUOTE_MAX_CHARS} chars")
             if "subtitle" in slide and not isinstance(slide["subtitle"], str):
                 raise DeckValidationError(f"Slide {sid}: quote subtitle (attribution) must be a string")
+        if stype == "ledger_layers":
+            layers = slide.get("layers")
+            if not isinstance(layers, list) or not (3 <= len(layers) <= 6):
+                raise DeckValidationError(f"Slide {sid}: ledger_layers requires 3..6 layer objects")
+            layer_ids: set[str] = set()
+            for l_idx, layer in enumerate(layers):
+                if not isinstance(layer, dict):
+                    raise DeckValidationError(f"Slide {sid}: layer #{l_idx} must be an object")
+                lid = layer.get("id")
+                if not isinstance(lid, str) or not lid.strip() or lid in layer_ids:
+                    raise DeckValidationError(f"Slide {sid}: layer #{l_idx} has missing or duplicate id {lid!r}")
+                layer_ids.add(lid)
+                for req in ("name", "tech", "desc", "guarantee"):
+                    if not isinstance(layer.get(req), str) or not layer[req].strip():
+                        raise DeckValidationError(f"Slide {sid}: layer {lid!r} missing non-empty string {req!r}")
+        if stype == "tx_journey":
+            journey = slide.get("journey")
+            if not isinstance(journey, dict):
+                raise DeckValidationError(f"Slide {sid}: tx_journey requires a journey object")
+            for req in ("tx_label", "amount_label", "signature_label"):
+                if not isinstance(journey.get(req), str) or not journey[req].strip():
+                    raise DeckValidationError(f"Slide {sid}: journey missing non-empty string {req!r}")
+            blocks = journey.get("blocks")
+            if not isinstance(blocks, list) or not (3 <= len(blocks) <= 5):
+                raise DeckValidationError(f"Slide {sid}: journey.blocks must have 3..5 items")
+            for b_idx, blk in enumerate(blocks):
+                if not isinstance(blk, dict):
+                    raise DeckValidationError(f"Slide {sid}: journey.blocks[{b_idx}] must be an object")
+                for req in ("height", "hash", "tx_count"):
+                    if not isinstance(blk.get(req), str) or not blk[req].strip():
+                        raise DeckValidationError(f"Slide {sid}: journey.blocks[{b_idx}] missing {req!r}")
+            j_steps = journey.get("steps")
+            if not isinstance(j_steps, list) or not (3 <= len(j_steps) <= 5):
+                raise DeckValidationError(f"Slide {sid}: journey.steps must have 3..5 items")
+            for s_idx, st in enumerate(j_steps):
+                if not isinstance(st, dict):
+                    raise DeckValidationError(f"Slide {sid}: journey.steps[{s_idx}] must be an object")
+                for req in ("title", "badge", "detail"):
+                    if not isinstance(st.get(req), str) or not st[req].strip():
+                        raise DeckValidationError(f"Slide {sid}: journey.steps[{s_idx}] missing {req!r}")
+            leaves = journey.get("merkle_leaves")
+            if leaves is not None:
+                if not isinstance(leaves, list) or not (2 <= len(leaves) <= 4) or not all(
+                    isinstance(x, str) and x.strip() for x in leaves
+                ):
+                    raise DeckValidationError(f"Slide {sid}: journey.merkle_leaves must be 2..4 non-empty strings")
+        if stype == "mesh_network":
+            mesh = slide.get("mesh")
+            if not isinstance(mesh, dict):
+                raise DeckValidationError(f"Slide {sid}: mesh_network requires a mesh object")
+            for req in ("protocol_label", "chain_id", "probe_label"):
+                if not isinstance(mesh.get(req), str) or not mesh[req].strip():
+                    raise DeckValidationError(f"Slide {sid}: mesh missing non-empty string {req!r}")
+            m_nodes = mesh.get("nodes")
+            if not isinstance(m_nodes, list) or not (3 <= len(m_nodes) <= 4):
+                raise DeckValidationError(f"Slide {sid}: mesh.nodes must have 3..4 items")
+            m_ids: set[str] = set()
+            for n_idx, node in enumerate(m_nodes):
+                if not isinstance(node, dict):
+                    raise DeckValidationError(f"Slide {sid}: mesh.nodes[{n_idx}] must be an object")
+                nid = node.get("id")
+                if not isinstance(nid, str) or not nid.strip() or nid in m_ids:
+                    raise DeckValidationError(f"Slide {sid}: mesh.nodes[{n_idx}] missing or duplicate id {nid!r}")
+                m_ids.add(nid)
+                for req in ("role", "endpoint", "status"):
+                    if not isinstance(node.get(req), str) or not node[req].strip():
+                        raise DeckValidationError(f"Slide {sid}: mesh node {nid!r} missing {req!r}")
+            rec_steps = mesh.get("recovery_steps")
+            if not isinstance(rec_steps, list) or not (2 <= len(rec_steps) <= 3):
+                raise DeckValidationError(f"Slide {sid}: mesh.recovery_steps must have 2..3 items")
+            for r_idx, rs in enumerate(rec_steps):
+                if not isinstance(rs, dict) or not str(rs.get("title", "")).strip() or not str(rs.get("desc", "")).strip():
+                    raise DeckValidationError(f"Slide {sid}: mesh.recovery_steps[{r_idx}] needs title and desc")
         if stype == "kpi":
             kpis = slide.get("kpis") or []
             if not (1 <= len(kpis) <= 4):

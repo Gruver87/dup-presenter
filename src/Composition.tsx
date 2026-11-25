@@ -19,6 +19,7 @@ import { slide as slideTransition } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
 import rawDeck from "./generated/deck_resolved.json";
 import { resolveTheme } from "./themes";
+import { LedgerLayersSlide, MeshNetworkSlide, TxJourneySlide } from "./StorySlides";
 import type { CaptionCue, ResolvedDeck, ResolvedSlide, ScreenFocus } from "./types";
 
 const DECK = rawDeck as unknown as ResolvedDeck;
@@ -2401,6 +2402,15 @@ export const DupPresenter: React.FC<Props> = () => {
     if (slide.type === "terminal") return <TerminalSlide slide={slide} />;
     if (slide.type === "kpi") return <KpiSlide slide={slide} />;
     if (slide.type === "quote") return <QuoteSlide slide={slide} />;
+    if (slide.type === "ledger_layers") {
+      return <LedgerLayersSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
+    if (slide.type === "tx_journey") {
+      return <TxJourneySlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
+    if (slide.type === "mesh_network") {
+      return <MeshNetworkSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
     return null;
   };
 
