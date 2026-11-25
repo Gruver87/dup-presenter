@@ -1,0 +1,340 @@
+{
+  "slug": "radar",
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "silero_v4_ru",
+    "speaker": "eugene",
+    "rate": "95%",
+    "ambient_volume": 0.16
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "ОБЗОР",
+      "type": "hero_3d",
+      "title": "Радар крипторынка",
+      "subtitle": "Гибридный вотчлист Python + Rust для крипто-рынков",
+      "voice_ssml": "<speak><prosody rate=\"95%\">DUP Market Radar — это гибридный вотчлист на Python и Rust для спотовых и фьючерсных рынков.<break time=\"250ms\"/> Он поддерживает секторы, листинги и крупные принты, а также опциональные ручные ордера на KuCoin.<break time=\"250ms\"/> Авто-торговля выключена по умолчанию и никогда не торгует фьючерсами.</prosody></speak>",
+      "pills": [
+        {
+          "name": "Секторы",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "KuCoin опционально",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Честные ограничения",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "ОБЗОР",
+        "РАДАР",
+        "КРИПТОРЫ"
+      ]
+    },
+    {
+      "id": "s2",
+      "tag": "АРХИТЕКТУРА",
+      "type": "code_split",
+      "title": "Rust-ядро",
+      "subtitle": "Общие типы и агрегация баров в native/radar_core",
+      "voice_ssml": "<speak><prosody rate=\"95%\">В Rust-ядре radar_core описаны общие типы рынка и агрегатор баров.<break time=\"250ms\"/> Он принимает тики и возвращает закрытый бар при смене интервала.<break time=\"250ms\"/> Денежные значения хранятся в целочисленной фиксированной точке.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Типы рынка",
+          "desc": "Биржа, сторона, тик и бар с сериализацией",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Агрегатор баров",
+          "desc": "Push тика возвращает закрытый бар при смене интервала",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Целочисленные деньги",
+          "desc": "Фиксированная точка i64, без float на денежных путях",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "native/radar_core/src/lib.rs · L122-126",
+        "lines": [
+          {
+            "text": "pub struct BarAggregator {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    interval_sec: u32,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    current: Option<Bar>,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s3",
+      "tag": "АВТО-ТОРГОВЛЯ",
+      "type": "code_split",
+      "title": "Разделение USDT",
+      "subtitle": "Функция split_equal_micros в движке авто-торговли",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Функция split_equal_micros делит свободный USDT на равные части, а остаток отдаёт первой доле.<break time=\"250ms\"/> Это основа режима equal_sleeves для распределения между секторами.<break time=\"250ms\"/> Важно: это не прогноз прибыли.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Равные части",
+          "desc": "Делит микро-USDT на равные доли, остаток идёт в первую",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Режим equal_sleeves",
+          "desc": "Свободный USDT делится между spot_alts, мемами, листингами",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Не прогноз прибыли",
+          "desc": "Это не заявление о доходности, а механика распределения",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "src/radar/trade/auto_engine.py · L89-102",
+        "lines": [
+          {
+            "text": "def split_equal_micros(amount_micro: int, parts: int) -> Tuple[int, ...]:",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    \"\"\"Split USDT micros into equal parts; remainder goes to the first part.\"\"\"",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    if (",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        isinstance(amount_micro, bool)",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        or isinstance(parts, bool)",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        or not isinstance(amount_micro, int)",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        or not isinstance(parts, int)",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    ):",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        return tuple()",
+            "color": "#00f5d4"
+          },
+          {
+            "text": "    if amount_micro < 0 or parts < 1 or parts > 8 or amount_micro >= 10**24:",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        return tuple()",
+            "color": "#00f5d4"
+          },
+          {
+            "text": "    base = amount_micro // parts",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    out = [base] * parts",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    out[0] += amount_micro - base * parts",
+            "color": "#f8fafc"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s4",
+      "tag": "БЕЗОПАСНОСТЬ",
+      "type": "code_split",
+      "title": "Проверка API-ключа",
+      "subtitle": "Функция проверки ключа в модуле API",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Функция _check_api_key требует совпадения заголовка X-Radar-Api-Key, если задан RADAR_API_KEY.<break time=\"250ms\"/> Это часть защиты торговых изменений и операционных эндпоинтов.<break time=\"250ms\"/> В логах секреты редактируются.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Гейт по ключу",
+          "desc": "При заданном RADAR_API_KEY требует совпадения заголовка",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Защита мутаций",
+          "desc": "API-ключ для торговых изменений, CORS без звёздочки",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Секреты в логах",
+          "desc": "Редактирование секретов, HTTPS allowlist, TLS проверка",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "src/radar/api/app.py · L353-366",
+        "lines": [
+          {
+            "text": "def _check_api_key(request: Request) -> None:",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    \"\"\"When RADAR_API_KEY is set, require matching X-Radar-Api-Key.",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    RADAR_REQUIRE_API_KEY=1 refuses trade mutations if the key is unset",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    (fail-closed for docker/prod — no open trade surface).",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    \"\"\"",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    if not api_key_gate_ok():",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        AUTH_STATS.inc(\"auth_fail\")",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        raise HTTPException(",
+            "color": "#f472b6"
+          },
+          {
+            "text": "            503,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "            detail=\"RADAR_REQUIRE_API_KEY set but RADAR_API_KEY missing\",",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        )",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    if not api_key_required():",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        return",
+            "color": "#00f5d4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s5",
+      "tag": "ИНГЕСТ",
+      "type": "code_split",
+      "title": "Скан на пуле",
+      "subtitle": "Отдельный исполнитель для сканирования в API",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Функция _scan_on_pool запускает сканирование на отдельном исполнителе, чтобы API и операционные потоки оставались отзывчивыми.<break time=\"250ms\"/> При этом MTF считается по выборочным топ-N символам, а не по всему универсуму.<break time=\"250ms\"/> Это честное ограничение проекта.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Отдельный поток",
+          "desc": "Скан на выделенном исполнителе, чтобы API оставался отзывчивым",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Сэмплинг top-N",
+          "desc": "MTF считается по выбранным топ-N, не по всему универсуму",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Честная оговорка",
+          "desc": "MTF — выборочный, не по всем символам книги",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "src/radar/api/app.py · L214-217",
+        "lines": [
+          {
+            "text": "def _scan_on_pool(*, force: bool = False) -> Dict[str, Any]:",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    \"\"\"Run scan on dedicated executor so API/ops threads stay responsive.\"\"\"",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    fut = _SCAN_EXECUTOR.submit(_scan, force=force)",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    return fut.result(timeout=180)",
+            "color": "#00f5d4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s6",
+      "tag": "ИТОГИ",
+      "type": "outro_3d",
+      "title": "Что важно помнить",
+      "subtitle": "Честные ограничения и статус проекта",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Проект честно указывает ограничения: это не аудит и не mainnet-стек.<break time=\"250ms\"/> Заявления о длительном соаке требуют пакета доказательств.<break time=\"250ms\"/> Ответственность за риск и настройку безопасности лежит на операторе.</prosody></speak>",
+      "url": "github.com/Gruver87",
+      "tagline": "Честные ограничения и статус проекта",
+      "badges": [
+        {
+          "name": "Не аудит",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Риски на операторе",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Статус",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "ИТОГИ",
+        "ЧТО",
+        "ВАЖНО",
+        "ПОМНИТЬ"
+      ]
+    }
+  ]
+}

@@ -4,4 +4,16 @@ models/
 public/voice/*.wav
 src/generated/deck_resolved.json
 .env
+secrets/
 *.log
+__pycache__/
+*.pyc
+
+# DUP Presenter 2.0 working files (facts, plan versions, raw LLM outputs)
+work/
+public/screens/*/
+# Stock clips and music are downloaded/copied per build; music tracks may be copyrighted
+public/stock/
+public/music/
+assets/music/*
+!assets/music/README-empty.txt

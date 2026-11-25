@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DUP Presenter — Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root, [data-theme="dark"] {
+  --bg0: #070b12; --bg1: #0f1622; --ink: #e8eef7; --muted: #93a4b8;
+  --line: #243247; --panel: rgba(18,26,40,0.88); --panel-solid: #121a28;
+  --side: rgba(10,15,24,0.94); --accent: #00d4b8; --accent2: #38bdf8;
+  --ok: #3dd68c; --bad: #ff7b72; --warn: #e3b341;
+  --log-bg: #05080f; --log-fg: #c9d7ea;
+}
+[data-theme="light"] {
+  --bg0: #e7eef6; --bg1: #f5f8fc; --ink: #0d1b2a; --muted: #5a6b7d;
+  --line: #c5d0dc; --panel: rgba(255,255,255,0.88); --panel-solid: #ffffff;
+  --side: rgba(255,255,255,0.72); --accent: #0f766e; --accent2: #1f6feb;
+  --ok: #1a7f4b; --bad: #b42318; --warn: #9a6700;
+  --log-bg: #0d1b2a; --log-fg: #d7e3f4;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: "Sora", system-ui, sans-serif; color: var(--ink);
+  background: radial-gradient(1000px 500px at 10% -5%, rgba(0,212,184,0.14), transparent 55%),
+              radial-gradient(900px 460px at 100% 0%, rgba(56,189,248,0.12), transparent 50%),
+              linear-gradient(165deg, var(--bg0), var(--bg1));
+}
+.app { display: grid; grid-template-columns: 262px 1fr; min-height: 100vh; }
+.side {
+  padding: 18px 14px; border-right: 1px solid var(--line); background: var(--side);
+  position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 14px;
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 6px 8px; }
+.mark {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(145deg, var(--accent), var(--accent2));
+  color: #061018; display: grid; place-items: center; font-weight: 700;
+}
+.brand b { font-size: 1.08rem; display: block; }
+.brand span { font-size: 0.72rem; color: var(--muted); }
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav button {
+  appearance: none; border: 1px solid transparent; background: transparent;
+  color: var(--ink); text-align: left; padding: 11px 12px; border-radius: 11px;
+  font: inherit; font-weight: 500; cursor: pointer; display: flex; gap: 10px; align-items: center;
+}
+.nav button.active { background: rgba(0,212,184,0.12); border-color: var(--accent); }
+.nav button:hover:not(.active) { background: rgba(255,255,255,0.05); }
+.side-foot { margin-top: auto; padding: 10px 8px; border-top: 1px solid var(--line); font-size: 0.78rem; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+.main { padding: 24px 28px; max-width: 1320px; width: 100%; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+h2 { margin: 0 0 12px; font-size: 1.2rem; }
+h3 { margin: 0 0 10px; font-size: 0.96rem; color: var(--muted); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 980px) { .app { grid-template-columns: 1fr; } .side { position: static; height: auto; } .grid2, .grid3 { grid-template-columns: 1fr; } }
+label { display: block; font-size: 0.78rem; color: var(--muted); margin: 10px 0 4px; }
+input[type=text], input[type=number], select, textarea {
+  width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel-solid); color: var(--ink); font: inherit; font-size: 0.88rem;
+}
+textarea { min-height: 76px; resize: vertical; }
+.btn {
+  appearance: none; border: 1px solid var(--line); background: var(--panel-solid);
+  color: var(--ink); padding: 9px 14px; border-radius: 10px; font: inherit;
+  font-weight: 600; cursor: pointer; font-size: 0.84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn.sm { padding: 5px 10px; font-size: 0.76rem; border-radius: 8px; }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #051018; border-color: transparent; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem; font-family: "IBM Plex Mono", monospace; border: 1px solid var(--line); }
+.pill.ok { color: var(--ok); border-color: var(--ok); }
+.pill.run { color: var(--warn); border-color: var(--warn); }
+.pill.err { color: var(--bad); border-color: var(--bad); }
+.log {
+  background: var(--log-bg); color: var(--log-fg); font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem; line-height: 1.45; padding: 14px; border-radius: 12px;
+  max-height: 360px; overflow: auto; white-space: pre-wrap; border: 1px solid var(--line);
+}
+video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; border: 1px solid var(--line); }
+.thumb { width: 100%; max-width: 240px; border-radius: 10px; border: 1px solid var(--line); margin-top: 8px; display: block; }
+.slide-card, .clip-row {
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px;
+  background: var(--panel-solid);
+}
+.clip-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.slide-card .head { display: flex; justify-content: space-between; gap: 8px; font-size: 0.76rem; color: var(--muted); font-family: "IBM Plex Mono", monospace; margin-bottom: 6px; }
+.bullet-edit { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 8px; margin-top: 6px; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer; margin-top: 8px; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="mark">DP</div>
+      <div><b>DUP Presenter</b><span data-i18n="brand_sub">Студия видео по коду</span></div>
+    </div>
+    <nav class="nav">
+      <button class="active" data-tab="new" data-i18n="nav_new">01 · Новый ролик</button>
+      <button data-tab="edit" data-i18n="nav_edit">02 · Редактор и правки</button>
+      <button data-tab="merge" data-i18n="nav_merge">03 · Склейка видео</button>
+      <button data-tab="logs" data-i18n="nav_logs">04 · Лог и версии</button>
+    </nav>
+    <div class="side-foot">
+      <div id="providerBadge">...</div>
+      <div id="sysStatus" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+      <div id="jobBadge">...</div>
+      <button class="btn sm" id="bootstrapBtn" style="width:100%;justify-content:center;" data-i18n="btn_bootstrap">Авто-настройка / Ollama</button>
+      <div class="row">
+        <button class="btn sm" id="uiLangBtn" style="flex:1;justify-content:center;">EN / RU</button>
+        <button class="btn sm" id="themeBtn" style="flex:1;justify-content:center;" data-i18n="btn_theme">Тема</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="tab-new" class="tab">
+      <div class="panel">
+        <h2 data-i18n="new_h2">Собрать ролик из папки на ПК или ссылки GitHub</h2>
+        <label data-i18n="new_source_lbl">Источник проекта (папка на ПК, https://github.com/owner/repo или owner/repo)</label>
+        <div class="row">
+          <input type="text" id="folderInput" placeholder="C:\path\to\project  |  https://github.com/Gruver87/dup-market-ping" style="flex:1"/>
+          <button class="btn" id="pickBtn" data-i18n="btn_pick">Выбрать папку…</button>
+        </div>
+
+        <div class="grid3" style="margin-top:6px;">
+          <div>
+            <label data-i18n="lbl_slug">Имя ролика (латиница)</label>
+            <input type="text" id="slugInput" placeholder="radar"/>
+          </div>
+          <div>
+            <label data-i18n="lbl_slides">Слайдов (3–12)</label>
+            <input type="number" id="slidesInput" value="6" min="3" max="12"/>
+          </div>
+          <div>
+            <label data-i18n="lbl_aspect">Формат видео</label>
+            <select id="newAspectSelect">
+              <option value="16:9">16:9 Landscape (YouTube / Docs)</option>
+              <option value="9:16">9:16 Vertical (Shorts / Reels / TikTok)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid3" style="margin-top:6px;">
+          <div>
+            <label data-i18n="lbl_vlang">Язык видео и озвучки</label>
+            <select id="langSelect">
+              <option value="ru">Русский (Silero v5 RU)</option>
+              <option value="en">English (Silero v3 EN)</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="lbl_voice">Голос диктора</label>
+            <select id="newSpeakerSelect"></select>
+          </div>
+          <div>
+            <label data-i18n="lbl_vmode">Режим озвучки</label>
+            <select id="newVoiceModeSelect">
+              <option value="single" data-i18n="opt_single">1 диктор</option>
+              <option value="podcast" data-i18n="opt_podcast">Подкаст — 2 голоса (муж. + жен.)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid3" style="margin-top:6px;">
+          <div>
+            <label data-i18n="lbl_vtheme">Тема оформления видео</label>
+            <select id="newThemeSelect"></select>
+          </div>
+          <div>
+            <label data-i18n="lbl_provider">Провайдер планировщика</label>
+            <select id="providerSelect">
+              <option value="cloud">Cloud (DeepSeek / OpenAI API)</option>
+              <option value="ollama">Local (Ollama)</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="lbl_model">Модель LLM</label>
+            <select id="modelSelect"></select>
+          </div>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" id="newCaptionsCheck" checked/>
+          <span data-i18n="chk_captions">Вшивать субтитры прямо в видео (SRT и VTT сохраняются всегда + обложка PNG)</span>
+        </label>
+
+        <div class="row" style="margin-top:16px;">
+          <button class="btn primary" id="genBtn" data-i18n="btn_gen">Анализ → План → Озвучка → MP4 + SRT + Обложка</button>
+          <span id="genMsg" style="font-size:0.84rem;color:var(--muted);"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-edit" class="tab hidden">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px;">
+          <h2 style="margin:0;" data-i18n="edit_h2">Редактор колоды, видео и правки</h2>
+          <select id="deckSelect" style="width:240px;"></select>
+        </div>
+        <div class="grid3">
+          <div>
+            <label data-i18n="lbl_vtheme">Тема видео</label>
+            <select id="editThemeSelect"></select>
+          </div>
+          <div>
+            <label data-i18n="lbl_aspect">Формат видео</label>
+            <select id="editAspectSelect">
+              <option value="16:9">16:9 (1920×1080)</option>
+              <option value="9:16">9:16 Vertical (1080×1920)</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="lbl_voice">Голос</label>
+            <select id="speakerSelect"></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;justify-content:space-between;">
+          <div class="row">
+            <select id="editVoiceModeSelect" style="width:240px;">
+              <option value="single" data-i18n="opt_single">1 диктор</option>
+              <option value="podcast" data-i18n="opt_podcast">Подкаст — 2 голоса</option>
+            </select>
+            <label class="check" style="margin:0;">
+              <input type="checkbox" id="editCaptionsCheck" checked/>
+              <span data-i18n="chk_burn">Вшитые субтитры</span>
+            </label>
+            <label class="check" style="margin:0;">
+              <input type="checkbox" id="editBgCheck"/>
+              <span data-i18n="chk_bg">Фон-видео (стоки)</span>
+            </label>
+            <select id="editBgProvider" style="width:130px;">
+              <option value="pixabay">Pixabay (по умолчанию)</option>
+              <option value="pexels">Pexels (нужен ключ)</option>
+            </select>
+            <label class="check" style="margin:0;">
+              <input type="checkbox" id="editMusicCheck"/>
+              <span data-i18n="chk_music">Фоновая музыка</span>
+            </label>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="saveRenderBtn" data-i18n="btn_save_render">Сохранить правки слайдов и пересобрать MP4</button>
+            <span id="saveMsg" style="font-size:0.82rem;color:var(--muted);"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <h3 data-i18n="h3_video">Готовое видео и файлы</h3>
+          <video id="videoPlayer" controls></video>
+          <div id="assetLinks" class="row" style="margin-top:10px;"></div>
+          <img id="thumbImg" class="thumb hidden" alt="Thumbnail"/>
+
+          <div style="margin-top:16px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);">
+            <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+              <strong style="font-size:0.86rem;" data-i18n="tt_title">Отправка в TikTok (Official API)</strong>
+              <span id="ttStatusPill" style="font-size:0.75rem;color:var(--muted);">...</span>
+            </div>
+            <div class="row" style="margin-bottom:8px;">
+              <select id="ttModeSelect" style="width:220px;">
+                <option value="inbox" data-i18n="tt_inbox">Черновик в TikTok (Inbox)</option>
+                <option value="direct" data-i18n="tt_direct">Прямая публикация (Direct)</option>
+              </select>
+              <input type="text" id="ttCaptionInput" style="flex:1;" placeholder="Подпись / #хэштеги"/>
+            </div>
+            <div class="row">
+              <button class="btn primary" id="ttUploadBtn" data-i18n="btn_tt_upload">Отправить видео в TikTok</button>
+              <button class="btn sm" id="ttRefreshBtn" data-i18n="btn_tt_refresh">Обновить токен</button>
+              <span id="ttMsg" style="font-size:0.82rem;color:var(--muted);"></span>
+            </div>
+          </div>
+
+          <label style="margin-top:18px;" data-i18n="lbl_fb">Правка через ИИ (напиши, что поменять — сохранит новую версию)</label>
+          <textarea id="feedbackInput"></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn" id="feedbackBtn" data-i18n="btn_fb">Отправить правку в ИИ и пересобрать</button>
+            <span id="fbMsg" style="font-size:0.82rem;color:var(--muted);"></span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 data-i18n="h3_slides">Редактор слайдов (правь текст руками без вызова ИИ)</h3>
+          <div id="slidesList">...</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-merge" class="tab hidden">
+      <div class="panel">
+        <h2 data-i18n="merge_h2">Склейка нескольких видео в одно MP4</h2>
+        <div style="font-size:0.84rem;color:var(--muted);margin-bottom:14px;" data-i18n="merge_desc">
+          Добавь 2 или более готовых ролика в очередь, расставь порядок стрелками ↑ / ↓ и нажми «Склеить». Автоматически выравнивает формат, звук 48 кГц AAC 320K, обложку и объединяет субтитры SRT/VTT.
+        </div>
+        <div class="grid2">
+          <div>
+            <h3 data-i18n="merge_avail">Доступные видео в папке out/</h3>
+            <div id="availVideos">...</div>
+          </div>
+          <div>
+            <h3 data-i18n="merge_queue">Очередь склейки (порядок воспроизведения)</h3>
+            <div id="mergeQueue"></div>
+            <label data-i18n="merge_out_lbl">Имя итогового файла (латиница)</label>
+            <div class="row">
+              <input type="text" id="mergeOutSlug" value="combined_video" style="flex:1"/>
+              <button class="btn primary" id="mergeBtn" data-i18n="btn_merge">Склеить видео в одно MP4</button>
+            </div>
+            <div id="mergeMsg" style="font-size:0.82rem;color:var(--muted);margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="mergedPreviewPanel">
+        <h3 data-i18n="merge_preview">Предпросмотр склеенного видео</h3>
+        <video id="mergedVideoPlayer" controls></video>
+        <div id="mergedLinks" class="row" style="margin-top:10px;"></div>
+      </div>
+    </section>
+
+    <section id="tab-logs" class="tab hidden">
+      <div class="panel">
+        <h2 data-i18n="logs_h2">Живой лог сборки</h2>
+        <div class="log" id="liveLog">...</div>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="hist_h2">История версий выбранной колоды</h2>
+        <div id="historyList" style="font-size:0.85rem;color:var(--muted);">...</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const I18N = {
+  ru: {
+    brand_sub: "Студия видео по коду",
+    nav_new: "01 · Новый ролик",
+    nav_edit: "02 · Редактор и правки",
+    nav_merge: "03 · Склейка видео",
+    nav_logs: "04 · Лог и версии",
+    btn_theme: "Тема",
+    new_h2: "Собрать ролик из папки на ПК или ссылки GitHub",
+    new_source_lbl: "Источник проекта (папка на ПК, https://github.com/owner/repo или owner/repo)",
+    btn_pick: "Выбрать папку…",
+    lbl_slug: "Имя ролика (латиница)",
+    lbl_slides: "Слайдов (3–12)",
+    lbl_aspect: "Формат видео",
+    lbl_vlang: "Язык видео и озвучки",
+    lbl_voice: "Голос диктора",
+    lbl_vmode: "Режим озвучки",
+    opt_single: "1 диктор",
+    opt_podcast: "Подкаст — 2 голоса (муж. + жен.)",
+    lbl_vtheme: "Тема оформления видео",
+    lbl_provider: "Провайдер планировщика",
+    lbl_model: "Модель LLM",
+    chk_captions: "Вшивать субтитры прямо в видео (SRT и VTT сохраняются всегда + обложка PNG)",
+    btn_gen: "Анализ → План → Озвучка → MP4 + SRT + Обложка",
+    edit_h2: "Редактор колоды, видео и правки",
+    chk_burn: "Вшитые субтитры",
+    btn_save_render: "Сохранить правки слайдов и пересобрать MP4",
+    h3_video: "Готовое видео и файлы",
+    lbl_fb: "Правка через ИИ (напиши, что поменять — сохранит новую версию)",
+    fb_ph: "Например: добавь слайд со схемой архитектуры, упрости 3-й слайд, сделай короче",
+    btn_fb: "Отправить правку в ИИ и пересобрать",
+    h3_slides: "Редактор слайдов (правь текст руками без вызова ИИ)",
+    merge_h2: "Склейка нескольких видео в одно MP4",
+    merge_desc: "Добавь 2 или более готовых ролика в очередь, расставь порядок стрелками ↑ / ↓ и нажми «Склеить». Автоматически выравнивает формат, звук 48 кГц AAC 320K, обложку и объединяет субтитры SRT/VTT.",
+    merge_avail: "Доступные видео в папке out/",
+    merge_queue: "Очередь склейки (порядок воспроизведения)",
+    merge_out_lbl: "Имя итогового файла (латиница)",
+    btn_merge: "Склеить видео в одно MP4",
+    merge_preview: "Предпросмотр склеенного видео",
+    merge_empty: "Очередь пуста — нажми «+ Добавить» на нужных видео слева.",
+    merge_add: "+ Добавить",
+    logs_h2: "Живой лог сборки",
+    hist_h2: "История версий выбранной колоды",
+    dl_mp4: "Скачать MP4",
+    dl_thumb: "Обложка PNG",
+    voice_lbl: "Текст озвучки",
+    prov_lbl: "Провайдер",
+    stat_lbl: "Статус",
+    btn_bootstrap: "Авто-настройка / Ollama",
+    tt_title: "Отправка в TikTok (Official API)",
+    tt_inbox: "Черновик в TikTok (Inbox)",
+    tt_direct: "Прямая публикация (Direct)",
+    btn_tt_upload: "Отправить видео в TikTok",
+    btn_tt_refresh: "Обновить токен",
+    tt_cap_ph: "Подпись / #хэштеги (для Direct)",
+    tt_merged_btn: "Отправить склеенное в TikTok",
+    chk_bg: "Фон-видео (стоки)",
+    chk_music: "Фоновая музыка",
+    bgq_ph: "Фон: 2–4 английских слова (например: server room)",
+  },
+  en: {
+    brand_sub: "Code-to-Video Studio",
+    nav_new: "01 · New Video",
+    nav_edit: "02 · Editor & Edits",
+    nav_merge: "03 · Merge Videos",
+    nav_logs: "04 · Logs & Versions",
+    btn_theme: "Theme",
+    new_h2: "Build a Video from a Local Folder or GitHub URL",
+    new_source_lbl: "Project source (local folder, https://github.com/owner/repo or owner/repo)",
+    btn_pick: "Browse folder…",
+    lbl_slug: "Video slug (Latin)",
+    lbl_slides: "Slides (3–12)",
+    lbl_aspect: "Aspect ratio",
+    lbl_vlang: "Video & voice language",
+    lbl_voice: "Speaker voice",
+    lbl_vmode: "Voice mode",
+    opt_single: "Single narrator",
+    opt_podcast: "Podcast — 2 voices (male + female)",
+    lbl_vtheme: "Visual theme",
+    lbl_provider: "Planner provider",
+    lbl_model: "LLM model",
+    chk_captions: "Burn captions into video (SRT & VTT always exported + PNG thumbnail)",
+    btn_gen: "Analyze → Plan → Voice → MP4 + SRT + Thumbnail",
+    edit_h2: "Deck Editor, Preview & Revisions",
+    chk_burn: "Burned-in captions",
+    btn_save_render: "Save Slide Edits & Re-Render MP4",
+    h3_video: "Rendered Video & Exports",
+    lbl_fb: "AI Revision (describe what to change — saves a new version)",
+    fb_ph: "e.g. add an architecture diagram slide, simplify slide 3, make it shorter",
+    btn_fb: "Send Feedback to AI & Re-Render",
+    h3_slides: "Slide Editor (edit text directly without calling the LLM)",
+    merge_h2: "Merge Multiple Videos into One MP4",
+    merge_desc: "Add 2 or more videos from out/ to the queue, reorder with ↑ / ↓, and click Merge. Automatically normalizes resolution, 48 kHz 320K AAC audio, thumbnail, and merges SRT/VTT subtitles.",
+    merge_avail: "Available videos in out/",
+    merge_queue: "Merge queue (playback order)",
+    merge_out_lbl: "Output filename slug (Latin)",
+    btn_merge: "Merge Videos into One MP4",
+    merge_preview: "Merged Video Preview",
+    merge_empty: "Queue is empty — click '+ Add' on videos on the left.",
+    merge_add: "+ Add",
+    logs_h2: "Live Build Log",
+    hist_h2: "Version History of Selected Deck",
+    dl_mp4: "Download MP4",
+    dl_thumb: "Thumbnail PNG",
+    voice_lbl: "Voiceover text",
+    prov_lbl: "Provider",
+    stat_lbl: "Status",
+    btn_bootstrap: "Auto-setup / Ollama",
+    tt_title: "Upload to TikTok (Official API)",
+    tt_inbox: "TikTok Draft (Inbox)",
+    tt_direct: "Direct Publish (Direct)",
+    btn_tt_upload: "Upload Video to TikTok",
+    btn_tt_refresh: "Refresh Token",
+    tt_cap_ph: "Caption / #hashtags (for Direct)",
+    tt_merged_btn: "Upload Merged to TikTok",
+    chk_bg: "Stock background video",
+    chk_music: "Background music",
+    bgq_ph: "Background: 2-4 English words (e.g. server room)",
+  },
+};
+
+let UI_LANG = localStorage.getItem("dup_presenter_ui_lang") || "ru";
+let STATE = null;
+let CURRENT_SLUG = "";
+let CURRENT_LANG = "ru";
+let MERGE_QUEUE = [];
+
+const $ = (id) => document.getElementById(id);
+const T = (k) => (I18N[UI_LANG] && I18N[UI_LANG][k]) || I18N.ru[k] || k;
+
+function applyUiLang() {
+  document.documentElement.lang = UI_LANG;
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const k = el.dataset.i18n;
+    if (T(k)) el.textContent = T(k);
+  });
+  $("feedbackInput").placeholder = T("fb_ph");
+  $("ttCaptionInput").placeholder = T("tt_cap_ph");
+  $("uiLangBtn").textContent = UI_LANG === "ru" ? "EN" : "RU";
+  renderMergeLists();
+}
+
+$("uiLangBtn").onclick = () => {
+  UI_LANG = UI_LANG === "ru" ? "en" : "ru";
+  localStorage.setItem("dup_presenter_ui_lang", UI_LANG);
+  applyUiLang();
+  if (CURRENT_SLUG) loadDeck(CURRENT_SLUG);
+};
+
+function syncVoices(selectEl, lang, preferred) {
+  const catalog = (STATE && STATE.provider && STATE.provider.voices) || {};
+  const list = catalog[lang] || [];
+  selectEl.innerHTML = list.map((v) => `<option value="${v.id}">${v.label}</option>`).join("");
+  if (preferred && list.some((v) => v.id === preferred)) selectEl.value = preferred;
+}
+
+function syncThemes(selectEl, preferred) {
+  const list = (STATE && STATE.provider && STATE.provider.themes) || [
+    { id: "neon_cyber", label: "Neon Cyber" },
+  ];
+  selectEl.innerHTML = list.map((t) => `<option value="${t.id}">${t.label}</option>`).join("");
+  if (preferred && list.some((t) => t.id === preferred)) selectEl.value = preferred;
+}
+
+function syncModels() {
+  const p = (STATE && STATE.provider) || {};
+  const prov = $("providerSelect").value;
+  const list = prov === "cloud" ? (p.cloud_models || ["deepseek-chat"]) : (p.ollama_models || ["qwen2.5:14b"]);
+  const cur = $("modelSelect").value;
+  $("modelSelect").innerHTML = list.map((m) => `<option value="${m}">${m}</option>`).join("");
+  if (cur && list.includes(cur)) $("modelSelect").value = cur;
+}
+
+$("langSelect").onchange = () => syncVoices($("newSpeakerSelect"), $("langSelect").value, "");
+$("providerSelect").onchange = () => syncModels();
+
+document.querySelectorAll(".nav button").forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll(".nav button").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach((t) => t.classList.add("hidden"));
+    btn.classList.add("active");
+    $("tab-" + btn.dataset.tab).classList.remove("hidden");
+  };
+});
+
+$("themeBtn").onclick = () => {
+  const html = document.documentElement;
+  html.dataset.theme = html.dataset.theme === "dark" ? "light" : "dark";
+};
+
+$("folderInput").oninput = () => {
+  const v = $("folderInput").value.trim().replace(/[\\/]+$/, "");
+  if (!v) return;
+  const tail = v.split(/[\\/]/).pop().replace(/\.git$/i, "");
+  if (tail && !$("slugInput").dataset.manual) {
+    $("slugInput").value = tail.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 64);
+  }
+};
+$("slugInput").oninput = () => { $("slugInput").dataset.manual = $("slugInput").value.trim() ? "1" : ""; };
+
+$("pickBtn").onclick = async () => {
+  const r = await fetch("/api/pick-folder", { method: "POST", body: "{}" });
+  const d = await r.json();
+  if (d.ok && d.path) {
+    $("folderInput").value = d.path;
+    const base = d.path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || "project";
+    if (!$("slugInput").dataset.manual) {
+      $("slugInput").value = base.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 64);
+    }
+  }
+};
+
+$("genBtn").onclick = async () => {
+  $("genMsg").textContent = "...";
+  const r = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      folder: $("folderInput").value.trim(),
+      slug: $("slugInput").value.trim(),
+      slides: Number($("slidesInput").value || 6),
+      provider: $("providerSelect").value,
+      model: $("modelSelect").value,
+      lang: $("langSelect").value,
+      speaker: $("newSpeakerSelect").value,
+      theme: $("newThemeSelect").value,
+      aspect: $("newAspectSelect").value,
+      voice_mode: $("newVoiceModeSelect").value,
+      burn_captions: $("newCaptionsCheck").checked,
+    }),
+  });
+  const d = await r.json();
+  $("genMsg").textContent = d.ok ? `OK (${d.slug})` : `Error: ${d.error}`;
+  if (d.ok) { CURRENT_SLUG = d.slug; document.querySelector('[data-tab="logs"]').click(); }
+  poll();
+};
+
+$("feedbackBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  $("fbMsg").textContent = "...";
+  const r = await fetch("/api/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      slug: CURRENT_SLUG,
+      feedback: $("feedbackInput").value.trim(),
+      provider: $("providerSelect").value,
+      model: $("modelSelect").value,
+      lang: CURRENT_LANG,
+      speaker: $("speakerSelect").value,
+      theme: $("editThemeSelect").value,
+      aspect: $("editAspectSelect").value,
+      voice_mode: $("editVoiceModeSelect").value,
+      burn_captions: $("editCaptionsCheck").checked,
+    }),
+  });
+  const d = await r.json();
+  $("fbMsg").textContent = d.ok ? "OK" : `Error: ${d.error}`;
+  if (d.ok) document.querySelector('[data-tab="logs"]').click();
+  poll();
+};
+
+function collectSlideEdits() {
+  const cards = document.querySelectorAll(".slide-card[data-sid]");
+  const edits = [];
+  cards.forEach((c) => {
+    const sid = c.dataset.sid;
+    const bullets = [];
+    c.querySelectorAll(".bullet-edit").forEach((be) => {
+      bullets.push({ title: be.querySelector(".b-title").value, desc: be.querySelector(".b-desc").value });
+    });
+    const kpis = [];
+    c.querySelectorAll(".kpi-edit").forEach((ke) => {
+      kpis.push({ value: ke.querySelector(".k-value").value, label: ke.querySelector(".k-label").value });
+    });
+    edits.push({
+      id: sid,
+      title: c.querySelector(".s-title").value,
+      subtitle: c.querySelector(".s-sub").value,
+      background_query: c.querySelector(".s-bgq") ? c.querySelector(".s-bgq").value : undefined,
+      voice_text: c.querySelector(".s-voice").value,
+      bullets: bullets.length ? bullets : undefined,
+      kpis: kpis.length ? kpis : undefined,
+    });
+  });
+  return edits;
+}
+
+$("saveRenderBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  $("saveMsg").textContent = "...";
+  const r = await fetch("/api/save-deck", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      slug: CURRENT_SLUG,
+      theme: $("editThemeSelect").value,
+      aspect: $("editAspectSelect").value,
+      speaker: $("speakerSelect").value,
+      voice_mode: $("editVoiceModeSelect").value,
+      burn_captions: $("editCaptionsCheck").checked,
+      background_enabled: $("editBgCheck").checked,
+      background_provider: $("editBgProvider").value,
+      music_enabled: $("editMusicCheck").checked,
+      slides: collectSlideEdits(),
+      render: true,
+    }),
+  });
+  const d = await r.json();
+  $("saveMsg").textContent = d.ok ? "OK" : `Error: ${d.error}`;
+  if (d.ok) document.querySelector('[data-tab="logs"]').click();
+  poll();
+};
+
+/* ---------- VIDEO MERGER ---------- */
+function renderMergeLists() {
+  const videos = (STATE && STATE.videos) || [];
+  const av = $("availVideos");
+  av.innerHTML = videos.map((v) =>
+    `<div class="clip-row">
+       <div><b>${esc(v.slug)}</b> <span style="font-size:0.78rem;color:var(--muted);">(${v.mb} MB)</span></div>
+       <button class="btn sm" onclick="addClip('${esc(v.slug)}')">${esc(T("merge_add"))}</button>
+     </div>`
+  ).join("") || `<div style="color:var(--muted);font-size:0.84rem;">—</div>`;
+
+  const q = $("mergeQueue");
+  if (!MERGE_QUEUE.length) {
+    q.innerHTML = `<div style="color:var(--muted);font-size:0.84rem;padding:10px 0;">${esc(T("merge_empty"))}</div>`;
+  } else {
+    q.innerHTML = MERGE_QUEUE.map((slug, idx) =>
+      `<div class="clip-row">
+         <div><b>#${idx + 1}</b> · ${esc(slug)}.mp4</div>
+         <div class="row" style="gap:4px;">
+           <button class="btn sm" onclick="moveClip(${idx}, -1)" ${idx === 0 ? "disabled" : ""}>↑</button>
+           <button class="btn sm" onclick="moveClip(${idx}, 1)" ${idx === MERGE_QUEUE.length - 1 ? "disabled" : ""}>↓</button>
+           <button class="btn sm" onclick="removeClip(${idx})">✕</button>
+         </div>
+       </div>`
+    ).join("");
+  }
+}
+
+window.addClip = (slug) => { MERGE_QUEUE.push(slug); renderMergeLists(); };
+window.removeClip = (idx) => { MERGE_QUEUE.splice(idx, 1); renderMergeLists(); };
+window.moveClip = (idx, dir) => {
+  const j = idx + dir;
+  if (j < 0 || j >= MERGE_QUEUE.length) return;
+  [MERGE_QUEUE[idx], MERGE_QUEUE[j]] = [MERGE_QUEUE[j], MERGE_QUEUE[idx]];
+  renderMergeLists();
+};
+
+$("mergeBtn").onclick = async () => {
+  const outSlug = $("mergeOutSlug").value.trim();
+  $("mergeMsg").textContent = "...";
+  const r = await fetch("/api/merge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ out_slug: outSlug, clips: MERGE_QUEUE }),
+  });
+  const d = await r.json();
+  $("mergeMsg").textContent = d.ok ? `OK (${d.slug}.mp4)` : `Error: ${d.error}`;
+  if (d.ok) document.querySelector('[data-tab="logs"]').click();
+  poll();
+};
+
+function showMergedPreview(slug) {
+  const v = ((STATE && STATE.videos) || []).find((x) => x.slug === slug);
+  if (!v) return;
+  const player = $("mergedVideoPlayer");
+  player.src = `/video/${encodeURIComponent(slug)}.mp4?t=${v.mtime}`;
+  const links = [`<a class="btn" href="/video/${encodeURIComponent(slug)}.mp4" download="${slug}.mp4">${esc(T("dl_mp4"))}</a>`];
+  if (v.has_srt) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}.srt" download="${slug}.srt">SRT</a>`);
+  if (v.has_vtt) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}.vtt" download="${slug}.vtt">VTT</a>`);
+  if (v.has_thumb) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}_thumb.png" download="${slug}_thumb.png">${esc(T("dl_thumb"))}</a>`);
+  links.push(`<button class="btn primary" onclick="uploadToTikTok('${esc(slug)}','inbox','')">${esc(T("tt_merged_btn"))}</button>`);
+  $("mergedLinks").innerHTML = links.join("");
+}
+
+window.uploadToTikTok = async (slug, mode, caption) => {
+  if (!slug) return;
+  $("ttMsg").textContent = "...";
+  $("mergeMsg").textContent = "...";
+  const r = await fetch("/api/tiktok/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug, mode: mode || "inbox", caption: caption || "" }),
+  });
+  const d = await r.json();
+  const text = d.ok ? `OK → TikTok (${d.mode})` : `Error: ${d.error}`;
+  $("ttMsg").textContent = text;
+  $("mergeMsg").textContent = text;
+  if (d.ok) document.querySelector('[data-tab="logs"]').click();
+  poll();
+};
+
+$("ttUploadBtn").onclick = () => {
+  uploadToTikTok(CURRENT_SLUG, $("ttModeSelect").value, $("ttCaptionInput").value.trim());
+};
+
+$("ttRefreshBtn").onclick = async () => {
+  $("ttMsg").textContent = "...";
+  const r = await fetch("/api/tiktok/refresh", { method: "POST", body: "{}" });
+  const d = await r.json();
+  $("ttMsg").textContent = d.ok
+    ? `Token OK (expires_in=${d.expires_in || "?"}s)`
+    : `Error: ${d.error || "refresh failed"}`;
+  poll();
+};
+
+$("deckSelect").onchange = () => loadDeck($("deckSelect").value);
+
+function esc(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+async function loadDeck(slug) {
+  if (!slug) return;
+  CURRENT_SLUG = slug;
+  const r = await fetch("/api/deck?slug=" + encodeURIComponent(slug));
+  const d = await r.json();
+  if (!d.ok) return;
+  const deck = d.deck;
+  const spk = String((deck.voice && deck.voice.speaker) || "");
+  const enSpeaker = /^(en_|af_|am_|bf_|bm_)/.test(spk);
+  CURRENT_LANG = deck.lang || (deck.voice && deck.voice.lang) || (enSpeaker ? "en" : "ru");
+  syncVoices($("speakerSelect"), CURRENT_LANG, deck.voice && deck.voice.speaker);
+  syncThemes($("editThemeSelect"), deck.theme || "neon_cyber");
+  $("editAspectSelect").value = deck.aspect || "16:9";
+  $("editVoiceModeSelect").value = (deck.voice && deck.voice.mode) || "single";
+  $("editCaptionsCheck").checked = deck.burn_captions !== false;
+  $("editBgCheck").checked = !!(deck.background && deck.background.enabled);
+  $("editBgProvider").value = (deck.background && deck.background.provider) || "pixabay";
+  $("editMusicCheck").checked = !!(deck.music && deck.music.enabled);
+  $("ttCaptionInput").value = [deck.brand, (deck.slides && deck.slides[0] && deck.slides[0].title) || ""].filter(Boolean).join(" — ").slice(0, 150);
+
+  const video = $("videoPlayer");
+  video.innerHTML = "";
+  if (d.has_mp4) {
+    video.src = `/video/${encodeURIComponent(slug)}.mp4?t=${d.mp4_mtime}`;
+    if (d.has_vtt) {
+      const tr = document.createElement("track");
+      tr.kind = "subtitles"; tr.label = CURRENT_LANG.toUpperCase(); tr.srclang = CURRENT_LANG;
+      tr.src = `/out/${encodeURIComponent(slug)}.vtt?t=${d.mp4_mtime}`; tr.default = true;
+      video.appendChild(tr);
+    }
+  } else {
+    video.removeAttribute("src"); video.load();
+  }
+
+  const links = [];
+  if (d.has_mp4) links.push(`<a class="btn" href="/video/${encodeURIComponent(slug)}.mp4" download="${slug}.mp4">${esc(T("dl_mp4"))}</a>`);
+  if (d.has_srt) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}.srt" download="${slug}.srt">SRT</a>`);
+  if (d.has_vtt) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}.vtt" download="${slug}.vtt">VTT</a>`);
+  if (d.has_thumb) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}_thumb.png" download="${slug}_thumb.png">${esc(T("dl_thumb"))}</a>`);
+  $("assetLinks").innerHTML = links.join("");
+
+  const thumb = $("thumbImg");
+  if (d.has_thumb) { thumb.src = `/out/${encodeURIComponent(slug)}_thumb.png?t=${d.thumb_mtime}`; thumb.classList.remove("hidden"); }
+  else { thumb.classList.add("hidden"); }
+
+  const box = $("slidesList");
+  box.innerHTML = "";
+  (deck.slides || []).forEach((s, i) => {
+    const div = document.createElement("div");
+    div.className = "slide-card";
+    div.dataset.sid = s.id;
+    const voicePlain = s.voice_text || String(s.voice_ssml || "").replace(/<[^>]+>/g, " ").replace(/\+/g, "").replace(/\s+/g, " ").trim();
+    const bulletsHtml = (s.bullets || []).map((b) =>
+      `<div class="bullet-edit">
+         <input type="text" class="b-title" value="${esc(b.title)}"/>
+         <input type="text" class="b-desc" value="${esc(b.desc)}"/>
+       </div>`
+    ).join("");
+    const kpisHtml = (s.kpis || []).map((k) =>
+      `<div class="kpi-edit" style="display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-top:6px;">
+         <input type="text" class="k-value" value="${esc(k.value)}" placeholder="1339"/>
+         <input type="text" class="k-label" value="${esc(k.label)}" placeholder="Label"/>
+       </div>`
+    ).join("");
+    const extraInfo = s.code ? `<code>${esc(s.code.filename)}</code>` : (s.arch ? `Arch: ${(s.arch.nodes || []).length} nodes` : "");
+    div.innerHTML = `
+      <div class="head"><span>#${i + 1} · ${esc(s.type)} · ${esc(s.tag)}</span><span>${extraInfo}</span></div>
+      <input type="text" class="s-title" value="${esc(s.title)}"/>
+      <input type="text" class="s-sub" value="${esc(s.subtitle || s.tagline || "")}" style="margin-top:6px;"/>
+      <input type="text" class="s-bgq" value="${esc(s.background_query || "")}" placeholder="${esc(T("bgq_ph"))}" style="margin-top:6px;"/>
+      ${bulletsHtml}
+      ${kpisHtml}
+      <label>${esc(T("voice_lbl"))}</label>
+      <textarea class="s-voice">${esc(voicePlain)}</textarea>
+    `;
+    box.appendChild(div);
+  });
+
+  const hbox = $("historyList");
+  if (!d.history || !d.history.length) {
+    hbox.textContent = "—";
+  } else {
+    hbox.innerHTML = d.history.slice().reverse().map((h) =>
+      `<div style="padding:6px 0;border-bottom:1px solid var(--line);"><b>v${h.version}</b> · <code>${esc(h.model || "")}</code> · <code>${esc(h.lang || "ru")}</code> — ${esc(h.feedback || "initial")}</div>`
+    ).join("");
+  }
+}
+
+let LAST_JOB_STATUS = "";
+async function poll() {
+  try {
+    const r = await fetch("/api/state");
+    STATE = await r.json();
+  } catch { return; }
+  const p = STATE.provider || {};
+  const sys = p.system || {};
+  $("providerBadge").textContent = p.cloud_configured
+    ? `${T("prov_lbl")}: cloud (${p.cloud_model || "API"})`
+    : `${T("prov_lbl")}: ollama (${p.ollama_model})`;
+  const badge = (label, ok, warn) => `<span class="pill ${ok ? "ok" : warn ? "run" : "err"}" style="font-size:0.68rem;">${esc(label)}</span>`;
+  const tt = sys.tiktok || {};
+  const ttLabel = tt.can_auto_refresh ? "TikTok:AUTO" : (tt.access_token_set ? "TikTok:OK" : "TikTok:OFF");
+  $("sysStatus").innerHTML = [
+    badge(sys.ollama_online ? `Ollama:${(sys.ollama_models || []).length}` : "Ollama:OFF", !!sys.ollama_online, false),
+    badge(sys.cloud_configured ? "Cloud:OK" : "Cloud:off", !!sys.cloud_configured, true),
+    badge(ttLabel, !!tt.ready, !!tt.access_token_set && !tt.can_auto_refresh),
+    badge(sys.silero_ru_ready ? "RU:OK" : "RU:auto", !!sys.silero_ru_ready, true),
+    badge(sys.silero_en_ready ? "EN:OK" : "EN:auto", !!sys.silero_en_ready, true),
+    badge(sys.ffmpeg_ready && sys.remotion_ready ? "FFmpeg:OK" : "FFmpeg:ERR", !!(sys.ffmpeg_ready && sys.remotion_ready), false),
+  ].join("");
+  if ($("ttStatusPill")) {
+    $("ttStatusPill").innerHTML = tt.can_auto_refresh
+      ? `<span class="pill ok">token + auto-refresh OK</span>`
+      : tt.access_token_set
+        ? `<span class="pill run">token OK · add CLIENT_KEY/SECRET for auto-refresh</span>`
+        : `<span class="pill err">no token</span>`;
+  }
+  if (!$("providerSelect").dataset.init) {
+    $("providerSelect").value = p.default_provider || "ollama";
+    $("providerSelect").dataset.init = "1";
+    syncModels();
+    syncVoices($("newSpeakerSelect"), $("langSelect").value, "");
+    syncThemes($("newThemeSelect"), "neon_cyber");
+  }
+
+  const job = STATE.job || {};
+  const cls = job.status === "running" ? "run" : job.status === "ok" ? "ok" : job.status === "error" ? "err" : "";
+  $("jobBadge").innerHTML = `${T("stat_lbl")}: <span class="pill ${cls}">${job.status || "idle"}${job.slug ? " · " + job.slug : ""}</span>`;
+  if (job.log) {
+    $("liveLog").textContent = job.log;
+    $("liveLog").scrollTop = $("liveLog").scrollHeight;
+  }
+  const busy = job.status === "running";
+  $("genBtn").disabled = busy;
+  $("feedbackBtn").disabled = busy;
+  $("saveRenderBtn").disabled = busy;
+  $("mergeBtn").disabled = busy;
+  $("ttUploadBtn").disabled = busy;
+
+  if (LAST_JOB_STATUS === "running" && job.status === "ok" && job.slug) {
+    if (job.step === "merge") showMergedPreview(job.slug);
+    else loadDeck(job.slug);
+  }
+  LAST_JOB_STATUS = job.status || "";
+  renderMergeLists();
+
+  const sel = $("deckSelect");
+  const prev = sel.value;
+  const slugs = (STATE.decks || []).map((x) => x.slug);
+  if (sel.options.length !== slugs.length) {
+    sel.innerHTML = slugs.map((s) => `<option value="${s}">${s}</option>`).join("");
+    const pick = slugs.includes(CURRENT_SLUG) ? CURRENT_SLUG : (slugs.includes(prev) ? prev : slugs[0]);
+    if (pick) { sel.value = pick; loadDeck(pick); }
+  }
+}
+
+$("bootstrapBtn").onclick = async () => {
+  const btn = $("bootstrapBtn");
+  btn.disabled = true;
+  btn.textContent = "...";
+  try {
+    await fetch("/api/bootstrap", { method: "POST", body: "{}" });
+    await poll();
+    syncModels();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = T("btn_bootstrap");
+  }
+};
+
+applyUiLang();
+poll();
+setInterval(poll, 2500);
+</script>
+</body>
+</html>

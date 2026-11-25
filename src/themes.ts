@@ -1,0 +1,264 @@
+export type ThemeId =
+  | "neon_cyber"
+  | "minimal_light"
+  | "terminal_green"
+  | "deep_ocean"
+  | "sunset_orange"
+  | "cyber_magenta"
+  | "aurora_purple"
+  | "mono_graphite"
+  | "paper_warm"
+  | "corporate_blue";
+
+export interface ThemePalette {
+  id: ThemeId;
+  name: string;
+  bg: string;
+  text: string;
+  muted: string;
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  accent4: string;
+  cardBg: string;
+  cardBorder: string;
+  codeBg: string;
+  codeHeaderBg: string;
+  grid1: string;
+  grid2: string;
+  glow1: string;
+  glow2: string;
+  glow3: string;
+  captionBg: string;
+  captionText: string;
+}
+
+export const THEMES: Record<ThemeId, ThemePalette> = {
+  neon_cyber: {
+    id: "neon_cyber",
+    name: "Neon Cyber",
+    bg: "#050714",
+    text: "#f8fafc",
+    muted: "#cbd5e1",
+    accent1: "#00f5d4",
+    accent2: "#38bdf8",
+    accent3: "#c084fc",
+    accent4: "#f472b6",
+    cardBg: "rgba(15,23,42,0.72)",
+    cardBorder: "rgba(255,255,255,0.12)",
+    codeBg: "#0b1120",
+    codeHeaderBg: "rgba(30,41,59,0.85)",
+    grid1: "rgba(56,189,248,0.28)",
+    grid2: "rgba(192,132,252,0.24)",
+    glow1: "rgba(0,245,212,0.22)",
+    glow2: "rgba(192,132,252,0.22)",
+    glow3: "rgba(56,189,248,0.18)",
+    captionBg: "rgba(5,7,20,0.82)",
+    captionText: "#f8fafc",
+  },
+  minimal_light: {
+    id: "minimal_light",
+    name: "Minimal Light",
+    bg: "#f4f7fb",
+    text: "#0f172a",
+    muted: "#475569",
+    accent1: "#0f766e",
+    accent2: "#2563eb",
+    accent3: "#7c3aed",
+    accent4: "#db2777",
+    cardBg: "rgba(255,255,255,0.92)",
+    cardBorder: "rgba(15,23,42,0.12)",
+    codeBg: "#0f172a",
+    codeHeaderBg: "#1e293b",
+    grid1: "rgba(37,99,235,0.12)",
+    grid2: "rgba(15,118,110,0.10)",
+    glow1: "rgba(37,99,235,0.12)",
+    glow2: "rgba(124,58,237,0.10)",
+    glow3: "rgba(15,118,110,0.10)",
+    captionBg: "rgba(15,23,42,0.88)",
+    captionText: "#f8fafc",
+  },
+  terminal_green: {
+    id: "terminal_green",
+    name: "Terminal Green",
+    bg: "#030b06",
+    text: "#dcfce7",
+    muted: "#86efac",
+    accent1: "#22c55e",
+    accent2: "#4ade80",
+    accent3: "#10b981",
+    accent4: "#a3e635",
+    cardBg: "rgba(5,24,13,0.84)",
+    cardBorder: "rgba(34,197,94,0.32)",
+    codeBg: "#020804",
+    codeHeaderBg: "rgba(6,40,20,0.9)",
+    grid1: "rgba(34,197,94,0.26)",
+    grid2: "rgba(16,185,129,0.20)",
+    glow1: "rgba(34,197,94,0.22)",
+    glow2: "rgba(16,185,129,0.18)",
+    glow3: "rgba(163,230,53,0.14)",
+    captionBg: "rgba(2,8,4,0.88)",
+    captionText: "#dcfce7",
+  },
+  deep_ocean: {
+    id: "deep_ocean",
+    name: "Deep Ocean",
+    bg: "#030d1c",
+    text: "#e0f2fe",
+    muted: "#93c5fd",
+    accent1: "#38bdf8",
+    accent2: "#0ea5e9",
+    accent3: "#2dd4bf",
+    accent4: "#818cf8",
+    cardBg: "rgba(7,26,52,0.78)",
+    cardBorder: "rgba(56,189,248,0.24)",
+    codeBg: "#041326",
+    codeHeaderBg: "rgba(12,41,76,0.9)",
+    grid1: "rgba(14,165,233,0.26)",
+    grid2: "rgba(45,212,191,0.20)",
+    glow1: "rgba(14,165,233,0.24)",
+    glow2: "rgba(45,212,191,0.20)",
+    glow3: "rgba(129,140,248,0.18)",
+    captionBg: "rgba(3,13,28,0.86)",
+    captionText: "#e0f2fe",
+  },
+  sunset_orange: {
+    id: "sunset_orange",
+    name: "Sunset Orange",
+    bg: "#140804",
+    text: "#fff7ed",
+    muted: "#fdba74",
+    accent1: "#fb923c",
+    accent2: "#f97316",
+    accent3: "#f43f5e",
+    accent4: "#facc15",
+    cardBg: "rgba(38,16,8,0.80)",
+    cardBorder: "rgba(251,146,60,0.28)",
+    codeBg: "#0c0503",
+    codeHeaderBg: "rgba(60,26,12,0.90)",
+    grid1: "rgba(251,146,60,0.22)",
+    grid2: "rgba(244,63,94,0.16)",
+    glow1: "rgba(251,146,60,0.26)",
+    glow2: "rgba(244,63,94,0.18)",
+    glow3: "rgba(250,204,21,0.14)",
+    captionBg: "rgba(20,8,4,0.88)",
+    captionText: "#fff7ed",
+  },
+  cyber_magenta: {
+    id: "cyber_magenta",
+    name: "Cyber Magenta",
+    bg: "#0a0410",
+    text: "#fdf4ff",
+    muted: "#f0abfc",
+    accent1: "#e879f9",
+    accent2: "#d946ef",
+    accent3: "#22d3ee",
+    accent4: "#fb7185",
+    cardBg: "rgba(30,8,40,0.80)",
+    cardBorder: "rgba(232,121,249,0.28)",
+    codeBg: "#070210",
+    codeHeaderBg: "rgba(50,14,64,0.90)",
+    grid1: "rgba(232,121,249,0.22)",
+    grid2: "rgba(34,211,238,0.16)",
+    glow1: "rgba(232,121,249,0.26)",
+    glow2: "rgba(34,211,238,0.18)",
+    glow3: "rgba(251,113,133,0.16)",
+    captionBg: "rgba(10,4,16,0.88)",
+    captionText: "#fdf4ff",
+  },
+  aurora_purple: {
+    id: "aurora_purple",
+    name: "Aurora Purple",
+    bg: "#070714",
+    text: "#eef2ff",
+    muted: "#a5b4fc",
+    accent1: "#818cf8",
+    accent2: "#6366f1",
+    accent3: "#34d399",
+    accent4: "#f0abfc",
+    cardBg: "rgba(20,20,48,0.80)",
+    cardBorder: "rgba(129,140,248,0.26)",
+    codeBg: "#05050f",
+    codeHeaderBg: "rgba(30,30,70,0.90)",
+    grid1: "rgba(129,140,248,0.22)",
+    grid2: "rgba(52,211,153,0.14)",
+    glow1: "rgba(129,140,248,0.26)",
+    glow2: "rgba(52,211,153,0.16)",
+    glow3: "rgba(240,171,252,0.16)",
+    captionBg: "rgba(7,7,20,0.88)",
+    captionText: "#eef2ff",
+  },
+  mono_graphite: {
+    id: "mono_graphite",
+    name: "Mono Graphite",
+    bg: "#101113",
+    text: "#f4f4f5",
+    muted: "#a1a1aa",
+    accent1: "#e4e4e7",
+    accent2: "#a1a1aa",
+    accent3: "#f59e0b",
+    accent4: "#71717a",
+    cardBg: "rgba(39,39,42,0.80)",
+    cardBorder: "rgba(244,244,245,0.14)",
+    codeBg: "#09090b",
+    codeHeaderBg: "rgba(63,63,70,0.90)",
+    grid1: "rgba(244,244,245,0.10)",
+    grid2: "rgba(161,161,170,0.10)",
+    glow1: "rgba(244,244,245,0.10)",
+    glow2: "rgba(161,161,170,0.10)",
+    glow3: "rgba(245,158,11,0.10)",
+    captionBg: "rgba(9,9,11,0.90)",
+    captionText: "#f4f4f5",
+  },
+  paper_warm: {
+    id: "paper_warm",
+    name: "Paper Warm",
+    bg: "#fbf6ec",
+    text: "#2a1f14",
+    muted: "#6b5a45",
+    accent1: "#b45309",
+    accent2: "#c2410c",
+    accent3: "#4d7c0f",
+    accent4: "#9f1239",
+    cardBg: "rgba(255,252,245,0.94)",
+    cardBorder: "rgba(120,80,30,0.18)",
+    codeBg: "#2a1f14",
+    codeHeaderBg: "#3d2e1e",
+    grid1: "rgba(180,83,9,0.10)",
+    grid2: "rgba(77,124,15,0.08)",
+    glow1: "rgba(194,65,12,0.10)",
+    glow2: "rgba(77,124,15,0.08)",
+    glow3: "rgba(159,18,57,0.07)",
+    captionBg: "rgba(42,31,20,0.88)",
+    captionText: "#fbf6ec",
+  },
+  corporate_blue: {
+    id: "corporate_blue",
+    name: "Corporate Blue",
+    bg: "#f1f5f9",
+    text: "#0b1f3a",
+    muted: "#475569",
+    accent1: "#1d4ed8",
+    accent2: "#0369a1",
+    accent3: "#0f766e",
+    accent4: "#4338ca",
+    cardBg: "rgba(255,255,255,0.95)",
+    cardBorder: "rgba(29,78,216,0.16)",
+    codeBg: "#0b1f3a",
+    codeHeaderBg: "#17325c",
+    grid1: "rgba(29,78,216,0.10)",
+    grid2: "rgba(3,105,161,0.08)",
+    glow1: "rgba(29,78,216,0.10)",
+    glow2: "rgba(15,118,110,0.08)",
+    glow3: "rgba(67,56,202,0.08)",
+    captionBg: "rgba(11,31,58,0.90)",
+    captionText: "#f1f5f9",
+  },
+};
+
+export function resolveTheme(id?: string): ThemePalette {
+  if (id && id in THEMES) {
+    return THEMES[id as ThemeId];
+  }
+  return THEMES.neon_cyber;
+}

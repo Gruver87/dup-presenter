@@ -1,0 +1,452 @@
+{
+  "slug": "radar-pro-en",
+  "lang": "en",
+  "theme": "neon_cyber",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "volume": 0.09
+  },
+  "bg_code_streams": [
+    [
+      "// native/radar_core/src/lib.rs",
+      "pub const PRICE_SCALE: i64 = 100_000_000;",
+      "pub const QUOTE_SCALE: i64 = 1_000_000;",
+      "",
+      "/// Normalized trade/tick — integer money only.",
+      "pub struct Tick {",
+      "    pub ts_ms: i64,",
+      "    pub venue: Venue,",
+      "    pub symbol: String,",
+      "    pub price_i: i64,",
+      "    pub qty_i: i64,",
+      "}",
+      "",
+      "impl Tick {",
+      "    pub fn quote_micros(&self) -> Option<i64> {",
+      "        let num = (self.price_i as i128)",
+      "            .checked_mul(self.qty_i as i128)?",
+      "            .checked_mul(QUOTE_SCALE as i128)?;",
+      "        let den = (PRICE_SCALE as i128)",
+      "            .checked_mul(PRICE_SCALE as i128)?;",
+      "        i64::try_from(num / den).ok()",
+      "    }",
+      "}",
+      "",
+      "pub struct BarAggregator {",
+      "    interval_sec: u32,",
+      "    current: Option<Bar>,",
+      "}",
+      "pub fn push(&mut self, tick: &Tick) -> Option<Bar> {"
+    ],
+    [
+      "# src/radar/trade/auto_engine.py",
+      "FUTURES_BLOCK = frozenset({",
+      "    'futures', 'futures_long', 'futures_short'",
+      "})",
+      "_MIN_SHARED_BUY_MICROS = 1_000_000",
+      "",
+      "def split_equal_micros(amount_micro: int, parts: int):",
+      "    if amount_micro < 0 or parts < 1 or parts > 8:",
+      "        return tuple()",
+      "    base = amount_micro // parts",
+      "    out = [base] * parts",
+      "    out[0] += amount_micro - base * parts",
+      "    return tuple(out)",
+      "",
+      "# config/default.yaml",
+      "native_ws:",
+      "  enabled: true",
+      "  venues: [binance, bybit, kucoin, mexc]",
+      "  bar_intervals: [60, 300, 900, 3600, 14400]",
+      "  apply_ws_to_price_i: true",
+      "",
+      "auto_trade:",
+      "  enabled_default: false",
+      "  dry_run: true",
+      "  allowed_sectors: [spot_alts, memes, listings]"
+    ]
+  ],
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "kokoro_v1",
+    "lang": "en",
+    "speaker": "am_michael",
+    "rate": "95%",
+    "ambient_volume": 0.12,
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "OVERVIEW",
+      "type": "hero_3d",
+      "title": "DUP Market Radar",
+      "subtitle": "Hybrid Python + Rust real-time crypto market watchlist",
+      "pills": [
+        {
+          "name": "4,488 instruments",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Integer-only money",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "KuCoin spot",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "RADAR",
+        "RUST",
+        "INT64",
+        "SPOT",
+        "MTF",
+        "DUP"
+      ],
+      "voice_text": "DUP Market Radar is a hybrid Python and Rust watchlist built for the crypto market. It tracks spot, watch-only futures, memes, stablecoins, and new listings. Manual orders and optional auto-execution run strictly on KuCoin spot."
+    },
+    {
+      "id": "s2",
+      "tag": "REAL-TIME",
+      "type": "kpi",
+      "title": "Real-Time Monitoring",
+      "subtitle": "Live tick stream, native Rust scoring, and fixed-point integer math",
+      "kpis": [
+        {
+          "value": "4,488",
+          "label": "Instruments tracked in the live dashboard universe"
+        },
+        {
+          "value": "4 venues",
+          "label": "Concurrent Rust WebSocket stream: Binance, Bybit, KuCoin, MEXC"
+        },
+        {
+          "value": "~150 ms",
+          "label": "Native Rust scoring across the universe (136 to 162 ms live)"
+        },
+        {
+          "value": "0 float",
+          "label": "All monetary values use fixed-point integers (i64, i128, micro-USDT)"
+        }
+      ],
+      "voice_text": "The radar monitors the market in real time. A native Rust WebSocket sidecar streams live ticks from four exchanges and folds candles from one minute up to four hours. The full universe of four thousand four hundred eighty-eight instruments is regularly scanned and scored natively in roughly one hundred fifty milliseconds, with every monetary value stored strictly as fixed-point integers."
+    },
+    {
+      "id": "s3",
+      "tag": "DASHBOARD",
+      "type": "screen_split",
+      "title": "Live Watchlist UI",
+      "subtitle": "Watchlist, multi-timeframe scoring, and entry zones in one screen",
+      "bullets": [
+        {
+          "title": "Native MTF Scoring",
+          "desc": "Rust engine evaluates momentum, relative volume, and multi-timeframe divergence",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Zones & Risk Flags",
+          "desc": "Each row highlights potential entry zones, volatility warnings, and dry-run status",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Spot-Only Control",
+          "desc": "Manual KuCoin Buy and Sell buttons require confirmation; futures are excluded from auto",
+          "accent": "#c084fc"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/radar_live_watchlist.png",
+          "caption": "DUP Market Radar · Live Watchlist & Native Scoring"
+        }
+      ],
+      "voice_text": "The main dashboard shows the live watchlist. The native Rust module scores each coin across multiple timeframes using momentum and volume, highlighting candidate entry zones and risk flags. On the right, manual KuCoin buy and sell buttons always require confirmation, while futures stay excluded from auto-execution."
+    },
+    {
+      "id": "s4",
+      "tag": "MARKETS",
+      "type": "screen_split",
+      "title": "Top-100 Overview",
+      "subtitle": "Six-month market context across the largest crypto assets",
+      "bullets": [
+        {
+          "title": "Top 100 by Market Cap",
+          "desc": "Dedicated tab showing price, market capitalization, and 200-day performance",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Macro Context",
+          "desc": "Helps distinguish a local bounce from a broader market-wide move",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Single Workspace",
+          "desc": "Switch between watchlist, trades, and market overview in one click",
+          "accent": "#c084fc"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/radar_live_markets.png",
+          "caption": "DUP Market Radar · Markets Top-100 (~6 Months)"
+        }
+      ],
+      "voice_text": "The markets tab tracks the top one hundred assets by capitalization along with their six-month performance. This gives clear macro context before acting on short-term watchlist signals."
+    },
+    {
+      "id": "s5",
+      "tag": "ARCHITECTURE",
+      "type": "arch_flow",
+      "title": "How It Works",
+      "subtitle": "Five-layer pipeline from exchange feeds to API and execution",
+      "arch": {
+        "nodes": [
+          {
+            "id": "n1",
+            "label": "Exchange Ingest",
+            "path": "native/radar_ingest/src/lib.rs"
+          },
+          {
+            "id": "n2",
+            "label": "Core Types",
+            "path": "native/radar_core/src/lib.rs"
+          },
+          {
+            "id": "n3",
+            "label": "Native Score",
+            "path": "native/radar_native/src/lib.rs"
+          },
+          {
+            "id": "n4",
+            "label": "FastAPI App",
+            "path": "src/radar/api/app.py"
+          },
+          {
+            "id": "n5",
+            "label": "Auto Engine",
+            "path": "src/radar/trade/auto_engine.py"
+          }
+        ],
+        "edges": [
+          {
+            "from": "n1",
+            "to": "n2",
+            "label": "Tick"
+          },
+          {
+            "from": "n2",
+            "to": "n3",
+            "label": "scoring"
+          },
+          {
+            "from": "n3",
+            "to": "n4",
+            "label": "snapshot"
+          },
+          {
+            "from": "n4",
+            "to": "n5",
+            "label": "trade calls"
+          }
+        ]
+      },
+      "voice_text": "The architecture is split into five clean layers: exchange ingest adapters, a shared Rust core of integer types, native Rust scoring, the FastAPI application, and the optional auto-trade engine. Data flows cleanly from live feeds through scoring into the dashboard and guarded execution."
+    },
+    {
+      "id": "s6",
+      "tag": "CORE",
+      "type": "code_split",
+      "title": "Integer-Only Core",
+      "subtitle": "Fixed-point Rust math instead of floats on every monetary path",
+      "bullets": [
+        {
+          "title": "Explicit Scales",
+          "desc": "PRICE_SCALE = 100,000,000 and QUOTE_SCALE = 1,000,000 micro-USDT",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Zero Float Drift",
+          "desc": "Checked 128-bit integer multiplication prevents overflow and rounding errors",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Bar Aggregation",
+          "desc": "BarAggregator folds ticks via push and emits the final bar on flush",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "native/radar_core/src/lib.rs · L6-89",
+        "lines": [
+          {
+            "text": "pub const PRICE_SCALE: i64 = 100_000_000;",
+            "color": "#00f5d4"
+          },
+          {
+            "text": "pub const QUOTE_SCALE: i64 = 1_000_000;",
+            "color": "#00f5d4"
+          },
+          {
+            "text": "pub struct Tick {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    pub price_i: i64,  // integer money only",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    pub qty_i: i64,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "let num = (self.price_i as i128)",
+            "color": "#c084fc"
+          },
+          {
+            "text": "    .checked_mul(self.qty_i as i128)?",
+            "color": "#c084fc"
+          },
+          {
+            "text": "    .checked_mul(QUOTE_SCALE as i128)?;",
+            "color": "#c084fc"
+          }
+        ]
+      },
+      "voice_text": "Inside the Rust core, every price and quantity uses fixed-point integers: one hundred million units per dollar for price and one million micro-USDT for quote amounts. Intermediate math uses checked 128-bit integers, eliminating floating-point rounding drift completely."
+    },
+    {
+      "id": "s7",
+      "tag": "TRADING",
+      "type": "code_split",
+      "title": "USDT Allocation & Guard",
+      "subtitle": "Exact micro-USDT splitting and hard safety boundaries",
+      "bullets": [
+        {
+          "title": "Exact Split",
+          "desc": "Divides micro-USDT into equal integer shares; remainder goes to the first share",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "OFF by Default",
+          "desc": "Auto-execution stays disabled until explicitly armed with keys and dry_run=false",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "No Futures Auto",
+          "desc": "Hard-blocked in code by FUTURES_BLOCK; futures stay watch-only",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "src/radar/trade/auto_engine.py · L89-102",
+        "lines": [
+          {
+            "text": "def split_equal_micros(amount_micro: int, parts: int) -> Tuple[int, ...]:",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    \"\"\"Split USDT micros into equal parts; remainder goes to the first part.\"\"\"",
+            "color": "#94a3b8"
+          },
+          {
+            "text": "    if amount_micro < 0 or parts < 1 or parts > 8 or amount_micro >= 10**24:",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        return tuple()",
+            "color": "#00f5d4"
+          },
+          {
+            "text": "    base = amount_micro // parts",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    out = [base] * parts",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    out[0] += amount_micro - base * parts",
+            "color": "#f8fafc"
+          }
+        ]
+      },
+      "voice_text": "The split_equal_micros function divides micro-USDT into equal integer shares and assigns any remainder to the first share without losing a single unit. The auto-engine is disabled by default and hard-blocks futures at the code level."
+    },
+    {
+      "id": "s8",
+      "tag": "WORKFLOW",
+      "type": "timeline",
+      "title": "Operator Workflow",
+      "subtitle": "From observation to manual orders and guarded automation",
+      "bullets": [
+        {
+          "title": "Observe",
+          "desc": "Watchlist, MTF scoring, dashboard, and Telegram alerts as the core product",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Manual Orders",
+          "desc": "KuCoin spot Buy and Sell buttons with mandatory operator confirmation",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Auto-Execution",
+          "desc": "Disabled by default; opt-in only with exchange keys and dry_run=false",
+          "accent": "#c084fc"
+        },
+        {
+          "title": "Fail-Closed Safety",
+          "desc": "Kill-switch latch, daily notional caps, rate limits, and refuse on error",
+          "accent": "#f472b6"
+        }
+      ],
+      "voice_text": "The operator workflow starts with observation: watchlist, multi-timeframe scoring, dashboard, and Telegram alerts. Next come manual KuCoin spot orders with confirmation. Optional auto-execution stays off by default and is guarded by a kill-switch and strict limits."
+    },
+    {
+      "id": "s9",
+      "tag": "SUMMARY",
+      "type": "outro_3d",
+      "title": "Not Financial Advice",
+      "subtitle": "Heuristic rankings do not guarantee profit",
+      "url": "github.com/Gruver87/dup-market-radar",
+      "tagline": "Heuristic rankings do not guarantee profit",
+      "badges": [
+        {
+          "name": "Your Own Risk",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Fail-Closed Design",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Open Source",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "DUP",
+        "RADAR",
+        "RUST",
+        "INT64",
+        "SPOT",
+        "LABS"
+      ],
+      "voice_text": "This project is not financial advice, and heuristic scores never guarantee profit. Neither the author nor DUP Labs assumes liability for trading losses. The full source code is available on GitHub."
+    }
+  ]
+}

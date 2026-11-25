@@ -1,0 +1,303 @@
+{
+  "slug": "dup-protocol",
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "silero_v5_ru",
+    "speaker": "eugene",
+    "rate": "95%",
+    "ambient_volume": 0.16
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "ОБЗОР",
+      "type": "hero_3d",
+      "title": "DUP Protocol — инженерный пин",
+      "subtitle": "Python оркестрирует, Rust владеет горячим путём",
+      "voice_ssml": "<speak><prosody rate=\"95%\">DUP Protocol — это инженерный пин локального L1-меша.<break time=\"250ms\"/> Python отвечает за оркестрацию, Rust — за горячий путь.<break time=\"250ms\"/> Это не публичный mainnet, внешний аудит пока не завершён.</prosody></speak>",
+      "pills": [
+        {
+          "name": "Локальный L1-меш",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Гибридная честность",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Внешний аудит",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "ОБЗОР",
+        "DUP",
+        "PROTOCOL",
+        "ИНЖЕНЕРН",
+        "ПИН"
+      ]
+    },
+    {
+      "id": "s2",
+      "tag": "NATIVE",
+      "type": "code_split",
+      "title": "Криптоядро на Rust",
+      "subtitle": "abs_native: хеши, Merkle, канонизация",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Ядро abs_native реализует криптографические примитивы на Rust.<break time=\"250ms\"/> Здесь и sha256, и построение Merkle-корней, и каноническая сериализация JSON.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Хеширование",
+          "desc": "Хеширование заголовков блоков в модуле lib.rs",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Merkle-деревья",
+          "desc": "Построение корней и доказательств Меркла",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Канонизация",
+          "desc": "Каноническая сериализация JSON для блоков",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "native/abs_native/src/lib.rs · L56-63",
+        "lines": [
+          {
+            "text": "fn sha256_hex_bytes(data: &[u8]) -> String {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    hex::encode(Sha256::digest(data))",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "pub(crate) fn hash_string(data: &str) -> String {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    sha256_hex_bytes(data.as_bytes())",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s3",
+      "tag": "BRIDGE",
+      "type": "code_split",
+      "title": "Мост: проверка L1-транзакций",
+      "subtitle": "Rust-мост проверяет подтверждения и квитанции",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Rust-мост проверяет L1-транзакции: подтверждения, квитанции и привязку событий.<break time=\"250ms\"/> Функция verify_l1_tx возвращает число подтверждений и признак привязки события.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Проверка квитанции",
+          "desc": "Проверка семантического лога блокировки и статуса",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Подтверждения",
+          "desc": "Проверка минимального числа подтверждений и доказательства",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "RPC-вызовы",
+          "desc": "Вызовы RPC и разрешение адреса RPC",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "bridge/rust_bridge/src/main.rs · L242-255",
+        "lines": [
+          {
+            "text": "fn verify_l1_tx(",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    rpc_url: &str,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    tx_hash: &str,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    args: &serde_json::Value,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": ") -> Result<(u32, bool), String> {",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    let receipt = rpc_call(",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        rpc_url,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        \"eth_getTransactionReceipt\",",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        serde_json::json!([tx_hash]),",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    )",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    .ok_or_else(|| \"L1 RPC check failed\".to_string())?;",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    if receipt.is_null() {",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        return Err(\"L1 receipt not found\".into());",
+            "color": "#f472b6"
+          },
+          {
+            "text": "    }",
+            "color": "#f8fafc"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s4",
+      "tag": "CRYPTO",
+      "type": "code_split",
+      "title": "Фасад нативной криптографии",
+      "subtitle": "crypto/native.py: статус и доступность",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Фасад crypto/native.py управляет доступностью нативных функций.<break time=\"250ms\"/> Он отдаёт карту бэкендов для health-эндпоинта и умеет понижать статус семейства.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Доступность",
+          "desc": "Флаг доступности нативного модуля abs_native",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Карта бэкендов",
+          "desc": "Карта бэкендов для health-эндпоинта по ADR 0009",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Демоушен",
+          "desc": "Понижение статуса при недоступности семейства",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "crypto/native.py · L69-71",
+        "lines": [
+          {
+            "text": "def native_capabilities_status() -> dict:",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    \"\"\"ADR 0009 per-family backend map for /health.\"\"\"",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    return get_registry().status()",
+            "color": "#00f5d4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s5",
+      "tag": "ИНТЕРФЕЙС",
+      "type": "screen_split",
+      "title": "Explorer и консоль",
+      "subtitle": "Скриншоты локального узла",
+      "voice_ssml": "<speak><prosody rate=\"95%\">На скриншотах показан локальный explorer и веб-консоль узла.<break time=\"250ms\"/> Интерфейс доступен на localhost:8080, меш работает с идентификатором цепи 778888.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Локальный explorer",
+          "desc": "Доступен на localhost:8080",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Консоль",
+          "desc": "Веб-интерфейс с обновлением по Refresh",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Меш",
+          "desc": "Prod-профиль с идентификатором цепи 778888",
+          "accent": "#c084fc"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/dup-protocol/Снимок экрана_24-5-2026_211644_localhost.jpeg",
+          "caption": "Explorer и консоль · Снимок экрана_24-5-2026_211644_localhost.jpeg"
+        },
+        {
+          "src": "screens/dup-protocol/Снимок экрана_24-5-2026_211740_localhost.jpeg",
+          "caption": "Explorer и консоль · Снимок экрана_24-5-2026_211740_localhost.jpeg"
+        },
+        {
+          "src": "screens/dup-protocol/Снимок экрана_24-5-2026_211830_localhost.jpeg",
+          "caption": "Explorer и консоль · Снимок экрана_24-5-2026_211830_localhost.jpeg"
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "tag": "ИТОГИ",
+      "type": "outro_3d",
+      "title": "Что доказано, что нет",
+      "subtitle": "Воспроизводимые артефакты вместо роадмапа",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Проект продаёт воспроизводимые доказательства, а не роадмап.<break time=\"250ms\"/> Доказаны меш, синхронизация и 48-часовой soak.<break time=\"250ms\"/> Публичного mainnet и фирменного аудита пока нет.</prosody></speak>",
+      "url": "github.com/Gruver87/dup-protocol",
+      "tagline": "Воспроизводимые артефакты вместо роадмапа",
+      "badges": [
+        {
+          "name": "Доказано",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Готово",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Не сделано",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "ИТОГИ",
+        "ЧТО",
+        "ДОКАЗАНО",
+        "НЕТ"
+      ]
+    }
+  ]
+}

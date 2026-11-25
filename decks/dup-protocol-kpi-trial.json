@@ -1,0 +1,312 @@
+{
+  "slug": "dup-protocol-kpi-trial",
+  "lang": "en",
+  "theme": "neon_cyber",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": false,
+    "volume": 0.12
+  },
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "kokoro_v1",
+    "lang": "en",
+    "speaker": "am_michael",
+    "rate": "95%",
+    "ambient_volume": 0.16,
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "INDUSTRIAL PIN",
+      "type": "hero_3d",
+      "title": "DUP Protocol Industrial Pin",
+      "subtitle": "Python orchestrates, Rust owns the hot path",
+      "voice_ssml": "<speak><prosody rate=\"95%\">This is the DUP Protocol industrial pin from DUP Labs.<break time=\"250ms\"/> Python orchestrates while Rust owns the hot path.<break time=\"250ms\"/> It is a local prod-profile L1 mesh, not a launched public mainnet.</prosody></speak>",
+      "pills": [
+        {
+          "name": "Reproducible evidence",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Fail-closed prod profile",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Not a public mainnet",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "INDUSTRI",
+        "PIN",
+        "DUP",
+        "PROTOCOL"
+      ],
+      "voice_text": "This is the DUP Protocol industrial pin from DUP Labs. Python orchestrates while Rust owns the hot path. It is a local prod-profile L1 mesh, not a launched public mainnet.",
+      "background_query": "server room"
+    },
+    {
+      "id": "s2",
+      "tag": "ARCHITECTURE",
+      "type": "arch_flow",
+      "title": "Layered Mesh Architecture",
+      "subtitle": "Edge, orchestration, network, domain, native planes",
+      "voice_ssml": "<speak><prosody rate=\"95%\">The architecture is split into edge, orchestration, network, domain, and native planes.<break time=\"250ms\"/> Python owns orchestration while Rust native kernels handle crypto and state roots.<break time=\"250ms\"/> Services contain no sockets.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Edge and orchestration",
+          "desc": "REST, JSON-RPC, consensus policy, secrets",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Network and domain",
+          "desc": "rust-libp2p working tip, CatchUp, StateService",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Native kernels",
+          "desc": "Crypto, satoshi roots, Rocks, EVM kernels",
+          "accent": "#c084fc"
+        }
+      ],
+      "arch": {
+        "nodes": [
+          {
+            "id": "n1",
+            "label": "REST + JSON-RPC",
+            "path": "rpc/server.py"
+          },
+          {
+            "id": "n2",
+            "label": "NodeOrchestrator",
+            "path": "main.py"
+          },
+          {
+            "id": "n3",
+            "label": "P2P transport",
+            "path": "native/abs_native/src/p2p_transport.rs"
+          },
+          {
+            "id": "n4",
+            "label": "StateService",
+            "path": "core/components/state_service.py"
+          },
+          {
+            "id": "n5",
+            "label": "abs_native",
+            "path": "native/abs_native/src/lib.rs"
+          }
+        ],
+        "edges": [
+          {
+            "from": "n1",
+            "to": "n2",
+            "label": "requests"
+          },
+          {
+            "from": "n2",
+            "to": "n3",
+            "label": "mesh"
+          },
+          {
+            "from": "n2",
+            "to": "n4",
+            "label": "apply"
+          },
+          {
+            "from": "n4",
+            "to": "n5",
+            "label": "state roots"
+          }
+        ]
+      },
+      "voice_text": "The architecture is split into edge, orchestration, network, domain, and native planes. Python owns orchestration while Rust native kernels handle crypto and state roots. The domain layer has no sockets.",
+      "background_query": "network diagram"
+    },
+    {
+      "id": "s3",
+      "tag": "NATIVE KERNEL",
+      "type": "code_split",
+      "title": "Satoshi State Roots",
+      "subtitle": "Rust owns crypto and satoshi state roots",
+      "voice_ssml": "<speak><prosody rate=\"95%\">The native kernel computes merkle roots over string items.<break time=\"250ms\"/> It lives in the Rust abs_native library and is exposed to Python through PyO3.<break time=\"250ms\"/> Native crypto is required on the prod profile.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Canonical amount math",
+          "desc": "Satoshi amount math plus StateEngine batch apply",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "PyO3 host surface",
+          "desc": "Native kernel exposed to Python via PyO3",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Fail-closed crypto",
+          "desc": "Native crypto required on prod profile",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "native/abs_native/src/lib.rs · L96-109",
+        "lines": [
+          {
+            "text": "fn merkle_root_strings(items: &[String]) -> String {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    if items.is_empty() {",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        return hash_string(\"empty\");",
+            "color": "#00f5d4"
+          },
+          {
+            "text": "    }",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    let mut layer: Vec<String> = items.iter().map(|item| hash_string(item)).collect();",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    while layer.len() > 1 {",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        if !layer.len().is_multiple_of(2) {",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "            let last = layer[layer.len() - 1].clone();",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "            layer.push(last);",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        }",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        let mut next = Vec::with_capacity(layer.len() / 2);",
+            "color": "#f8fafc"
+          }
+        ]
+      },
+      "voice_text": "The native kernel computes merkle roots over string items. It lives in the Rust abs_native library and is exposed to Python through PyO3. Native crypto is required on the prod profile.",
+      "background_query": "code on screen"
+    },
+    {
+      "id": "s4",
+      "tag": "EVIDENCE",
+      "type": "timeline",
+      "title": "Evidence Timeline",
+      "subtitle": "Reproducible runs behind the industrial pin",
+      "voice_ssml": "<speak><prosody rate=\"95%\">The evidence timeline starts with the tip-v2 48 hour soak that passed in August 2026.<break time=\"250ms\"/> Phase 3 ops cutover dry-run passed and the Phase 4 audit binder is ready.<break time=\"250ms\"/> The libp2p STRICT 48 hour run passed on a clean commit.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Tip-v2 48h soak",
+          "desc": "TCP+TLS freeze tag. PASS Aug 5-7 2026, run 375d14f"
+        },
+        {
+          "title": "Phase 3 dry-run",
+          "desc": "Ops cutover dry-run PASS, run phase3-da25c34"
+        },
+        {
+          "title": "Phase 4 binder",
+          "desc": "Binder ready. External audit still pending"
+        },
+        {
+          "title": "Libp2p STRICT 48h",
+          "desc": "Working-tip mesh (ADR 0020). PASS 2026-10-18-20, run pin-libp2p-strict-48h"
+        }
+      ],
+      "voice_text": "The evidence timeline starts with the tip-v2 48 hour soak on the TCP plus TLS freeze tag, which passed in August 2026. The Phase 3 ops cutover dry-run passed. The Phase 4 audit binder is ready, while the external audit is still pending. The working-tip mesh runs rust libp2p under ADR 0020, and its 48 hour STRICT run passed in October 2026.",
+      "background_query": "timeline data"
+    },
+    {
+      "id": "s5",
+      "tag": "PIN NUMBERS",
+      "type": "kpi",
+      "title": "Pin At A Glance",
+      "subtitle": "Measurable identifiers from the industrial pin",
+      "voice_ssml": "<speak><prosody rate=\"95%\">The industrial pin release is v1.3.1339.<break time=\"250ms\"/> The libp2p mesh tag is v1.3.1340.<break time=\"250ms\"/> The prod mesh uses chain ID 778888.</prosody></speak>",
+      "bullets": [
+        {
+          "title": "Prod mesh chain ID",
+          "desc": "Chain ID 778888 for the local prod mesh",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "External audit pending",
+          "desc": "Firm audit still pending, not a public mainnet",
+          "accent": "#38bdf8"
+        }
+      ],
+      "kpis": [
+        {
+          "value": "v1.3.1339",
+          "label": "Industrial pin release"
+        },
+        {
+          "value": "v1.3.1340",
+          "label": "Libp2p mesh tag"
+        }
+      ],
+      "voice_text": "The industrial pin release is v1.3.1339. The libp2p mesh tag is v1.3.1340. The prod mesh uses chain ID 778888.",
+      "background_query": "data dashboard"
+    },
+    {
+      "id": "s6",
+      "tag": "CLOSING",
+      "type": "outro_3d",
+      "title": "Reproducible Evidence",
+      "subtitle": "Local prod-profile mesh, not a public mainnet",
+      "voice_ssml": "<speak><prosody rate=\"95%\">DUP Protocol sells reproducible evidence, not a roadmap.<break time=\"250ms\"/> Every pass links to a command or packed run.<break time=\"250ms\"/> The external firm audit is still pending and this is not a public mainnet.</prosody></speak>",
+      "url": "github.com/Gruver87/dup-protocol",
+      "tagline": "Local prod-profile mesh, not a public mainnet",
+      "badges": [
+        {
+          "name": "Re-run the evidence",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Audit still pending",
+          "color": "#38bdf8"
+        }
+      ],
+      "cube_faces": [
+        "CLOSING",
+        "REPRODUC",
+        "EVIDENCE"
+      ],
+      "voice_text": "DUP Protocol sells reproducible evidence, not a roadmap. Every pass links to a command or packed run. The external firm audit is still pending and this is not a public mainnet.",
+      "background_query": "abstract technology"
+    }
+  ]
+}
