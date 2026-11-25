@@ -40,7 +40,7 @@ FACTS_BUDGET_CHARS = 18_000
 CODE_MAX_SPAN = 14
 CODE_LINE_CAP = 110
 PALETTE = ["#00f5d4", "#38bdf8", "#c084fc", "#f472b6"]
-SLIDE_TYPES = {"hero_3d", "code_split", "screen_split", "arch_flow", "timeline", "terminal", "kpi", "outro_3d"}
+SLIDE_TYPES = {"hero_3d", "code_split", "screen_split", "arch_flow", "timeline", "terminal", "kpi", "quote", "outro_3d"}
 CODE_TYPES = {"code_split", "terminal"}
 from theme_catalog import THEME_IDS as THEMES  # noqa: E402
 ASPECTS = {"16:9": (1920, 1080), "9:16": (1080, 1920)}
@@ -65,6 +65,7 @@ Hard rules:
 10. Reply with JSON ONLY matching the schema.
 11. background_query (optional): 2-4 English words describing a free stock video for the slide, e.g. "server room" or "code on screen". Latin letters and spaces only; empty string if no fit.
 12. kpi slide: kpis = 1-4 items {"value": "...", "label": "...", "quote": "..."}. value is a measurable identifier, count, size, version, or duration. quote is one EXACT sentence copied from FACTS that contains the value; the value must refer to the same thing as the label. Never round, compute, or invent. KPI labels must NOT claim health, soak, audit, pass/fail, mainnet, production, stable or proven; put such claims in bullets with source_ids. If FACTS has no fitting numbers, do not use kpi.
+13. quote slide: title is ONE EXACT sentence copied verbatim from FACTS (at most 220 characters), shown as a quotation; subtitle is the source name (for example README or a file path from FACTS). Never paraphrase or invent a quote. The same claim rules as KPI apply: no health, soak, audit, pass/fail, mainnet, production, stable or proven statements in a quote. If no suitable sentence exists, do not use quote.
 
 JSON schema:
 {
@@ -72,7 +73,7 @@ JSON schema:
   "brand": "BRAND IN CAPS up to 3 words",
   "slides": [
     {
-      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | outro_3d",
+      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | quote | outro_3d",
       "tag": "TAG IN CAPS up to 3 words",
       "title": "...",
       "subtitle": "...",
@@ -105,6 +106,7 @@ SYSTEM_PROMPT = """Ты редактор коротких обзорных пр�
 10. Ответ — ТОЛЬКО JSON по схеме, без пояснений.
 11. background_query (необязательно): 2–4 английских слова для бесплатного стокового видео к слайду, например "server room" или "code on screen". Только латиница и пробелы; пустая строка, если подходящего нет.
 12. kpi-слайд: kpis = 1–4 элемента {"value": "...", "label": "...", "quote": "..."}. value — измеряемый идентификатор, количество, размер, версия или длительность. quote — ОДНО точное предложение из FACTS, содержащее value; value должно относиться именно к тому, что написано в label. Не округляй, не вычисляй, не выдумывай. В label kpi НЕ пиши заявления о здоровье, soak, аудите, pass/fail, mainnet, production, stable, proven — такие утверждения выноси в bullets с source_ids. Если подходящих чисел в FACTS нет — kpi не используй.
+13. quote-слайд: title — ОДНО точное предложение из FACTS, дословно (не длиннее 220 символов), показывается как цитата; subtitle — название источника (например README или путь к файлу из FACTS). Не перефразируй и не выдумывай цитату. Для quote действуют те же запреты, что и для kpi: никаких заявлений о здоровье, soak, аудите, pass/fail, mainnet, production, stable, proven. Если подходящего предложения нет — quote не используй.
 
 Схема JSON:
 {
@@ -112,7 +114,7 @@ SYSTEM_PROMPT = """Ты редактор коротких обзорных пр�
   "brand": "БРЕНД КАПСОМ до 3 слов",
   "slides": [
     {
-      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | outro_3d",
+      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | quote | outro_3d",
       "tag": "МЕТКА КАПСОМ до 3 слов",
       "title": "...",
       "subtitle": "...",
@@ -127,7 +129,7 @@ SYSTEM_PROMPT = """Ты редактор коротких обзорных пр�
     }
   ]
 }
-Для code_split: code_ref обязателен. Для screen_split: screen_ids обязательны. Для arch_flow: arch обязателен. Для kpi: kpis обязателен (1–4 элемента с точными числами из FACTS). Для остальных типов эти поля = null или [].
+Для code_split: code_ref обязателен. Для screen_split: screen_ids обязательны. Для arch_flow: arch обязателен. Для kpi: kpis обязателен (1–4 элемента с точными числами из FACTS). Для quote: title — точное предложение из FACTS, subtitle — источник. Для остальных типов эти поля = null или [].
 """
 
 
@@ -347,6 +349,28 @@ def validate_kpi_slide(s: dict, facts: dict, tag: str) -> list[str]:
     return errors
 
 
+def validate_quote_slide(s: dict, facts: dict, tag: str) -> list[str]:
+    """A quote slide shows one sentence copied verbatim from FACTS, so the wording is attributable to the project.
+
+    Same claim refusal as KPI cards: a quotation must not carry health/soak/audit/mainnet claims.
+    Length limit and attribution type mirror build_deck.validate_deck.
+    """
+    from build_deck import QUOTE_MAX_CHARS
+
+    quote_raw = str(s.get("title", "")).strip()
+    if not quote_raw or len(quote_raw) > QUOTE_MAX_CHARS:
+        return [f"{tag}: quote title must be 1..{QUOTE_MAX_CHARS} chars"]
+    if "subtitle" in s and not isinstance(s.get("subtitle"), str):
+        return [f"{tag}: quote subtitle (source) must be a string"]
+    if KPI_HEALTH_CLAIM_RE.search(quote_raw):
+        return [f"{tag}: quote is a health/soak/audit claim; keep such statements in bullets with source_ids"]
+    corpus = re.sub(r"\s+", " ", build_corpus(facts))
+    norm = re.sub(r"\s+", " ", quote_raw).lower()
+    if norm not in corpus:
+        return [f"{tag}: quote is not verbatim in FACTS; copy one sentence exactly"]
+    return []
+
+
 def validate_plan(plan: dict, facts: dict, lang: str = "ru") -> list[str]:
     errors: list[str] = []
     code_by_id = {c["id"]: c for c in facts["code"]}
@@ -428,6 +452,8 @@ def validate_plan(plan: dict, facts: dict, lang: str = "ru") -> list[str]:
                 errors.append(f"{tag}: timeline needs 2..6 bullets (steps), got {len(steps)}")
         if stype == "kpi":
             errors.extend(validate_kpi_slide(s, facts, tag))
+        if stype == "quote":
+            errors.extend(validate_quote_slide(s, facts, tag))
         if stype == "arch_flow":
             arch = s.get("arch") or {}
             nodes = arch.get("nodes") or []
