@@ -10,9 +10,16 @@ All notable changes to **DUP Presenter** are documented in this file. Dates and 
 - **Phase C — Director Presets, Thumbnail Studio & Duo Speaker Indicator:**
   - `scripts/director_presets.py` (`cinema_cosmos`, `fast_shorts`, `documentary`, `news_flash`, `tech_pitch`).
   - `scripts/thumbnail_studio.py` + Remotion `DupThumbnail` (`src/Thumbnail.tsx`, `1280×720`).
-  - Upgraded `duo` active-speaker badge (`HOST` / `EXPERT`) in `src/Composition.tsx`.
+  - Upgraded two-voice active-speaker badge (`HOST` / `EXPERT`) in `src/Composition.tsx`, shared by `karaoke`, `bold` and `box` caption styles (`DuoSpeakerChip`).
+- **Studio finalize (`c5c9f6c`):**
+  - `auto_fix_deck()` in `scripts/idea_engine.py`: deterministic safe fixes (9:16 `box` → `bold` captions, `fast_shorts` default preset, missing `outro_3d`), validated fail-closed. Exposed as `POST /api/critique/autofix`, the «Авто-исправить дек» button, and the MCP tool `auto_fix_deck`.
+  - Two-voice recommendation now uses the real `podcast` mode (was the non-existent `duo` mode in the advisor output).
+  - `scripts/build_deck.py` resolves `director_preset` from the CLI (`resolve_director_preset`, explicit keys win).
+  - `scripts/video_pack.py` applies `fast_shorts` to the 9:16 Short; console `POST /api/video-pack/build` + «Собрать Video Pack» button.
+  - `decks/studio-universal-demo.json` gained `s5` (`chart_story` line) and `s6` (`chart_story` donut); both visually verified as stills.
+- **Docs:** `docs/DECK_SCHEMA.md` documents the 4 universal slide types, `director_preset`, and `voice.mode` `podcast` (the `duo` value was never a real build mode).
 - **Phase D — Multi-Format Video Pack (`scripts/video_pack.py` + MCP `plan_video_pack` / `render_thumbnail`):** builds coordinated 16:9 + 9:16 Short + optional translation + 1280×720 cover + unified fail-closed `out/<slug>_pack_manifest.json`.
-- **Tests:** `tests/test_idea_engine.py`, `tests/test_universal_slides.py`, `tests/test_director_thumb_pack.py` (**153 total tests passing**).
+- **Tests:** `tests/test_idea_engine.py`, `tests/test_universal_slides.py`, `tests/test_director_thumb_pack.py` (**157 total tests passing**).
 
 ## [1.2.0] — 2026-11-25
 

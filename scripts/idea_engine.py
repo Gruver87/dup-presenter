@@ -880,7 +880,7 @@ def assess_topic_complexity(
         tools.extend(["stat_burst", "video_pack_short"])
     elif has_versus or genre == "versus_battle":
         preset = "cinema_cosmos" if has_deep_tech else "news_flash"
-        tools.extend(["versus_split", "stat_burst", "duo_voice"])
+        tools.extend(["versus_split", "stat_burst", "podcast_voice"])
     elif has_metrics or genre == "news_digest":
         preset = "news_flash"
         tools.extend(["chart_story", "kpi"])

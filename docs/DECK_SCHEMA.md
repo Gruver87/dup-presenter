@@ -18,7 +18,8 @@ Every presentation in DUP Presenter is defined by a declarative JSON deck valida
 | `sfx_enabled` | `boolean` | No | Procedural transition whoosh and UI pop SFX |
 | `sfx_volume` | `number` | No | SFX gain (`0.0–1.0`, e.g. `0.16`) |
 | `music` | `object` | No | `{ "enabled": true, "file": "track.mp3", "volume": 0.1, "duck_db": -10.5 }` |
-| `voice` | `object` | Yes | `{ "engine": "edge_tts" \| "kokoro_v1" \| "silero_v5_ru", "lang": "ru" \| "en", "speaker": "...", "rate": "96%", "mode": "single" \| "duo" }` |
+| `voice` | `object` | Yes | `{ "engine": "edge_tts" \| "kokoro_v1" \| "silero_v5_ru", "lang": "ru" \| "en", "speaker": "...", "speaker_b": "..." (podcast only), "rate": "96%", "mode": "single" \| "podcast" }`. `mode: "podcast"` = two-voice dialogue (`speaker` = A, `speaker_b` = B, optional per-slide `dialogue: [{ speaker: "A" \| "B", text }]`). Any other value falls back to single-voice narration. |
+| `director_preset` | `string` | No | One of `cinema_cosmos`, `fast_shorts`, `documentary`, `news_flash`, `tech_pitch` (see `scripts/director_presets.py`). Applied by `build_deck.py` before validation with `override_existing=False`: explicit deck keys always win. Unknown preset = fail-closed error. |
 | `slides` | `Slide[]` | Yes | Ordered array of slide objects |
 
 ## Supported Themes (`theme`)
@@ -46,6 +47,10 @@ Every slide requires `id`, `type`, `title`, and `voice_text` (or explicit timing
 | `tx_journey` | Animated transaction lifecycle: Merkle tree folding, `prev_hash` block chain, RocksDB seal | `journey: { tx_label, amount_label, signature_label, merkle_leaves[4], blocks[3..5], steps[3..6] }` |
 | `mesh_network` | 3–4 node P2P mesh topology with propagation pulses, probes, and recovery cards | `mesh: { protocol_label, chain_id, probe_label, nodes[3..4], recovery_steps[2..4] }` |
 | `protocol_cosmos` | Central holographic crypto reactor + 6 angled 3D stations + optical conduits + red fail-closed shield | `cosmos: { core_title, core_subtitle, core_badges[2..4], stations[6] (3 left + 3 right, unique ids) }` |
+| `versus_split` | A vs B 3D comparison columns with pulsing `VS` center and optional verdict | `versus: { left: { label, points[2..5] }, right: { label, points[2..5] }, verdict? }` |
+| `chart_story` | Animated `bar` / `line` / `donut` chart with spring-grown values | `chart: { kind: "bar" \| "line" \| "donut", series[2..8] of { label, value >= 0, display?, color? }, unit?, source_note? }` |
+| `stat_burst` | High-impact hook slide (giant floating headline + energy ring), for the first 3–5 seconds | `stat_burst: { headline (1..24 chars), kicker?, caption, chips? (<= 3) }` |
+| `broll_cinematic` | Full-bleed cinematic Ken Burns slide with vignette and thesis callouts | `broll: { image? (safe relative path, no ".."), badge?, caption?, callouts? (0..3) }` |
 
 ## Markdown Authoring (`scripts/md_deck.py`)
 

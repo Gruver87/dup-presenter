@@ -182,7 +182,7 @@ python scripts/console_server.py --port 8790 --no-auto-ollama
 python scripts/console_ui_check.py --url http://127.0.0.1:8790/
 ```
 
-Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **153 Python unit/gate тестов** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **157 Python unit/gate тестов** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Документация и экосистема DUP Labs
 
