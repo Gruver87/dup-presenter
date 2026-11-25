@@ -86,6 +86,21 @@ class ValidateScenarioTests(unittest.TestCase):
             validate_scenario(sc)
         self.assertIn("exceeds", str(ctx.exception))
 
+    def test_zoom_defaults_and_reset(self) -> None:
+        sc = validate_scenario({**_valid(), "steps": [{"action": "zoom", "selector": "#r"}]})
+        self.assertEqual(sc["steps"][0]["scale"], record_ui.ZOOM_SCALE_DEFAULT)
+        self.assertEqual(sc["steps"][0]["ms"], record_ui.ZOOM_MS_DEFAULT)
+        reset = validate_scenario({**_valid(), "steps": [{"action": "zoom"}]})
+        self.assertNotIn("scale", reset["steps"][0])
+        self.assertNotIn("selector", reset["steps"][0])
+
+    def test_zoom_rejects_bad_scale_and_duration(self) -> None:
+        for bad_scale in (0.5, 3.0, True, "1.5", None):
+            with self.subTest(scale=bad_scale), self.assertRaises(RecordUIError):
+                validate_scenario({**_valid(), "steps": [{"action": "zoom", "selector": "#r", "scale": bad_scale}]})
+        with self.assertRaises(RecordUIError):
+            validate_scenario({**_valid(), "steps": [{"action": "zoom", "ms": 50}]})
+
     def test_rejects_bad_viewport(self) -> None:
         with self.assertRaises(RecordUIError):
             validate_scenario({**_valid(), "viewport": {"width": 100, "height": 1080}})

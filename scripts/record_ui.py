@@ -41,7 +41,13 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUT_DIR = ROOT / "out" / "ui_recordings"
 
-ALLOWED_ACTIONS = frozenset({"goto", "click", "type", "scroll", "wait"})
+ALLOWED_ACTIONS = frozenset({"goto", "click", "type", "scroll", "wait", "zoom"})
+ZOOM_SCALE_MIN = 1.0
+ZOOM_SCALE_MAX = 2.5
+ZOOM_MS_MIN = 100
+ZOOM_MS_MAX = 3000
+ZOOM_SCALE_DEFAULT = 1.4
+ZOOM_MS_DEFAULT = 800
 NAME_RE = re.compile(r"[a-z0-9][a-z0-9_-]{0,60}")
 MAX_STEPS = 100
 MAX_TOTAL_MS = 600_000
@@ -132,6 +138,18 @@ def validate_scenario(scenario: Any) -> dict:
         elif action == "wait":
             step["ms"] = _require_int(raw.get("ms"), f"{where}.ms", 0, MAX_WAIT_MS)
             total_ms += step["ms"]
+        elif action == "zoom":
+            # Without selector the zoom resets to 1.0. With selector it centres that element at the given scale.
+            if raw.get("selector") is not None:
+                step["selector"] = _require_str(raw.get("selector"), f"{where}.selector", MAX_SELECTOR_LEN)
+                scale = raw.get("scale", ZOOM_SCALE_DEFAULT)
+                if isinstance(scale, bool) or not isinstance(scale, (int, float)):
+                    raise RecordUIError(f"{where}.scale must be a number, got {scale!r}")
+                if not ZOOM_SCALE_MIN <= float(scale) <= ZOOM_SCALE_MAX:
+                    raise RecordUIError(f"{where}.scale must be in [{ZOOM_SCALE_MIN}, {ZOOM_SCALE_MAX}], got {scale}")
+                step["scale"] = round(float(scale), 3)
+            step["ms"] = _require_int(raw.get("ms", ZOOM_MS_DEFAULT), f"{where}.ms", ZOOM_MS_MIN, ZOOM_MS_MAX)
+            total_ms += step["ms"] + 300
         steps.append(step)
 
     if total_ms > MAX_TOTAL_MS:
@@ -188,6 +206,43 @@ _CURSOR_INIT_JS = r"""
     r.animate([{ transform: 'scale(0.3)', opacity: 0.9 }, { transform: 'scale(2.2)', opacity: 0 }], { duration: 450 })
       .onfinish = () => r.remove();
   };
+  // Auto-zoom: scales <body> around a transform origin at 0 0 and centres the target element in the viewport.
+  // State is kept so consecutive zooms animate from the current transform instead of jumping.
+  window.__dupZoomState = window.__dupZoomState || { tx: 0, ty: 0, s: 1 };
+  window.__dupZoom = (cx, cy, s, ms) => {
+    const b = document.body;
+    if (!b) return;
+    const st = window.__dupZoomState;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let tx = 0, ty = 0, scale = 1;
+    if (cx !== null && cy !== null) {
+      // Untransformed body box: the transformed corner sits at B + t, so B = rect - t.
+      const r = b.getBoundingClientRect();
+      const Bx = r.left - st.tx, By = r.top - st.ty;
+      const W = r.width / st.s, H = r.height / st.s;
+      // Untransformed point currently under (cx, cy): screen = B + t + s * (P - B).
+      const px = Bx + (cx - Bx - st.tx) / st.s;
+      const py = By + (cy - By - st.ty) / st.s;
+      scale = s;
+      tx = vw / 2 - Bx - scale * (px - Bx);
+      ty = vh / 2 - By - scale * (py - By);
+      // Keep the scaled body covering the viewport when the body is larger than the viewport.
+      const clamp = (t, B, size, view) => {
+        const lo = view - B - scale * size;
+        const hi = -B;
+        return lo <= hi ? Math.min(hi, Math.max(lo, t)) : t;
+      };
+      tx = clamp(tx, Bx, W, vw);
+      ty = clamp(ty, By, H, vh);
+    }
+    st.tx = tx;
+    st.ty = ty;
+    st.s = scale;
+    b.style.transformOrigin = '0 0';
+    b.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.4, 0, 0.2, 1)';
+    b.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')';
+  };
 })();
 """
 
@@ -236,13 +291,25 @@ def _run_steps(page, steps: list[dict], t0: float) -> list[dict]:
                 page.wait_for_timeout(900)
             elif action == "wait":
                 page.wait_for_timeout(step["ms"])
+            elif action == "zoom":
+                if step.get("selector"):
+                    box = page.locator(step["selector"]).first.bounding_box(timeout=STEP_TIMEOUT_MS)
+                    if not box:
+                        raise RecordUIError(f"zoom target has no bounding box: {step['selector']!r}")
+                    cx = box["x"] + box["width"] / 2.0
+                    cy = box["y"] + box["height"] / 2.0
+                    scale = step["scale"]
+                else:
+                    cx, cy, scale = None, None, 1.0
+                page.evaluate("([cx, cy, s, ms]) => window.__dupZoom(cx, cy, s, ms)", [cx, cy, scale, step["ms"]])
+                page.wait_for_timeout(step["ms"] + 150)
         except RecordUIError:
             raise
         except Exception as exc:
             raise RecordUIError(f"step {index} ({action}) failed: {type(exc).__name__}: {exc}") from exc
         end = time.monotonic() - t0
         entry = {"index": index, "action": action, "start_sec": round(start, 3), "end_sec": round(end, 3)}
-        for key in ("selector", "url", "text", "dy", "ms"):
+        for key in ("selector", "url", "text", "dy", "ms", "scale"):
             if key in step:
                 entry[key] = step[key]
         timeline.append(entry)

@@ -6,7 +6,10 @@
     { "action": "wait", "ms": 800 },
     { "action": "type", "selector": "#query", "text": "BTCUSDT", "cursor_ms": 700 },
     { "action": "click", "selector": "#go", "cursor_ms": 600 },
+    { "action": "wait", "ms": 600 },
+    { "action": "zoom", "selector": "#result", "scale": 1.5, "ms": 800 },
     { "action": "wait", "ms": 1200 },
+    { "action": "zoom", "ms": 800 },
     { "action": "scroll", "dy": 700 },
     { "action": "wait", "ms": 1000 }
   ]
