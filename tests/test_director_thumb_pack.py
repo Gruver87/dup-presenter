@@ -15,7 +15,7 @@ from build_deck import resolve_director_preset, validate_deck  # noqa: E402
 from director_presets import DIRECTOR_PRESETS, DirectorPresetError, apply_director_preset  # noqa: E402
 from idea_engine import generate_ideas, idea_to_deck  # noqa: E402
 from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumbnail  # noqa: E402
-from video_pack import VideoPackError, plan_video_pack  # noqa: E402
+from video_pack import VideoPackError, pack_cli_args, plan_video_pack  # noqa: E402
 
 
 class DirectorThumbPackTests(unittest.TestCase):
@@ -87,6 +87,27 @@ class DirectorThumbPackTests(unittest.TestCase):
 
             with self.assertRaises(VideoPackError):
                 plan_video_pack(dp, translate_to="en")
+
+
+class PackCliArgsTests(unittest.TestCase):
+    """Console video-pack build must never replace existing MP4s without explicit opt-in."""
+
+    def test_default_has_no_overwrite_flag(self) -> None:
+        args = pack_cli_args("decks/x.json")
+        self.assertEqual(args, ["decks/x.json"])
+        self.assertNotIn("--overwrite", args)
+
+    def test_overwrite_only_on_explicit_opt_in(self) -> None:
+        self.assertIn("--overwrite", pack_cli_args("decks/x.json", overwrite=True))
+
+    def test_flags_map_to_video_pack_cli(self) -> None:
+        args = pack_cli_args("decks/x.json", include_short=False, include_thumbnail=False, translate_to="ru")
+        self.assertIn("--no-short", args)
+        self.assertIn("--no-thumbnail", args)
+        self.assertEqual(args[args.index("--translate-to") + 1], "ru")
+
+    def test_unknown_translate_target_is_ignored(self) -> None:
+        self.assertNotIn("--translate-to", pack_cli_args("decks/x.json", translate_to="fr"))
 
 
 if __name__ == "__main__":

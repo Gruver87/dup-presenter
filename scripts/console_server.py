@@ -60,7 +60,7 @@ from md_deck import MarkdownDeckError, MarkdownDeckExists, MarkdownImportError, 
 from plan_deck import voice_ssml  # noqa: E402
 from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumbnail  # noqa: E402
 from tiktok_uploader import refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
-from video_pack import VideoPackError, plan_video_pack  # noqa: E402
+from video_pack import VideoPackError, pack_cli_args, plan_video_pack  # noqa: E402
 
 from theme_catalog import THEME_CATALOG  # noqa: E402
 from tts_engines import KOKORO_DEFAULT, KOKORO_VOICE_CATALOG  # noqa: E402
@@ -824,17 +824,18 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             if not deck_path.is_file():
                 self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
                 return
-            cmd = [sys.executable, str(SCRIPTS / "video_pack.py"), str(deck_path)]
             # Never replace existing MP4s implicitly: overwrite only on explicit opt-in.
-            if body.get("overwrite") is True:
-                cmd.append("--overwrite")
-            if not body.get("include_short", True):
-                cmd.append("--no-short")
-            if not body.get("include_thumbnail", True):
-                cmd.append("--no-thumbnail")
-            tr_to = str(body.get("translate_to") or "").strip()
-            if tr_to in {"ru", "en"}:
-                cmd.extend(["--translate-to", tr_to])
+            cmd = [
+                sys.executable,
+                str(SCRIPTS / "video_pack.py"),
+                *pack_cli_args(
+                    deck_path,
+                    include_short=bool(body.get("include_short", True)),
+                    include_thumbnail=bool(body.get("include_thumbnail", True)),
+                    translate_to=str(body.get("translate_to") or "").strip(),
+                    overwrite=body.get("overwrite") is True,
+                ),
+            ]
             if not JOBS.start(f"video_pack:{slug}", [cmd]):
                 self._json(409, {"ok": False, "error": "Уже идёт сборка. Дождись окончания в «Логах»."})
                 return

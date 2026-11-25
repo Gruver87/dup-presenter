@@ -31,6 +31,30 @@ class VideoPackError(RuntimeError):
     """Fail-closed error raised when pack planning or execution fails."""
 
 
+def pack_cli_args(
+    deck_path: Path | str,
+    *,
+    include_short: bool = True,
+    include_thumbnail: bool = True,
+    translate_to: str = "",
+    overwrite: bool = False,
+) -> list[str]:
+    """Return argv (after the script path) for a `video_pack.py` run.
+
+    Overwrite is opt-in only: an existing MP4 is never replaced unless `overwrite=True`.
+    """
+    args = [str(deck_path)]
+    if overwrite:
+        args.append("--overwrite")
+    if not include_short:
+        args.append("--no-short")
+    if not include_thumbnail:
+        args.append("--no-thumbnail")
+    if translate_to in {"ru", "en"}:
+        args.extend(["--translate-to", translate_to])
+    return args
+
+
 def plan_video_pack(
     deck_path: Path,
     *,

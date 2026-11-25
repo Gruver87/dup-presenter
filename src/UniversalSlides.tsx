@@ -152,7 +152,17 @@ export const VersusSplitSlide: React.FC<UniversalSlideProps> = ({ slide, dur, th
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: isPortrait ? 18 : 11,
+          marginTop: 4,
+          // Portrait: distribute points across the full card height instead of stacking at the top.
+          flex: isPortrait ? 1 : undefined,
+          justifyContent: isPortrait ? "center" : undefined,
+        }}
+      >
         {side.points.map((pt, idx) => {
           const itemIn = spring({
             frame: Math.max(0, frame - 16 - idx * 8),
@@ -166,7 +176,7 @@ export const VersusSplitSlide: React.FC<UniversalSlideProps> = ({ slide, dur, th
                 display: "flex",
                 alignItems: "flex-start",
                 gap: 12,
-                padding: "11px 14px",
+                padding: isPortrait ? "20px 20px" : "11px 14px",
                 borderRadius: 14,
                 background: "rgba(3,9,24,0.58)",
                 borderLeft: `3.5px solid ${color}`,
@@ -185,7 +195,7 @@ export const VersusSplitSlide: React.FC<UniversalSlideProps> = ({ slide, dur, th
               >
                 0{idx + 1}
               </span>
-              <span style={{ fontSize: isPortrait ? 19 : 21, color: theme.text, lineHeight: 1.32, fontWeight: 600 }}>
+              <span style={{ fontSize: isPortrait ? 25 : 21, color: theme.text, lineHeight: 1.32, fontWeight: 600 }}>
                 {pt}
               </span>
             </div>
