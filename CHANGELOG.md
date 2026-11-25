@@ -2,7 +2,11 @@
 
 All notable changes to **DUP Presenter** are documented in this file. Dates and versions match actual commits and verified runs on disk.
 
-## [Unreleased / 1.3.0-dev] — 2026-11-25
+## [1.3.0] — 2026-11-26
+
+### Fixed
+- **Console video-pack build no longer overwrites MP4s implicitly** (`scripts/console_server.py`): `POST /api/video-pack/build` passes `--overwrite` only on explicit `overwrite: true`; otherwise an existing MP4 fails closed.
+- **Docs & counts synced:** `docs/DECK_SCHEMA.md` documents the 4 universal slide types, `director_preset`, and voice `mode: "podcast"` (the `duo` value was never a real build mode); test count corrected to 157.
 
 ### Added (Universal Studio Roadmap A–D)
 - **Phase A — Built-in Idea Engine (`scripts/idea_engine.py`, `console_server.py`, `console_ui.html`, `mcp_server.py`):** 7 video genres (`tech_explainer`, `versus_battle`, `short_60s`, `news_digest`, `investor_pitch`, `case_study`, `tutorial`), honest offline template mode vs fail-closed Ollama/Cloud LLM mode, and 1-click conversion into validated `decks/<slug>.json`.

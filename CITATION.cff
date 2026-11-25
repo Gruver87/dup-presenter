@@ -33,9 +33,12 @@ keywords:
   - fail-closed
   - dup-labs
 license: MIT
-version: "1.2.0"
-date-released: "2026-11-25"
+version: "1.3.0"
+date-released: "2026-11-26"
 identifiers:
+  - type: url
+    value: "https://github.com/Gruver87/dup-presenter/releases/tag/v1.3.0"
+    description: "Release v1.3.0 — Universal Studio (Idea Engine, 4 universal slide types, director presets, thumbnail studio, video pack, auto-fix critique), 18 slide types, 157 unit tests"
   - type: url
     value: "https://github.com/Gruver87/dup-presenter/releases/tag/v1.2.0"
     description: "Release v1.2.0 — quantum_ledger cosmic theme, protocol_cosmos reactor slide, RU+EN cosmos decks, 14 slide types, 12 themes, 137 unit tests"
@@ -50,4 +53,4 @@ preferred-citation:
   title: "DUP Presenter"
   year: 2026
   url: "https://github.com/Gruver87/dup-presenter"
-  version: "1.2.0"
+  version: "1.3.0"
