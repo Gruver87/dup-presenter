@@ -1,0 +1,13 @@
+{
+  "name": "example-local-demo",
+  "url": "file:///{SCENARIO_DIR}/example_page.html",
+  "viewport": { "width": 1920, "height": 1080 },
+  "steps": [
+    { "action": "wait", "ms": 800 },
+    { "action": "type", "selector": "#query", "text": "BTCUSDT", "cursor_ms": 700 },
+    { "action": "click", "selector": "#go", "cursor_ms": 600 },
+    { "action": "wait", "ms": 1200 },
+    { "action": "scroll", "dy": 700 },
+    { "action": "wait", "ms": 1000 }
+  ]
+}

@@ -24,11 +24,23 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
+      - name: Provide typecheck fixture for generated deck
+        # src/generated/deck_resolved.json is gitignored (produced per build). Typecheck only;
+        # the fixture is never rendered. Without it tsc fails on a clean checkout.
+        run: |
+          mkdir -p src/generated
+          cp tests/fixtures/deck_resolved.typecheck.json src/generated/deck_resolved.json
+
       - name: TypeScript check
         run: npx tsc --noEmit
 
       - name: Install Python test deps
-        run: pip install numpy scipy httpx
+        run: pip install numpy scipy httpx playwright
+
+      - name: Install Playwright Chromium and ffmpeg (live UI recorder test)
+        run: |
+          python -m playwright install --with-deps chromium
+          python -m playwright install ffmpeg
 
       - name: Python syntax check
         run: python -m py_compile scripts/*.py

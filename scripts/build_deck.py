@@ -22,7 +22,6 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 import numpy as np
-import torch
 
 ROOT = Path(__file__).resolve().parent.parent
 SILERO_MODELS = {
@@ -408,6 +407,10 @@ class VoiceSynth:
 
     def _silero_model(self, lang: str):
         if lang not in self._silero:
+            # torch is imported lazily: only the offline Silero fallback needs it, and importing it at
+            # module level made every deck/MCP/gate test (and CI without torch) fail at import time.
+            import torch
+
             model = torch.package.PackageImporter(str(ensure_silero(lang))).load_pickle("tts_models", "model")
             model.to(torch.device("cpu"))
             self._silero[lang] = model

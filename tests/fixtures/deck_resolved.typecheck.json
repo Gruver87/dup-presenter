@@ -1,0 +1,11 @@
+{
+  "_comment": "TYPECHECK-ONLY fixture. CI copies this to src/generated/deck_resolved.json so `tsc --noEmit` can resolve the import. It is never rendered; real decks are produced by scripts/build_deck.py and are gitignored.",
+  "slug": "typecheck-fixture",
+  "lang": "en",
+  "theme": "cosmic_radar",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "transition_style": "fade",
+  "slides": []
+}
