@@ -40,7 +40,11 @@ FACTS_BUDGET_CHARS = 18_000
 CODE_MAX_SPAN = 14
 CODE_LINE_CAP = 110
 PALETTE = ["#00f5d4", "#38bdf8", "#c084fc", "#f472b6"]
-SLIDE_TYPES = {"hero_3d", "code_split", "screen_split", "arch_flow", "timeline", "terminal", "kpi", "quote", "outro_3d"}
+SLIDE_TYPES = {"hero_3d", "code_split", "screen_split", "arch_flow", "timeline", "terminal", "kpi", "quote", "ui_recording", "outro_3d"}
+UI_RECORDINGS_DIR = ROOT / "public" / "ui_recordings"
+# Same shape as build_deck.UI_RECORDING_SRC_RE (tests assert the two stay identical).
+UI_RECORDING_SRC_RE = re.compile(r"ui_recordings/[a-z0-9][a-z0-9_-]{0,60}\.mp4")
+UI_RECORDING_CAPTION_MAX = 120
 CODE_TYPES = {"code_split", "terminal"}
 from theme_catalog import THEME_IDS as THEMES  # noqa: E402
 ASPECTS = {"16:9": (1920, 1080), "9:16": (1080, 1920)}
@@ -66,6 +70,7 @@ Hard rules:
 11. background_query (optional): 2-4 English words describing a free stock video for the slide, e.g. "server room" or "code on screen". Latin letters and spaces only; empty string if no fit.
 12. kpi slide: kpis = 1-4 items {"value": "...", "label": "...", "quote": "..."}. value is a measurable identifier, count, size, version, or duration. quote is one EXACT sentence copied from FACTS that contains the value; the value must refer to the same thing as the label. Never round, compute, or invent. KPI labels must NOT claim health, soak, audit, pass/fail, mainnet, production, stable or proven; put such claims in bullets with source_ids. If FACTS has no fitting numbers, do not use kpi.
 13. quote slide: title is ONE EXACT sentence copied verbatim from FACTS (at most 220 characters), shown as a quotation; subtitle is the source name (for example README or a file path from FACTS). Never paraphrase or invent a quote. The same claim rules as KPI apply: no health, soak, audit, pass/fail, mainnet, production, stable or proven statements in a quote. If no suitable sentence exists, do not use quote.
+14. ui_recording slide: use it ONLY when section AVAILABLE UI RECORDINGS lists at least one file. recording.src must be copied exactly from that list. Describe the recording only through its file name; do not claim anything else about what is on screen. If the list is empty, do not use ui_recording.
 
 JSON schema:
 {
@@ -73,7 +78,7 @@ JSON schema:
   "brand": "BRAND IN CAPS up to 3 words",
   "slides": [
     {
-      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | quote | outro_3d",
+      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | quote | ui_recording | outro_3d",
       "tag": "TAG IN CAPS up to 3 words",
       "title": "...",
       "subtitle": "...",
@@ -82,6 +87,7 @@ JSON schema:
       "screen_ids": [],
       "arch": null,
       "kpis": [{"value": "...", "label": "...", "quote": "exact sentence from FACTS"}],
+      "recording": null,
       "voice_text": "...",
       "background_query": "2-4 english words or empty",
       "source_ids": ["D1"]
@@ -107,6 +113,7 @@ SYSTEM_PROMPT = """Ты редактор коротких обзорных пр�
 11. background_query (необязательно): 2–4 английских слова для бесплатного стокового видео к слайду, например "server room" или "code on screen". Только латиница и пробелы; пустая строка, если подходящего нет.
 12. kpi-слайд: kpis = 1–4 элемента {"value": "...", "label": "...", "quote": "..."}. value — измеряемый идентификатор, количество, размер, версия или длительность. quote — ОДНО точное предложение из FACTS, содержащее value; value должно относиться именно к тому, что написано в label. Не округляй, не вычисляй, не выдумывай. В label kpi НЕ пиши заявления о здоровье, soak, аудите, pass/fail, mainnet, production, stable, proven — такие утверждения выноси в bullets с source_ids. Если подходящих чисел в FACTS нет — kpi не используй.
 13. quote-слайд: title — ОДНО точное предложение из FACTS, дословно (не длиннее 220 символов), показывается как цитата; subtitle — название источника (например README или путь к файлу из FACTS). Не перефразируй и не выдумывай цитату. Для quote действуют те же запреты, что и для kpi: никаких заявлений о здоровье, soak, аудите, pass/fail, mainnet, production, stable, proven. Если подходящего предложения нет — quote не используй.
+14. ui_recording-слайд: используй ТОЛЬКО если в разделе AVAILABLE UI RECORDINGS есть хотя бы один файл. recording.src копируй дословно из этого списка. Описывай запись только через её имя файла; не утверждай ничего больше о том, что показано на экране. Если список пуст — ui_recording не используй.
 
 Схема JSON:
 {
@@ -114,7 +121,7 @@ SYSTEM_PROMPT = """Ты редактор коротких обзорных пр�
   "brand": "БРЕНД КАПСОМ до 3 слов",
   "slides": [
     {
-      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | quote | outro_3d",
+      "type": "hero_3d | code_split | screen_split | arch_flow | timeline | terminal | kpi | quote | ui_recording | outro_3d",
       "tag": "МЕТКА КАПСОМ до 3 слов",
       "title": "...",
       "subtitle": "...",
@@ -123,13 +130,14 @@ SYSTEM_PROMPT = """Ты редактор коротких обзорных пр�
       "screen_ids": [],
       "arch": null,
       "kpis": [{"value": "...", "label": "...", "quote": "exact sentence from FACTS"}],
+      "recording": null,
       "voice_text": "...",
       "background_query": "2-4 english words or empty",
       "source_ids": ["D1"]
     }
   ]
 }
-Для code_split: code_ref обязателен. Для screen_split: screen_ids обязательны. Для arch_flow: arch обязателен. Для kpi: kpis обязателен (1–4 элемента с точными числами из FACTS). Для quote: title — точное предложение из FACTS, subtitle — источник. Для остальных типов эти поля = null или [].
+Для code_split: code_ref обязателен. Для screen_split: screen_ids обязательны. Для arch_flow: arch обязателен. Для kpi: kpis обязателен (1–4 элемента с точными числами из FACTS). Для quote: title — точное предложение из FACTS, subtitle — источник. Для ui_recording: recording обязателен, src — из раздела AVAILABLE UI RECORDINGS. Для остальных типов эти поля = null или [].
 """
 
 
@@ -379,7 +387,40 @@ def validate_quote_slide(s: dict, facts: dict, tag: str) -> list[str]:
     return []
 
 
-def validate_plan(plan: dict, facts: dict, lang: str = "ru") -> list[str]:
+def list_ui_recordings(directory: Path = UI_RECORDINGS_DIR) -> list[str]:
+    """Recordings the planner may reference: `ui_recordings/<slug>.mp4` files under public/, sorted.
+
+    Only files whose names match the same shape build_deck accepts are listed, so the planner can never
+    point a slide at a path the deck validator would refuse.
+    """
+    if not directory.is_dir():
+        return []
+    found = [f"ui_recordings/{p.name}" for p in directory.glob("*.mp4") if p.is_file()]
+    return sorted(src for src in found if UI_RECORDING_SRC_RE.fullmatch(src))
+
+
+def validate_ui_recording_slide(s: dict, recordings: set[str], tag: str) -> list[str]:
+    """A ui_recording slide must reference an existing recording (fail-closed: the planner cannot invent a file)."""
+    rec = s.get("recording")
+    if not isinstance(rec, dict):
+        return [f"{tag}: ui_recording needs recording={{\"src\": \"ui_recordings/<name>.mp4\"}}"]
+    if not recordings:
+        return [f"{tag}: no UI recordings exist in public/ui_recordings; do not use ui_recording on this slide"]
+    src = rec.get("src")
+    if not isinstance(src, str) or src not in recordings:
+        return [
+            f"{tag}: recording.src {src!r} is not an available recording; "
+            f"pick one of: {', '.join(sorted(recordings))}"
+        ]
+    caption = rec.get("caption", "")
+    if not isinstance(caption, str) or len(caption) > UI_RECORDING_CAPTION_MAX:
+        return [f"{tag}: recording.caption must be a string of at most {UI_RECORDING_CAPTION_MAX} characters"]
+    return []
+
+
+def validate_plan(plan: dict, facts: dict, lang: str = "ru", recordings: set[str] | None = None) -> list[str]:
+    if recordings is None:
+        recordings = set(list_ui_recordings())
     errors: list[str] = []
     code_by_id = {c["id"]: c for c in facts["code"]}
     symbols = symbol_index(facts)
@@ -462,6 +503,8 @@ def validate_plan(plan: dict, facts: dict, lang: str = "ru") -> list[str]:
             errors.extend(validate_kpi_slide(s, facts, tag))
         if stype == "quote":
             errors.extend(validate_quote_slide(s, facts, tag))
+        if stype == "ui_recording":
+            errors.extend(validate_ui_recording_slide(s, recordings, tag))
         if stype == "arch_flow":
             arch = s.get("arch") or {}
             nodes = arch.get("nodes") or []
@@ -517,7 +560,8 @@ def ask_plan(facts: dict, model: str, host: str, feedback: str | None, previous:
              slides_n: int | None, raw_dir: Path, provider: str = "ollama", lang: str = "ru") -> dict:
     raw_dir.mkdir(parents=True, exist_ok=True)
     facts_text = render_facts(facts)
-    user_parts = [facts_text]
+    recordings = list_ui_recordings()
+    user_parts = [facts_text, "=== AVAILABLE UI RECORDINGS ===\n" + ("\n".join(recordings) if recordings else "(none)")]
     if slides_n:
         user_parts.append(f"Нужно ровно {slides_n} слайдов." if lang == "ru" else f"Produce exactly {slides_n} slides.")
     if feedback and previous:
@@ -554,7 +598,7 @@ def ask_plan(facts: dict, model: str, host: str, feedback: str | None, previous:
             last_errors = [f"invalid JSON: {exc}"]
             print(f"[plan] attempt {attempt}: invalid JSON, retrying")
             continue
-        last_errors = validate_plan(plan, facts, lang=lang)
+        last_errors = validate_plan(plan, facts, lang=lang, recordings=set(recordings))
         if not last_errors:
             print(f"[plan] attempt {attempt}: valid plan with {len(plan['slides'])} slides")
             return plan
@@ -680,6 +724,12 @@ def assemble_deck(
                 {"value": str(k["value"]).strip(), "label": str(k["label"]).strip()}
                 for k in (s.get("kpis") or [])[:4]
             ]
+        if s["type"] == "ui_recording":
+            rec = s["recording"]
+            item["recording"] = {
+                "src": rec["src"],
+                "caption": str(rec.get("caption", ""))[:UI_RECORDING_CAPTION_MAX],
+            }
         item["voice_text"] = s["voice_text"]
         if s.get("background_query"):
             item["background_query"] = str(s["background_query"]).strip()
