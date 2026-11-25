@@ -824,7 +824,10 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             if not deck_path.is_file():
                 self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
                 return
-            cmd = [sys.executable, str(SCRIPTS / "video_pack.py"), str(deck_path), "--overwrite"]
+            cmd = [sys.executable, str(SCRIPTS / "video_pack.py"), str(deck_path)]
+            # Never replace existing MP4s implicitly: overwrite only on explicit opt-in.
+            if body.get("overwrite") is True:
+                cmd.append("--overwrite")
             if not body.get("include_short", True):
                 cmd.append("--no-short")
             if not body.get("include_thumbnail", True):

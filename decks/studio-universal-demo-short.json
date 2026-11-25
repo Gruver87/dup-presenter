@@ -1,0 +1,172 @@
+{
+  "slug": "studio-universal-demo-short",
+  "lang": "en",
+  "theme": "cyber_magenta",
+  "director_preset": "fast_shorts",
+  "aspect": "9:16",
+  "burn_captions": true,
+  "caption_style": "bold",
+  "transition_style": "slide",
+  "transition_frames": 10,
+  "sfx_enabled": true,
+  "sfx_volume": 0.22,
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -9.5
+  },
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "voice": {
+    "engine": "kokoro_v1",
+    "lang": "en",
+    "speaker": "am_michael",
+    "rate": "104%",
+    "ambient_volume": 0.08,
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "short_1",
+      "tag": "HOOK",
+      "type": "stat_burst",
+      "title": "Zero Float Drift",
+      "voice_text": "One rule separates toy ledgers from industrial systems: zero floating-point drift in money.",
+      "stat_burst": {
+        "kicker": "UNIVERSAL STUDIO · HOOK",
+        "headline": "0 FLOAT",
+        "caption": "Every monetary balance is stored strictly as 64-bit integer satoshis.",
+        "chips": [
+          {
+            "label": "int64 Satoshis",
+            "color": "#10ff88"
+          },
+          {
+            "label": "Fail-Closed",
+            "color": "#ff2e63"
+          },
+          {
+            "label": "Rust + Python",
+            "color": "#ffb800"
+          }
+        ]
+      }
+    },
+    {
+      "id": "short_2",
+      "tag": "VERSUS",
+      "type": "versus_split",
+      "title": "Silent Fallback vs Fail-Closed",
+      "subtitle": "How architectural discipline changes reliability under stress",
+      "voice_text": "Compare legacy silent fallbacks against fail-closed engineering side by side.",
+      "versus": {
+        "left": {
+          "label": "Silent Fallback",
+          "badge": "LEGACY RISK",
+          "accent": "#ff2e63",
+          "points": [
+            "Paints green even when probes fail",
+            "Floating-point rounding drift in money",
+            "Unverified claims mixed with real runs"
+          ]
+        },
+        "right": {
+          "label": "Fail-Closed L1",
+          "badge": "DUP STANDARD",
+          "accent": "#10ff88",
+          "points": [
+            "Withdraws readiness immediately on mismatch",
+            "Exact 64-bit integer satoshis everywhere",
+            "Every PASS anchored to sealed packs on disk"
+          ]
+        },
+        "verdict": "Choose systems that fail loudly in testing instead of silently drifting in production."
+      }
+    },
+    {
+      "id": "short_3",
+      "tag": "BENCHMARK",
+      "type": "chart_story",
+      "title": "DUP Presenter Engine Growth",
+      "subtitle": "Slide templates, themes, and automated tests verified on disk",
+      "voice_text": "Look at how DUP Presenter evolved from core templates into a full 3D universal video studio.",
+      "chart": {
+        "kind": "bar",
+        "unit": "items",
+        "source_note": "Verified counts in Gruver87/dup-presenter",
+        "series": [
+          {
+            "label": "Themes",
+            "value": 12,
+            "color": "#00f0ff"
+          },
+          {
+            "label": "Slide Types",
+            "value": 18,
+            "color": "#10ff88"
+          },
+          {
+            "label": "Genres",
+            "value": 7,
+            "color": "#ffb800"
+          },
+          {
+            "label": "Presets",
+            "value": 5,
+            "color": "#a855f7"
+          }
+        ]
+      }
+    },
+    {
+      "id": "short_4",
+      "tag": "MIX",
+      "type": "chart_story",
+      "title": "18 Slide Templates by Category",
+      "subtitle": "Balanced toolkit for explainers, comparisons, metrics, and live UI",
+      "voice_text": "Eighteen slide templates span core layouts, visual storytelling, universal charts, and live UI demos.",
+      "chart": {
+        "kind": "donut",
+        "unit": "TYPES",
+        "source_note": "Gruver87/dup-presenter ALLOWED_TYPES",
+        "series": [
+          {
+            "label": "Core Layouts",
+            "value": 8,
+            "color": "#00f0ff"
+          },
+          {
+            "label": "Story / L1",
+            "value": 4,
+            "color": "#a855f7"
+          },
+          {
+            "label": "Universal",
+            "value": 4,
+            "color": "#10ff88"
+          },
+          {
+            "label": "Live UI / Quote",
+            "value": 2,
+            "color": "#ffb800"
+          }
+        ]
+      }
+    }
+  ],
+  "transition": {
+    "style": "slide",
+    "frames": 10
+  },
+  "sfx": {
+    "enabled": true,
+    "volume": 0.22
+  }
+}
