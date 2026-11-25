@@ -88,7 +88,8 @@ def deck_lang(deck: dict) -> str:
     return voice.get("lang") or deck.get("lang") or speaker_lang(voice.get("speaker", ""))
 
 
-def validate_deck(deck: dict) -> None:
+def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
+    """Fail-closed schema validation. check_assets=False skips local screenshot files (schema-only, e.g. CI)."""
     if not isinstance(deck.get("slug"), str) or not deck["slug"].strip():
         raise DeckValidationError("deck.slug must be a non-empty string")
     slides = deck.get("slides")
@@ -180,7 +181,7 @@ def validate_deck(deck: dict) -> None:
             for sc in screens:
                 rel = sc.get("src", "")
                 full = PUBLIC_DIR / rel
-                if not full.is_file():
+                if check_assets and not full.is_file():
                     raise DeckValidationError(f"Slide {sid}: missing screen file {full}")
         if stype == "arch_flow":
             arch = slide.get("arch") or {}

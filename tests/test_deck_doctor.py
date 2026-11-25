@@ -19,7 +19,10 @@ EN_DECK = ROOT / "decks" / "radar-cosmic-v4-en.json"
 
 
 def _base_en_deck() -> dict:
-    return json.loads(EN_DECK.read_text(encoding="utf-8"))
+    """EN deck with music disabled: its track is gitignored (copyright), so CI has no copy."""
+    deck = json.loads(EN_DECK.read_text(encoding="utf-8"))
+    deck["music"] = {**(deck.get("music") or {}), "enabled": False}
+    return deck
 
 
 class DeckDoctorTests(unittest.TestCase):
@@ -81,8 +84,18 @@ class DeckDoctorTests(unittest.TestCase):
         with self.assertRaises(deck_doctor.DeckDoctorError):
             deck_doctor.diagnose_deck([])  # type: ignore[arg-type]
 
+    def test_missing_music_file_is_error(self) -> None:
+        deck = _base_en_deck()
+        deck["music"] = {"enabled": True, "file": "__no_such_track__.mp3", "volume": 0.1}
+        report = deck_doctor.diagnose_deck(deck)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("music file not found" in e for e in report["errors"]), report["errors"])
+
     def test_load_and_diagnose_accepts_str_and_reports_missing_file(self) -> None:
-        ok = deck_doctor.load_and_diagnose(str(EN_DECK))
+        with tempfile.TemporaryDirectory() as tmp:
+            deck_file = Path(tmp) / "deck.json"
+            deck_file.write_text(json.dumps(_base_en_deck(), ensure_ascii=False), encoding="utf-8")
+            ok = deck_doctor.load_and_diagnose(str(deck_file))
         self.assertTrue(ok["ok"], ok["errors"])
 
         missing = deck_doctor.load_and_diagnose(str(ROOT / "decks" / "__missing__.json"))

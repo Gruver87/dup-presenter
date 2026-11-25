@@ -28,7 +28,9 @@ class PresenterGatesTests(unittest.TestCase):
         self.assertGreater(len(decks), 0)
         for dp in decks:
             data = json.loads(dp.read_text(encoding="utf-8"))
-            build_deck.validate_deck(data)
+            # Schema only: some decks reference local-only screenshots (gitignored, not in CI).
+            # Asset presence is enforced at render time by deck_doctor / validate_deck(check_assets=True).
+            build_deck.validate_deck(data, check_assets=False)
 
     def test_validation_rejects_bad_transition_and_duck(self) -> None:
         base = json.loads((ROOT / "decks" / "radar-pro.json").read_text(encoding="utf-8"))
