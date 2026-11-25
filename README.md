@@ -4,6 +4,12 @@
 
 Создаёт воспроизводимые продуктовые 3D-презентации (16:9 и 9:16) с живым кодом, скриншотами, 3D-архитектурой, KPI-метриками и честной проверкой фактов по исходникам репозитория — **без ручного видеомонтажа**.
 
+## Демо
+
+[![Смотреть демо: DUP Market Radar](docs/media/radar-showcase-v2-thumb.jpg)](https://github.com/Gruver87/dup-presenter/releases/download/media-radar-showcase-v2/radar-showcase-v2.mp4)
+
+Видео (1920x1080, 142 с, −16 LUFS, Media QA PASS) собрано этим пайплайном из деки [`decks/radar-showcase-v2.json`](decks/radar-showcase-v2.json). MP4 лежит в [GitHub Release `media-radar-showcase-v2`](https://github.com/Gruver87/dup-presenter/releases/tag/media-radar-showcase-v2), а не в git из-за лимита 100 МБ. В релизе есть субтитры `.srt/.vtt` и главы.
+
 ## Архитектура пайплайна
 
 ```text
