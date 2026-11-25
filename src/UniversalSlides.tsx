@@ -322,15 +322,16 @@ export const ChartStorySlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
 
   const renderSvg = () => {
     if (ch.kind === "bar") {
-      const w = 1120;
-      const h = 440;
-      const padL = 56;
-      const padB = 64;
-      const padT = 48;
+      // Portrait uses a tall viewBox so the SVG fills the vertical container instead of letterboxing.
+      const w = isPortrait ? 960 : 1120;
+      const h = isPortrait ? 1180 : 440;
+      const padL = isPortrait ? 40 : 56;
+      const padB = isPortrait ? 120 : 64;
+      const padT = isPortrait ? 110 : 48;
       const plotW = w - padL * 2;
       const plotH = h - padT - padB;
-      const gap = 24;
-      const barW = Math.min(128, (plotW - gap * (series.length - 1)) / series.length);
+      const gap = isPortrait ? 36 : 24;
+      const barW = Math.min(isPortrait ? 200 : 128, (plotW - gap * (series.length - 1)) / series.length);
       const startX = padL + (plotW - (barW * series.length + gap * (series.length - 1))) / 2;
 
       return (
@@ -350,10 +351,10 @@ export const ChartStorySlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
               <g key={pt.label}>
                 <rect x={x} y={y} width={barW} height={bh} rx={14} fill={`${c}cc`} stroke={c} strokeWidth={2.4} />
                 <rect x={x + 6} y={y + 4} width={Math.max(0, barW - 12)} height={Math.min(18, bh * 0.35)} rx={8} fill="rgba(255,255,255,0.28)" />
-                <text x={x + barW / 2} y={y - 12} textAnchor="middle" fill="#ffffff" fontSize={22} fontWeight={900}>
+                <text x={x + barW / 2} y={y - 12} textAnchor="middle" fill="#ffffff" fontSize={isPortrait ? 38 : 22} fontWeight={900}>
                   {valLabel}
                 </text>
-                <text x={x + barW / 2} y={padT + plotH + 34} textAnchor="middle" fill={theme.muted} fontSize={18} fontWeight={700}>
+                <text x={x + barW / 2} y={padT + plotH + 44} textAnchor="middle" fill={theme.muted} fontSize={isPortrait ? 30 : 18} fontWeight={700}>
                   {pt.label}
                 </text>
               </g>
@@ -364,11 +365,11 @@ export const ChartStorySlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
     }
 
     if (ch.kind === "line") {
-      const w = 1120;
-      const h = 440;
-      const padX = 80;
-      const padT = 56;
-      const padB = 64;
+      const w = isPortrait ? 960 : 1120;
+      const h = isPortrait ? 1180 : 440;
+      const padX = isPortrait ? 70 : 80;
+      const padT = isPortrait ? 110 : 56;
+      const padB = isPortrait ? 120 : 64;
       const plotW = w - padX * 2;
       const plotH = h - padT - padB;
       const pts = series.map((pt, idx) => {
@@ -396,18 +397,18 @@ export const ChartStorySlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
           })}
           <g clipPath="url(#chartReveal)">
             <polygon points={area} fill="url(#chartAreaGrad)" />
-            <polyline points={poly} fill="none" stroke={theme.accent1} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+            <polyline points={poly} fill="none" stroke={theme.accent1} strokeWidth={isPortrait ? 8 : 5} strokeLinecap="round" strokeLinejoin="round" />
           </g>
           {pts.map((p, idx) => {
             const visible = sweep >= idx / Math.max(1, pts.length - 1) - 0.05;
             const valLabel = p.pt.display || `${p.pt.value}${ch.unit ? ` ${ch.unit}` : ""}`;
             return (
               <g key={p.pt.label} opacity={visible ? 1 : 0.15}>
-                <circle cx={p.x} cy={p.y} r={9} fill="#ffffff" stroke={p.c} strokeWidth={4} />
-                <text x={p.x} y={p.y - 18} textAnchor="middle" fill="#ffffff" fontSize={20} fontWeight={900}>
+                <circle cx={p.x} cy={p.y} r={isPortrait ? 15 : 9} fill="#ffffff" stroke={p.c} strokeWidth={isPortrait ? 6 : 4} />
+                <text x={p.x} y={p.y - (isPortrait ? 28 : 18)} textAnchor="middle" fill="#ffffff" fontSize={isPortrait ? 36 : 20} fontWeight={900}>
                   {valLabel}
                 </text>
-                <text x={p.x} y={padT + plotH + 34} textAnchor="middle" fill={theme.muted} fontSize={18} fontWeight={700}>
+                <text x={p.x} y={padT + plotH + 44} textAnchor="middle" fill={theme.muted} fontSize={isPortrait ? 30 : 18} fontWeight={700}>
                   {p.pt.label}
                 </text>
               </g>
@@ -422,8 +423,18 @@ export const ChartStorySlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
     const circ = 2 * Math.PI * r;
     let offset = 0;
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 48, height: "100%", flexWrap: "wrap" }}>
-        <svg width={380} height={380} viewBox="0 0 380 380">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: isPortrait ? "column" : "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: isPortrait ? 56 : 48,
+          height: "100%",
+          flexWrap: "wrap",
+        }}
+      >
+        <svg width={isPortrait ? 620 : 380} height={isPortrait ? 620 : 380} viewBox="0 0 380 380">
           <circle cx={190} cy={190} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={44} />
           {series.map((pt, idx) => {
             const frac = pt.value / totalVal;
@@ -453,7 +464,7 @@ export const ChartStorySlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
             {ch.unit || "TOTAL"}
           </text>
         </svg>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 320 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: isPortrait ? 22 : 14, minWidth: isPortrait ? 760 : 320 }}>
           {series.map((pt, idx) => {
             const c = pt.color || palette[idx % palette.length];
             const pct = Math.round((pt.value / totalVal) * 100);
@@ -470,8 +481,8 @@ export const ChartStorySlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
                   borderLeft: `4px solid ${c}`,
                 }}
               >
-                <span style={{ fontSize: 20, fontWeight: 700, color: "#ffffff" }}>{pt.label}</span>
-                <span style={{ fontFamily: "Consolas, monospace", fontSize: 19, fontWeight: 900, color: c }}>
+                <span style={{ fontSize: isPortrait ? 30 : 20, fontWeight: 700, color: "#ffffff" }}>{pt.label}</span>
+                <span style={{ fontFamily: "Consolas, monospace", fontSize: isPortrait ? 28 : 19, fontWeight: 900, color: c }}>
                   {pt.display || `${pt.value}`} ({pct}%)
                 </span>
               </div>
