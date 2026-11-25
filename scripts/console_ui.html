@@ -206,6 +206,17 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
           <h2 style="margin:0;" data-i18n="edit_h2">Редактор колоды, видео и правки</h2>
           <select id="deckSelect" style="width:240px;"></select>
         </div>
+        <details style="margin-bottom:14px;">
+          <summary style="cursor:pointer;font-size:0.9rem;" data-i18n="md_import_h">Импорт деки из Markdown</summary>
+          <div style="margin-top:8px;">
+            <textarea id="mdImportInput" style="min-height:140px;font-family:Consolas,monospace;font-size:0.82rem;" spellcheck="false"></textarea>
+            <div class="row" style="margin-top:8px;">
+              <button class="btn" id="mdImportBtn" data-i18n="md_import_btn">Импортировать</button>
+              <span id="mdImportMsg" style="font-size:0.82rem;color:var(--muted);"></span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:6px;" data-i18n="md_import_hint">Формат: examples/md-talk-demo.md. Колода создаётся без сборки; затем её можно пересобрать в редакторе.</div>
+          </div>
+        </details>
         <div class="grid3">
           <div>
             <label data-i18n="lbl_vtheme">Тема видео</label>
@@ -233,6 +244,11 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
               <input type="checkbox" id="editCaptionsCheck" checked/>
               <span data-i18n="chk_burn">Вшитые субтитры</span>
             </label>
+            <select id="editCaptionStyleSelect" style="width:200px;" title="caption_style">
+              <option value="box" data-i18n="opt_cap_box">Субтитры: рамка</option>
+              <option value="karaoke" data-i18n="opt_cap_karaoke">Караоке (подсветка слов)</option>
+              <option value="bold" data-i18n="opt_cap_bold">Крупные (bold)</option>
+            </select>
             <label class="check" style="margin:0;">
               <input type="checkbox" id="editBgCheck"/>
               <span data-i18n="chk_bg">Фон-видео (стоки)</span>
@@ -345,6 +361,12 @@ const I18N = {
     nav_edit: "02 · Редактор и правки",
     nav_merge: "03 · Склейка видео",
     nav_logs: "04 · Лог и версии",
+    opt_cap_box: "Субтитры: рамка",
+    opt_cap_karaoke: "Караоке (подсветка слов)",
+    opt_cap_bold: "Крупные (bold)",
+    md_import_h: "Импорт деки из Markdown",
+    md_import_btn: "Импортировать",
+    md_import_hint: "Формат: examples/md-talk-demo.md. Колода создаётся без сборки; затем её можно пересобрать в редакторе.",
     btn_theme: "Тема",
     new_h2: "Собрать ролик из папки на ПК или ссылки GitHub",
     new_source_lbl: "Источник проекта (папка на ПК, https://github.com/owner/repo или owner/repo)",
@@ -404,6 +426,12 @@ const I18N = {
     nav_edit: "02 · Editor & Edits",
     nav_merge: "03 · Merge Videos",
     nav_logs: "04 · Logs & Versions",
+    opt_cap_box: "Subtitles: box",
+    opt_cap_karaoke: "Karaoke (word highlight)",
+    opt_cap_bold: "Large (bold)",
+    md_import_h: "Import deck from Markdown",
+    md_import_btn: "Import",
+    md_import_hint: "Format: examples/md-talk-demo.md. The deck is created without rendering; rebuild it in the editor.",
     btn_theme: "Theme",
     new_h2: "Build a Video from a Local Folder or GitHub URL",
     new_source_lbl: "Project source (local folder, https://github.com/owner/repo or owner/repo)",
@@ -639,6 +667,7 @@ $("saveRenderBtn").onclick = async () => {
       speaker: $("speakerSelect").value,
       voice_mode: $("editVoiceModeSelect").value,
       burn_captions: $("editCaptionsCheck").checked,
+      caption_style: $("editCaptionStyleSelect").value,
       background_enabled: $("editBgCheck").checked,
       background_provider: $("editBgProvider").value,
       music_enabled: $("editMusicCheck").checked,
@@ -650,6 +679,26 @@ $("saveRenderBtn").onclick = async () => {
   $("saveMsg").textContent = d.ok ? "OK" : `Error: ${d.error}`;
   if (d.ok) document.querySelector('[data-tab="logs"]').click();
   poll();
+};
+
+/* ---------- MARKDOWN IMPORT ---------- */
+$("mdImportBtn").onclick = async () => {
+  const text = $("mdImportInput").value;
+  if (!text.trim()) { $("mdImportMsg").textContent = "Error: empty"; return; }
+  $("mdImportMsg").textContent = "...";
+  const r = await fetch("/api/import-md", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ markdown: text }),
+  });
+  const d = await r.json();
+  $("mdImportMsg").textContent = d.ok ? `OK (${d.slug})` : `Error: ${d.error}`;
+  if (d.ok) {
+    CURRENT_SLUG = d.slug;
+    await poll();
+    $("deckSelect").value = d.slug;
+    loadDeck(d.slug);
+  }
 };
 
 /* ---------- VIDEO MERGER ---------- */
@@ -768,6 +817,7 @@ async function loadDeck(slug) {
   $("editAspectSelect").value = deck.aspect || "16:9";
   $("editVoiceModeSelect").value = (deck.voice && deck.voice.mode) || "single";
   $("editCaptionsCheck").checked = deck.burn_captions !== false;
+  $("editCaptionStyleSelect").value = ["box", "karaoke", "bold"].includes(deck.caption_style) ? deck.caption_style : "box";
   $("editBgCheck").checked = !!(deck.background && deck.background.enabled);
   $("editBgProvider").value = (deck.background && deck.background.provider) || "pixabay";
   $("editMusicCheck").checked = !!(deck.music && deck.music.enabled);

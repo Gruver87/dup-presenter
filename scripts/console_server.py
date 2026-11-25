@@ -45,6 +45,7 @@ WORK_DIR = ROOT / "work"
 
 sys.path.insert(0, str(SCRIPTS))
 from build_deck import (  # noqa: E402
+    ALLOWED_CAPTION_STYLES,
     ALLOWED_SPEAKERS,
     ALLOWED_SPEAKERS_BY_LANG,
     ALLOWED_THEMES,
@@ -53,6 +54,7 @@ from build_deck import (  # noqa: E402
     validate_deck,
 )
 from fetch_repo import RepoFetchError, looks_like_remote, normalize_git_url  # noqa: E402
+from md_deck import MarkdownDeckError, MarkdownDeckExists, MarkdownImportError, write_deck_from_markdown  # noqa: E402
 from plan_deck import voice_ssml  # noqa: E402
 from tiktok_uploader import refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
 
@@ -644,6 +646,25 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             self._json(202, {"ok": True, "slug": slug, "step": "feedback"})
             return
 
+        if path == "/api/import-md":
+            markdown = str(body.get("markdown") or "")
+            if not markdown.strip():
+                self._json(400, {"ok": False, "error": "Вставь Markdown-текст с блоком front matter (slug, lang и слайды)."})
+                return
+            try:
+                deck = write_deck_from_markdown(markdown, DECKS_DIR)
+            except MarkdownDeckExists as exc:
+                self._json(409, {"ok": False, "error": str(exc)})
+                return
+            except MarkdownImportError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            except MarkdownDeckError as exc:
+                self._json(400, {"ok": False, "error": f"Markdown не разобран: {exc}"})
+                return
+            self._json(200, {"ok": True, "slug": deck["slug"]})
+            return
+
         if path == "/api/save-deck":
             try:
                 slug = _valid_slug(str(body.get("slug") or ""))
@@ -662,6 +683,12 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 deck["width"], deck["height"] = ASPECT_DIMS[body["aspect"]]
             if "burn_captions" in body:
                 deck["burn_captions"] = bool(body["burn_captions"])
+            if "caption_style" in body:
+                style = str(body.get("caption_style") or "").strip()
+                if style not in ALLOWED_CAPTION_STYLES:
+                    self._json(400, {"ok": False, "error": f"Стиль субтитров {style!r} не поддерживается; допустимо: {sorted(ALLOWED_CAPTION_STYLES)}"})
+                    return
+                deck["caption_style"] = style
             if "background_enabled" in body:
                 prov = str(body.get("background_provider") or "pixabay")
                 deck["background"] = {

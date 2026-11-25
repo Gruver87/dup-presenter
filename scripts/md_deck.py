@@ -237,6 +237,44 @@ def convert_file(src: Path, out: Path | None = None, *, overwrite: bool = False)
     return deck
 
 
+DECK_SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+MAX_MARKDOWN_BYTES = 300_000
+
+
+class MarkdownImportError(MarkdownDeckError):
+    """Text-based import refused (size, slug or schema). Callers map this to a client error."""
+
+
+class MarkdownDeckExists(MarkdownImportError):
+    """The target deck file already exists; the caller should map this to a conflict."""
+
+
+def write_deck_from_markdown(text: str, decks_dir: Path, *, overwrite: bool = False) -> dict:
+    """Parse Markdown text, validate fail-closed, and write decks/<slug>.json. Used by the console import.
+
+    Refuses oversized input, unsafe slugs, schema errors and overwriting an existing deck unless asked.
+    Returns the written deck dict; its path is decks_dir / f"{deck['slug']}.json".
+    """
+    from build_deck import DeckValidationError, validate_deck
+
+    if len(text.encode("utf-8")) > MAX_MARKDOWN_BYTES:
+        raise MarkdownImportError(f"Markdown is larger than {MAX_MARKDOWN_BYTES // 1000} KB")
+    deck = parse_markdown_deck(text)
+    slug = str(deck.get("slug", ""))
+    if not DECK_SLUG_RE.match(slug):
+        raise MarkdownImportError(f"unsafe or empty slug {slug!r} (use letters, digits, '_' or '-')")
+    try:
+        validate_deck(deck, check_assets=False)
+    except DeckValidationError as exc:
+        raise MarkdownImportError(f"deck schema: {exc}") from exc
+    out = decks_dir / f"{slug}.json"
+    if out.exists() and not overwrite:
+        raise MarkdownDeckExists(f"deck {slug!r} already exists; change the slug in the front matter")
+    decks_dir.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(deck, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return deck
+
+
 def main() -> int:
     import argparse
 
