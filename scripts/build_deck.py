@@ -170,6 +170,15 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
         if not -24.0 <= duck_db <= 0.0:
             raise DeckValidationError(f"music.duck_db must be in [-24, 0], got {duck_db}")
 
+    if "director_preset" in deck and deck["director_preset"] is not None:
+        from director_presets import DIRECTOR_PRESETS
+
+        dp_id = str(deck["director_preset"]).strip()
+        if dp_id not in DIRECTOR_PRESETS:
+            raise DeckValidationError(
+                f"Unsupported director_preset {dp_id!r}; allowed: {sorted(DIRECTOR_PRESETS)}"
+            )
+
     transition = deck.get("transition") or {}
     tr_style = str(transition.get("style", "fade"))
     if tr_style not in ALLOWED_TRANSITIONS:

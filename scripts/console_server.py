@@ -53,11 +53,14 @@ from build_deck import (  # noqa: E402
     DeckValidationError,
     validate_deck,
 )
+from director_presets import DIRECTOR_PRESETS, DirectorPresetError, PRESET_CATALOG, apply_director_preset  # noqa: E402
 from fetch_repo import RepoFetchError, looks_like_remote, normalize_git_url  # noqa: E402
-from idea_engine import GENRE_CATALOG, IdeaDeckExistsError, IdeaEngineError, generate_ideas, write_idea_deck  # noqa: E402
+from idea_engine import GENRE_CATALOG, IdeaDeckExistsError, IdeaEngineError, critique_deck, generate_ideas, write_idea_deck  # noqa: E402
 from md_deck import MarkdownDeckError, MarkdownDeckExists, MarkdownImportError, write_deck_from_markdown  # noqa: E402
 from plan_deck import voice_ssml  # noqa: E402
+from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumbnail  # noqa: E402
 from tiktok_uploader import refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
+from video_pack import VideoPackError, plan_video_pack  # noqa: E402
 
 from theme_catalog import THEME_CATALOG  # noqa: E402
 from tts_engines import KOKORO_DEFAULT, KOKORO_VOICE_CATALOG  # noqa: E402
@@ -492,6 +495,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 "videos": list_videos(),
                 "provider": provider_info(),
                 "genres": GENRE_CATALOG,
+                "presets": PRESET_CATALOG,
                 "job": JOBS.snapshot(),
             })
             return
@@ -699,6 +703,95 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 self._json(400, {"ok": False, "error": str(exc)})
                 return
             self._json(200, {"ok": True, "slug": deck["slug"], "path": str(deck_path)})
+            return
+
+        if path == "/api/critique":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            deck_path = DECKS_DIR / f"{slug}.json"
+            if not deck_path.is_file():
+                self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                return
+            try:
+                deck = json.loads(deck_path.read_text(encoding="utf-8"))
+                report = critique_deck(deck, lang=str(body.get("lang") or ""))
+            except IdeaEngineError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, report)
+            return
+
+        if path == "/api/apply-preset":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            preset_id = str(body.get("preset") or "").strip()
+            deck_path = DECKS_DIR / f"{slug}.json"
+            if not deck_path.is_file():
+                self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                return
+            try:
+                deck = json.loads(deck_path.read_text(encoding="utf-8"))
+                updated = apply_director_preset(deck, preset_id, override_existing=True)
+                validate_deck(updated)
+                deck_path.write_text(json.dumps(updated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            except (DirectorPresetError, DeckValidationError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "slug": slug, "preset": preset_id})
+            return
+
+        if path == "/api/thumbnail":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            deck_path = DECKS_DIR / f"{slug}.json"
+            if not deck_path.is_file():
+                self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                return
+            try:
+                deck = json.loads(deck_path.read_text(encoding="utf-8"))
+                props = build_thumbnail_props(
+                    deck=deck,
+                    accent_badge=str(body.get("badge") or ""),
+                )
+                out_png = OUT_DIR / f"{slug}_cover.png"
+                res = render_thumbnail(out_png, props, dry_run=False)
+            except ThumbnailError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/video-pack/plan":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            deck_path = DECKS_DIR / f"{slug}.json"
+            if not deck_path.is_file():
+                self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                return
+            try:
+                plan = plan_video_pack(
+                    deck_path,
+                    include_short=bool(body.get("include_short", True)),
+                    include_thumbnail=bool(body.get("include_thumbnail", True)),
+                    translate_to=str(body.get("translate_to") or ""),
+                    preset=str(body.get("preset") or ""),
+                )
+            except (VideoPackError, DirectorPresetError, DeckValidationError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, plan)
             return
 
         if path == "/api/save-deck":

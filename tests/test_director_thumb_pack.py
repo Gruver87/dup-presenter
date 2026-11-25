@@ -66,6 +66,9 @@ class DirectorThumbPackTests(unittest.TestCase):
             roles = [t["role"] for t in plan["targets"]]
             self.assertEqual(roles, ["primary", "short_9x16", "translated_ru"])
             self.assertIsNotNone(plan["thumbnail"])
+            self.assertIn("preflight", plan)
+            self.assertGreaterEqual(plan["preflight"]["director_score"], 0)
+            self.assertEqual(plan["targets"][1]["preset"], "fast_shorts")
 
             with self.assertRaises(VideoPackError):
                 plan_video_pack(dp, translate_to="en")

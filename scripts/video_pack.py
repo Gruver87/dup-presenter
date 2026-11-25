@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from build_deck import validate_deck  # noqa: E402
 from director_presets import apply_director_preset  # noqa: E402
+from idea_engine import critique_deck  # noqa: E402
 from make_cutdown import build_short_cutdown  # noqa: E402
 from thumbnail_studio import build_thumbnail_props, render_thumbnail  # noqa: E402
 
@@ -75,6 +76,7 @@ def plan_video_pack(
                 "slug": short_slug,
                 "aspect": "9:16",
                 "lang": lang,
+                "preset": "fast_shorts",
                 "deck": str(ROOT / "decks" / f"{short_slug}.json"),
                 "mp4": str(ROOT / "out" / f"{short_slug}.mp4"),
                 "qa": str(ROOT / "out" / f"{short_slug}_qa.json"),
@@ -103,12 +105,22 @@ def plan_video_pack(
             "props": build_thumbnail_props(deck=deck),
         }
 
+    preflight = critique_deck(deck)
+    est_minutes = round(len(targets) * max(1.5, len(deck.get("slides") or []) * 0.45), 1)
+
     return {
         "ok": True,
         "source_deck": str(dp),
         "slug": slug,
         "preset": preset or None,
         "overwrite": overwrite,
+        "preflight": {
+            "director_score": preflight["score"],
+            "add": preflight["add"],
+            "remove": preflight["remove"],
+            "upgrade": preflight["upgrade"],
+            "estimated_render_minutes": est_minutes,
+        },
         "targets": targets,
         "thumbnail": cover,
         "manifest_path": str(ROOT / "out" / f"{slug}_pack_manifest.json"),

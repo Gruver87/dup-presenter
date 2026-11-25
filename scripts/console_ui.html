@@ -265,6 +265,25 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
             <div style="font-size:0.78rem;color:var(--muted);margin-top:6px;" data-i18n="md_import_hint">Формат: examples/md-talk-demo.md. Колода создаётся без сборки; затем её можно пересобрать в редакторе.</div>
           </div>
         </details>
+        <details style="margin-bottom:14px;">
+          <summary style="cursor:pointer;font-size:0.9rem;">Студийные инструменты (пресеты, советчик, обложка 1280×720, Video Pack)</summary>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+            <div class="row" style="flex-wrap:wrap;gap:8px;">
+              <select id="presetSelect" style="width:260px;">
+                <option value="cinema_cosmos">cinema_cosmos (16:9 космос)</option>
+                <option value="fast_shorts">fast_shorts (9:16 Short)</option>
+                <option value="documentary">documentary (16:9 спокойный)</option>
+                <option value="news_flash">news_flash (16:9 дайджест)</option>
+                <option value="tech_pitch">tech_pitch (16:9 светлый питч)</option>
+              </select>
+              <button class="btn sm" id="applyPresetBtn">Применить пресет</button>
+              <button class="btn sm primary" id="critiqueDeckBtn">Советчик (что добавить/убрать)</button>
+              <button class="btn sm" id="makeThumbBtn">Обложка 1280×720</button>
+              <button class="btn sm" id="planPackBtn">План Video Pack</button>
+            </div>
+            <pre id="studioToolOut" style="margin:0;padding:10px;border-radius:10px;background:rgba(0,0,0,0.28);font-size:0.78rem;white-space:pre-wrap;display:none;"></pre>
+          </div>
+        </details>
         <div class="grid3">
           <div>
             <label data-i18n="lbl_vtheme">Тема видео</label>
@@ -750,19 +769,78 @@ $("ideaGenBtn").onclick = async () => {
   const d = await r.json();
   if (!d.ok) { $("ideaMsg").textContent = `Ошибка: ${d.error}`; return; }
   LAST_IDEAS = d.ideas || [];
-  $("ideaMsg").textContent = `Готово: ${LAST_IDEAS.length} идей (источник: ${d.source}).`;
+  const assess = d.assessment ? ` | ${d.assessment.reasoning}` : "";
+  $("ideaMsg").textContent = `Готово: ${LAST_IDEAS.length} идей (источник: ${d.source})${assess}`;
   $("ideaCards").innerHTML = LAST_IDEAS.map((idea, idx) => `
     <div class="slide-card">
       <div class="head">
         <span>${esc(idea.genre)} · ${esc(idea.aspect)} · ${esc(idea.theme)}</span>
-        <span>~${esc(String(idea.duration_hint_sec))}s</span>
+        <span>${esc(idea.complexity || "medium")} · ~${esc(String(idea.duration_hint_sec))}s</span>
       </div>
       <div style="font-weight:700;font-size:0.98rem;margin-bottom:4px;">${esc(idea.title)}</div>
-      <div style="font-size:0.84rem;color:var(--muted);margin-bottom:8px;">${esc(idea.hook)}</div>
+      <div style="font-size:0.84rem;color:var(--muted);margin-bottom:6px;">${esc(idea.hook)}</div>
+      <div style="font-size:0.74rem;color:var(--muted);margin-bottom:4px;">Пресет: <b>${esc(idea.recommended_preset || "cinema_cosmos")}</b> · Инструменты: ${(idea.recommended_tools || []).map((t) => esc(t)).join(", ")}</div>
       <div style="font-size:0.76rem;color:var(--muted);margin-bottom:10px;">Слайды: ${(idea.slides || []).map((s) => esc(s.type)).join(" → ")}</div>
       <button class="btn sm primary" onclick="createDeckFromIdea(${idx})">Создать черновик де́ка</button>
     </div>
   `).join("");
+};
+
+function showStudioOut(text) {
+  const el = $("studioToolOut");
+  el.style.display = "block";
+  el.textContent = text;
+}
+$("applyPresetBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Применяю пресет...");
+  const r = await fetch("/api/apply-preset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG, preset: $("presetSelect").value }),
+  });
+  const d = await r.json();
+  showStudioOut(d.ok ? `OK: пресет '${d.preset}' применён к ${d.slug}.json` : `Ошибка: ${d.error}`);
+  if (d.ok) loadDeck(CURRENT_SLUG);
+};
+$("critiqueDeckBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Анализирую дек...");
+  const r = await fetch("/api/critique", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG }),
+  });
+  const d = await r.json();
+  if (!d.ok) { showStudioOut(`Ошибка: ${d.error}`); return; }
+  const lines = [`Оценка режиссёра: ${d.score}/100 (слайдов: ${d.slide_count})`];
+  if (d.add.length) lines.push("\n+ ДОБАВИТЬ:\n- " + d.add.join("\n- "));
+  if (d.remove.length) lines.push("\n- УБРАТЬ / СОКРАТИТЬ:\n- " + d.remove.join("\n- "));
+  if (d.upgrade.length) lines.push("\n* УЛУЧШИТЬ:\n- " + d.upgrade.join("\n- "));
+  if (!d.add.length && !d.remove.length && !d.upgrade.length) lines.push("\nОтличный баланс — критических замечаний нет!");
+  showStudioOut(lines.join("\n"));
+};
+$("makeThumbBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Рендерю обложку 1280×720 (Thumbnail Studio)...");
+  const r = await fetch("/api/thumbnail", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG }),
+  });
+  const d = await r.json();
+  showStudioOut(d.ok ? `OK: обложка сохранена -> ${d.out} (${Math.round((d.bytes || 0) / 1024)} KB)` : `Ошибка: ${d.error}`);
+};
+$("planPackBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Строю план мультиформатного Video Pack...");
+  const r = await fetch("/api/video-pack/plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG, include_short: true, include_thumbnail: true }),
+  });
+  const d = await r.json();
+  showStudioOut(d.ok ? JSON.stringify(d, null, 2) : `Ошибка: ${d.error}`);
 };
 
 window.createDeckFromIdea = async (idx) => {

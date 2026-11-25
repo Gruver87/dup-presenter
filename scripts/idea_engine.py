@@ -255,8 +255,8 @@ def _angle_blueprints(topic: str, lang: str, genre_filter: str) -> list[dict[str
             "duration_hint_sec": 55,
             "slides": [
                 {
-                    "type": "hero_3d",
-                    "tag": "60 SEC" if is_en else "60 СЕК",
+                    "type": "stat_burst",
+                    "tag": "60 SEC HOOK" if is_en else "ХУК 60 СЕК",
                     "title": f"{t} in 60s" if is_en else f"{t} за 60 сек",
                     "subtitle": "One sharp idea, zero fluff" if is_en else "Одна сильная мысль, ноль воды",
                     "voice_text": (
@@ -264,6 +264,15 @@ def _angle_blueprints(topic: str, lang: str, genre_filter: str) -> list[dict[str
                         if is_en
                         else f"Не пролистывай. Вот самый понятный способ разобраться в {t} меньше чем за минуту."
                     ),
+                    "stat_burst": {
+                        "kicker": "60 SECOND BREAKDOWN" if is_en else "РАЗБОР ЗА 60 СЕКУНД",
+                        "headline": "60 SEC" if is_en else "60 СЕК",
+                        "caption": f"{t}: what actually matters without fluff" if is_en else f"{t}: главная суть без воды",
+                        "chips": [
+                            {"label": "9:16 Short", "color": "#00f0ff"},
+                            {"label": "Zero Fluff" if is_en else "Без воды", "color": "#10ff88"},
+                        ],
+                    },
                 },
                 {
                     "type": "kpi",
@@ -334,20 +343,42 @@ def _angle_blueprints(topic: str, lang: str, genre_filter: str) -> list[dict[str
                     ),
                 },
                 {
-                    "type": "timeline",
-                    "tag": "COMPARISON" if is_en else "КРИТЕРИИ",
-                    "title": "Three Battlegrounds" if is_en else "Три критерия сравнения",
+                    "type": "versus_split",
+                    "tag": "COMPARISON" if is_en else "СРАВНЕНИЕ",
+                    "title": f"{t}: A vs B" if is_en else f"{t}: Старый путь vs Новый путь",
                     "subtitle": "Reliability, speed, and operational clarity" if is_en else "Надёжность, скорость и прозрачность работы",
                     "voice_text": (
-                        "We evaluate both options across three real criteria: failure handling, execution speed, and auditability."
+                        "We compare both options side by side across three real criteria: failure handling, execution speed, and auditability."
                         if is_en
-                        else "Оценим оба варианта по трём реальным критериям: реакция на сбой, скорость и прозрачность проверки."
+                        else "Сравним оба подхода лицом к лицу по трём критериям: реакция на сбой, скорость ядра и проверяемость."
                     ),
-                    "steps": [
-                        {"title": "Failure Mode" if is_en else "Реакция на сбой", "desc": "Silent fallback vs fail-closed refusal." if is_en else "Тихий сбой против честного fail-closed отказа."},
-                        {"title": "Performance" if is_en else "Скорость", "desc": "Ad-hoc scripts vs dedicated hot path." if is_en else "Ручная склейка против быстрого ядра."},
-                        {"title": "Auditability" if is_en else "Проверяемость", "desc": "Guesswork vs deterministic artifacts." if is_en else "Догадки против проверяемых артефактов."},
-                    ],
+                    "versus": {
+                        "left": {
+                            "label": "Legacy Way" if is_en else "Старый подход",
+                            "badge": "RISK" if is_en else "РИСК",
+                            "points": [
+                                "Silent fallbacks hide errors" if is_en else "Тихие сбои скрывают ошибки",
+                                "Ad-hoc glue slows down execution" if is_en else "Ручная склейка тормозит работу",
+                                "Hard to reproduce or audit" if is_en else "Трудно повторить и проверить",
+                            ],
+                            "accent": "#ff2e63",
+                        },
+                        "right": {
+                            "label": "Modern Approach" if is_en else "Новый подход",
+                            "badge": "FAIL-CLOSED",
+                            "points": [
+                                "Refuses bad input at the boundary" if is_en else "Отказ на границе при ошибке",
+                                "Dedicated hot path for speed" if is_en else "Быстрое ядро для горячего пути",
+                                "Deterministic, auditable artifacts" if is_en else "Детерминированные артефакты на диске",
+                            ],
+                            "accent": "#10ff88",
+                        },
+                        "verdict": (
+                            "Choose the design that fails loudly in tests rather than silently in production."
+                            if is_en
+                            else "Выбирайте систему, которая громко падает на тесте, а не тихо врёт в проде."
+                        ),
+                    },
                 },
                 {
                     "type": "quote",
@@ -546,19 +577,25 @@ def _angle_blueprints(topic: str, lang: str, genre_filter: str) -> list[dict[str
                     ),
                 },
                 {
-                    "type": "kpi",
-                    "tag": "SIGNALS" if is_en else "ЦИФРЫ",
-                    "title": "Snapshot" if is_en else "Срез дня",
-                    "subtitle": "Insert real measured figures before rendering" if is_en else "Подставьте актуальные проверенные цифры",
+                    "type": "chart_story",
+                    "tag": "SIGNALS" if is_en else "ГРАФИК",
+                    "title": "Signal Snapshot" if is_en else "Срез ключевых сигналов",
+                    "subtitle": "Insert live measured figures before rendering" if is_en else "Подставьте актуальные проверенные цифры перед рендером",
                     "voice_text": (
-                        "Here is the snapshot of key indicators — replace these slots with live measured data before publishing."
+                        "Here is a visual snapshot of the main signals — replace these placeholder bars with live measured data before publishing."
                         if is_en
-                        else "Вот срез ключевых индикаторов — перед публикацией подставьте актуальные живые данные."
+                        else "Вот наглядный срез главных сигналов — перед публикацией подставьте актуальные живые данные."
                     ),
-                    "kpis": [
-                        {"value": "3", "label": "top highlights" if is_en else "главных события"},
-                        {"value": "100%", "label": "source-linked facts" if is_en else "фактов с источниками"},
-                    ],
+                    "chart": {
+                        "kind": "bar",
+                        "unit": "pts",
+                        "source_note": "Placeholder values — replace with verified metrics" if is_en else "Ориентировочные значения — замените на реальные данные",
+                        "series": [
+                            {"label": "Signal A" if is_en else "Сигнал A", "value": 42, "color": "#00f0ff"},
+                            {"label": "Signal B" if is_en else "Сигнал B", "value": 78, "color": "#10ff88"},
+                            {"label": "Signal C" if is_en else "Сигнал C", "value": 64, "color": "#ffb800"},
+                        ],
+                    },
                 },
                 {
                     "type": "outro_3d",
@@ -797,6 +834,213 @@ def _normalize_idea(raw: dict[str, Any], idx: int, topic: str, lang: str) -> dic
     }
 
 
+def assess_topic_complexity(
+    topic: str,
+    genre: str = "all",
+    lang: str = "ru",
+) -> dict[str, Any]:
+    """Automatically classify topic complexity and select the best studio tools & preset."""
+    low = str(topic or "").lower()
+    words = [w for w in re.split(r"\s+", low) if w]
+    is_en = lang == "en"
+
+    has_versus = any(k in low for k in (" vs ", "против", "сравн", "compare", "versus", "или "))
+    has_metrics = any(k in low for k in ("рынок", "market", "метрик", "chart", "график", "аналит", "дайджест", "digest", "%", "roi", "benchmark"))
+    has_deep_tech = any(
+        k in low
+        for k in (
+            "блокчейн", "blockchain", "protocol", "протокол", "rust", "python", "архитект", "architecture",
+            "consensus", "консенсус", "libp2p", "merkle", "api", "evm", "ядро", "алгоритм", "квантов",
+        )
+    )
+    has_short = genre == "short_60s" or any(k in low for k in ("short", "reels", "tiktok", "60 сек", "60s", "шорт"))
+
+    score = 0
+    if len(words) >= 6:
+        score += 1
+    if has_deep_tech:
+        score += 2
+    if has_versus:
+        score += 1
+    if has_metrics:
+        score += 1
+
+    if has_short and score <= 1:
+        complexity = "simple"
+    elif score >= 3:
+        complexity = "deep"
+    elif score >= 1:
+        complexity = "medium"
+    else:
+        complexity = "simple"
+
+    tools: list[str] = ["thumbnail_studio"]
+    if has_short:
+        preset = "fast_shorts"
+        tools.extend(["stat_burst", "video_pack_short"])
+    elif has_versus or genre == "versus_battle":
+        preset = "cinema_cosmos" if has_deep_tech else "news_flash"
+        tools.extend(["versus_split", "stat_burst", "duo_voice"])
+    elif has_metrics or genre == "news_digest":
+        preset = "news_flash"
+        tools.extend(["chart_story", "kpi"])
+    elif genre == "investor_pitch":
+        preset = "tech_pitch"
+        tools.extend(["kpi", "chart_story", "timeline"])
+    elif has_deep_tech or complexity == "deep":
+        preset = "cinema_cosmos"
+        tools.extend(["protocol_cosmos", "ledger_layers", "chart_story", "video_pack"])
+    else:
+        preset = "documentary"
+        tools.extend(["broll_cinematic", "timeline", "quote"])
+
+    # Deduplicate while preserving order
+    unique_tools = list(dict.fromkeys(tools))
+    voice_mode = "duo" if (has_versus or genre == "versus_battle") else "single"
+
+    if is_en:
+        reason = (
+            f"Complexity='{complexity}': selected preset '{preset}', voice='{voice_mode}', "
+            f"and tools {', '.join(unique_tools)}."
+        )
+    else:
+        reason = (
+            f"Сложность='{complexity}': автоматически выбраны пресет '{preset}', голос='{voice_mode}' "
+            f"и инструменты: {', '.join(unique_tools)}."
+        )
+    return {
+        "complexity": complexity,
+        "recommended_preset": preset,
+        "recommended_voice_mode": voice_mode,
+        "recommended_tools": unique_tools,
+        "reasoning": reason,
+    }
+
+
+VISUAL_SLIDE_TYPES: frozenset[str] = frozenset(
+    {
+        "protocol_cosmos",
+        "ledger_layers",
+        "tx_journey",
+        "mesh_network",
+        "versus_split",
+        "chart_story",
+        "screen_split",
+        "code_split",
+        "ui_recording",
+        "arch_flow",
+        "broll_cinematic",
+    }
+)
+
+
+def critique_deck(deck: dict[str, Any], lang: str = "") -> dict[str, Any]:
+    """Analyze a deck and return concrete director suggestions: what to add, remove, or upgrade."""
+    if not isinstance(deck, dict):
+        raise IdeaEngineError("deck must be a JSON object")
+    slides = deck.get("slides") or []
+    if not isinstance(slides, list) or not slides:
+        raise IdeaEngineError("deck.slides must be a non-empty list")
+
+    effective_lang = (lang or str(deck.get("lang") or "ru")).lower()
+    is_en = effective_lang == "en"
+
+    add_tips: list[str] = []
+    remove_tips: list[str] = []
+    upgrade_tips: list[str] = []
+    penalty = 0
+
+    types = [str(s.get("type") or "") for s in slides]
+    aspect = str(deck.get("aspect") or "16:9")
+    caption_style = str(deck.get("caption_style") or "box")
+
+    # 1. Opening hook check
+    if types[0] not in {"hero_3d", "stat_burst"}:
+        penalty += 12
+        add_tips.append(
+            "Add a 'stat_burst' or 'hero_3d' hook as slide 1 to lock viewer attention in the first 3 seconds."
+            if is_en
+            else "Добавь ударный хук 'stat_burst' или 'hero_3d' первым слайдом, чтобы удержать зрителя в первые 3 секунды."
+        )
+
+    # 2. Visual variety check
+    if len(slides) >= 4 and not any(t in VISUAL_SLIDE_TYPES for t in types):
+        penalty += 18
+        add_tips.append(
+            "No rich visual slide found: add 'chart_story', 'versus_split', 'broll_cinematic', or 'protocol_cosmos' to break up text."
+            if is_en
+            else "Нет ни одного сильного визуального слайда: добавь 'chart_story' (график), 'versus_split' (A vs B) или 'broll_cinematic' для динамики."
+        )
+
+    # 3. Outro check
+    if types[-1] != "outro_3d":
+        penalty += 8
+        add_tips.append(
+            "Add an 'outro_3d' closing slide with a clear link or call to action."
+            if is_en
+            else "Добавь финальный слайд 'outro_3d' со ссылкой или понятным итогом."
+        )
+
+    # 4. Consecutive duplicate slide types (monotony)
+    for i in range(1, len(types)):
+        if types[i] == types[i - 1]:
+            penalty += 10
+            sid_prev = slides[i - 1].get("id") or f"s{i}"
+            sid_cur = slides[i].get("id") or f"s{i + 1}"
+            remove_tips.append(
+                f"Slides {sid_prev} and {sid_cur} repeat type '{types[i]}' back-to-back — vary or merge them."
+                if is_en
+                else f"Слайды {sid_prev} и {sid_cur} подряд повторяют тип '{types[i]}' — замени один из них или объедини."
+            )
+
+    # 5. Per-slide narration pacing check
+    for idx, s in enumerate(slides, 1):
+        sid = s.get("id") or f"s{idx}"
+        words = [w for w in re.split(r"\s+", str(s.get("voice_text") or "").strip()) if w]
+        if len(words) > 95:
+            penalty += 8
+            remove_tips.append(
+                f"Slide {sid} narration is too dense ({len(words)} words) — trim or split into 2 slides for better pacing."
+                if is_en
+                else f"На слайде {sid} слишком длинная озвучка ({len(words)} слов) — сократи текст или разбей на 2 слайда."
+            )
+        elif len(words) < 6:
+            penalty += 5
+            upgrade_tips.append(
+                f"Slide {sid} narration is very short ({len(words)} words) — expand with one clear takeaway."
+                if is_en
+                else f"На слайде {sid} очень короткая реплика ({len(words)} слов) — добавь одну чёткую мысль."
+            )
+
+    # 6. Aspect vs caption style check
+    if aspect == "9:16" and caption_style == "box":
+        penalty += 8
+        upgrade_tips.append(
+            "For 9:16 vertical Shorts, switch caption_style from 'box' to 'bold' or 'karaoke' for higher mobile readability."
+            if is_en
+            else "Для вертикального 9:16 Short переключи caption_style с 'box' на 'bold' или 'karaoke' — на телефоне читается намного лучше."
+        )
+
+    # 7. Director preset / thumbnail tip
+    if not deck.get("director_preset"):
+        upgrade_tips.append(
+            "Tip: attach a director_preset ('cinema_cosmos', 'fast_shorts', 'news_flash', etc.) and render a 1280x720 cover via Thumbnail Studio."
+            if is_en
+            else "Совет: примени режиссёрский пресет ('cinema_cosmos', 'fast_shorts', 'news_flash') и сделай обложку 1280×720 в Thumbnail Studio."
+        )
+
+    score = max(0, min(100, 100 - penalty))
+    return {
+        "ok": True,
+        "slug": str(deck.get("slug") or ""),
+        "slide_count": len(slides),
+        "score": score,
+        "add": add_tips,
+        "remove": remove_tips,
+        "upgrade": upgrade_tips,
+    }
+
+
 def generate_ideas(
     topic: str,
     *,
@@ -807,7 +1051,7 @@ def generate_ideas(
     model: str = "",
     host: str = DEFAULT_OLLAMA_HOST,
 ) -> dict[str, Any]:
-    """Generate structured video concepts. Fails closed on bad input or provider errors."""
+    """Generate structured video concepts with automatic complexity & tool selection."""
     clean_topic = str(topic or "").strip()
     if len(clean_topic) < 2:
         raise IdeaEngineError("Topic must be at least 2 characters long")
@@ -820,15 +1064,25 @@ def generate_ideas(
     if clean_mode not in {"template", "ollama", "cloud"}:
         raise IdeaEngineError(f"Unsupported mode {mode!r}; expected 'template', 'ollama', or 'cloud'")
 
+    assessment = assess_topic_complexity(clean_topic, genre=genre, lang=clean_lang)
+
     if clean_mode == "template":
         blueprints = _angle_blueprints(clean_topic, clean_lang, genre)[:count]
-        ideas = [_normalize_idea(bp, i + 1, clean_topic, clean_lang) for i, bp in enumerate(blueprints)]
+        ideas = []
+        for i, bp in enumerate(blueprints):
+            item = _normalize_idea(bp, i + 1, clean_topic, clean_lang)
+            per_idea_assess = assess_topic_complexity(clean_topic, genre=item["genre"], lang=clean_lang)
+            item["complexity"] = per_idea_assess["complexity"]
+            item["recommended_preset"] = per_idea_assess["recommended_preset"]
+            item["recommended_tools"] = per_idea_assess["recommended_tools"]
+            ideas.append(item)
         return {
             "ok": True,
             "source": "template",
             "topic": clean_topic,
             "lang": clean_lang,
             "genre": genre,
+            "assessment": assessment,
             "ideas": ideas,
         }
 
@@ -836,13 +1090,21 @@ def generate_ideas(
     raw_ideas = raw_payload.get("ideas")
     if not isinstance(raw_ideas, list) or not raw_ideas:
         raise IdeaEngineError("LLM response JSON must contain a non-empty 'ideas' list")
-    ideas = [_normalize_idea(item, i + 1, clean_topic, clean_lang) for i, item in enumerate(raw_ideas[:count])]
+    ideas = []
+    for i, item in enumerate(raw_ideas[:count]):
+        norm = _normalize_idea(item, i + 1, clean_topic, clean_lang)
+        per_idea_assess = assess_topic_complexity(clean_topic, genre=norm["genre"], lang=clean_lang)
+        norm["complexity"] = per_idea_assess["complexity"]
+        norm["recommended_preset"] = per_idea_assess["recommended_preset"]
+        norm["recommended_tools"] = per_idea_assess["recommended_tools"]
+        ideas.append(norm)
     return {
         "ok": True,
         "source": clean_mode,
         "topic": clean_topic,
         "lang": clean_lang,
         "genre": genre,
+        "assessment": assessment,
         "ideas": ideas,
     }
 

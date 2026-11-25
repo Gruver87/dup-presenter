@@ -210,7 +210,7 @@ export const VersusSplitSlide: React.FC<UniversalSlideProps> = ({ slide, dur, th
           flex: 1,
           display: "flex",
           flexDirection: isPortrait ? "column" : "row",
-          alignItems: "stretch",
+          alignItems: "center",
           gap: isPortrait ? 16 : 26,
           position: "relative",
           perspective: 1700,
@@ -516,7 +516,10 @@ export const StatBurstSlide: React.FC<UniversalSlideProps> = ({ slide, theme, is
 
   const pop = spring({ frame, fps, config: { damping: 11, stiffness: 140 } });
   const ringScale = 0.7 + ((frame % 60) / 60) * 0.9;
-  const ringOpacity = Math.max(0, 1 - (frame % 60) / 60) * 0.6;
+  const ringOpacity = Math.max(0, 1 - (frame % 60) / 60) * 0.62;
+  const ring2Phase = ((frame + 30) % 60) / 60;
+  const ring2Scale = 0.65 + ring2Phase * 0.95;
+  const ring2Opacity = Math.max(0, 1 - ring2Phase) * 0.45;
   const accent = isQuantum ? theme.accent2 : theme.accent1;
 
   return (
@@ -533,7 +536,7 @@ export const StatBurstSlide: React.FC<UniversalSlideProps> = ({ slide, theme, is
         gap: 22,
       }}
     >
-      {/* Expanding shockwave energy ring */}
+      {/* Dual counter-phase shockwave energy rings */}
       <div
         style={{
           position: "absolute",
@@ -544,7 +547,20 @@ export const StatBurstSlide: React.FC<UniversalSlideProps> = ({ slide, theme, is
           opacity: ringOpacity,
           transform: `scale(${ringScale})`,
           pointerEvents: "none",
-          boxShadow: `0 0 40px ${accent}`,
+          boxShadow: `0 0 42px ${accent}`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: isPortrait ? 460 : 600,
+          height: isPortrait ? 460 : 600,
+          borderRadius: "50%",
+          border: `2px dashed ${theme.accent1}`,
+          opacity: ring2Opacity,
+          transform: `scale(${ring2Scale})`,
+          pointerEvents: "none",
+          boxShadow: `0 0 28px ${theme.accent1}`,
         }}
       />
 
@@ -670,10 +686,33 @@ export const BRollCinematicSlide: React.FC<UniversalSlideProps> = ({ slide, dur,
           style={{
             position: "absolute",
             inset: 0,
-            background: `radial-gradient(ellipse at 30% 25%, ${theme.accent1}40 0%, transparent 55%), radial-gradient(ellipse at 75% 70%, ${theme.accent4}35 0%, transparent 58%), linear-gradient(145deg, #040b20 0%, #091536 55%, #020512 100%)`,
+            background: `radial-gradient(ellipse at 32% 28%, ${theme.accent1}42 0%, transparent 54%), radial-gradient(ellipse at 74% 38%, ${theme.accent4}36 0%, transparent 56%), radial-gradient(ellipse at 50% 60%, ${theme.accent2}24 0%, transparent 60%), linear-gradient(145deg, #040b20 0%, #091536 55%, #020512 100%)`,
             transform: `scale(${zoom})`,
           }}
-        />
+        >
+          <svg width="100%" height="100%" viewBox="0 0 1600 720" preserveAspectRatio="xMidYMid slice" style={{ opacity: 0.58 }}>
+            {[110, 210, 320, 440, 580].map((r, i) => (
+              <ellipse
+                key={r}
+                cx={800}
+                cy={290}
+                rx={r * 1.48}
+                ry={r * 0.72}
+                fill="none"
+                stroke={i % 2 === 0 ? theme.accent1 : theme.accent3}
+                strokeWidth={1.6}
+                strokeDasharray={i % 2 === 1 ? "10 12" : undefined}
+                opacity={0.48 - i * 0.06}
+              />
+            ))}
+            <line x1={120} y1={70} x2={720} y2={265} stroke={theme.accent1} strokeWidth={2.5} opacity={0.65} />
+            <line x1={1480} y1={90} x2={880} y2={265} stroke={theme.accent2} strokeWidth={2.5} opacity={0.65} />
+            <line x1={220} y1={520} x2={710} y2={325} stroke={theme.accent4} strokeWidth={2.2} opacity={0.55} />
+            <line x1={1380} y1={510} x2={890} y2={325} stroke={theme.accent3} strokeWidth={2.2} opacity={0.55} />
+            <circle cx={800} cy={290} r={42} fill={`${theme.accent1}33`} stroke={theme.accent1} strokeWidth={2} />
+            <circle cx={800} cy={290} r={14} fill="#ffffff" opacity={0.85} />
+          </svg>
+        </div>
       )}
 
       {/* Cinematic vignette overlay for guaranteed typography contrast */}
