@@ -67,10 +67,14 @@ def _estimate_slide_sec(slide: dict, probe_media: Callable[[Path], float]) -> fl
     return round(base, 2)
 
 
-def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
+def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = True) -> dict:
     """Return {"ok", "errors", "warnings", "estimates"} for a deck dict.
 
     `ok` is False when there is any error. Callers must refuse to render in that case.
+
+    `check_assets=False` skips file-presence checks (screenshots, music, clip lengths) so that
+    schema, language, theme and output checks can run on a clean machine (CI). It adds a warning,
+    so a report without assets is never mistaken for a render-ready one.
     """
     if not isinstance(deck, dict):
         raise DeckDoctorError("deck must be a JSON object")
@@ -87,7 +91,7 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
     warnings: list[str] = []
 
     try:
-        validate_deck(deck)
+        validate_deck(deck, check_assets=check_assets)
     except Exception as exc:  # DeckValidationError and friends: report, do not crash
         errors.append(f"schema: {exc}")
         return {"ok": False, "errors": errors, "warnings": warnings, "estimates": {}}
@@ -104,14 +108,17 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
     if deck.get("theme") and deck["theme"] not in ALLOWED_THEMES:
         errors.append(f"unknown theme {deck['theme']!r}")
 
+    if not check_assets:
+        warnings.append("assets not checked (check_assets=false): screenshots, music and clip lengths are not verified")
+
     for s in slides:
         for scr in s.get("screens") or []:
             src = str(scr.get("src", ""))
-            if not (PUBLIC_DIR / src).is_file():
+            if check_assets and not (PUBLIC_DIR / src).is_file():
                 errors.append(f"slide {s.get('id')}: screenshot not found: public/{src}")
 
     music = deck.get("music") or {}
-    if music.get("enabled"):
+    if music.get("enabled") and check_assets:
         if music.get("file"):
             chosen = MUSIC_DIR / Path(str(music["file"])).name
             if not chosen.is_file():
@@ -120,9 +127,11 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
             errors.append("music enabled but assets/music is empty")
 
     slide_secs: list[float] = []
+    # Without assets the clip length is unknown: 0.0 leaves the word-based estimate in place.
+    probe_media = _media_duration_sec if check_assets else (lambda _p: 0.0)
     for s in slides:
         try:
-            slide_secs.append(_estimate_slide_sec(s, _media_duration_sec))
+            slide_secs.append(_estimate_slide_sec(s, probe_media))
         except DeckValidationError as exc:
             errors.append(f"slide {s.get('id')}: {exc}")
     total_sec = round(sum(slide_secs), 2)

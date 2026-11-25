@@ -103,5 +103,54 @@ class DeckDoctorTests(unittest.TestCase):
         self.assertTrue(any("cannot read deck" in e for e in missing["errors"]))
 
 
+class DoctorWithoutAssetsTests(unittest.TestCase):
+    """CI has no local assets. These run the doctor's non-asset checks on every committed deck."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self._patch = mock.patch.object(deck_doctor, "OUT_DIR", Path(self._tmp.name))
+        self._patch.start()
+
+    def tearDown(self) -> None:
+        self._patch.stop()
+        self._tmp.cleanup()
+
+    def test_every_committed_deck_passes_without_assets(self) -> None:
+        decks = sorted((ROOT / "decks").glob("*.json"))
+        self.assertGreater(len(decks), 0)
+        failures: dict[str, list[str]] = {}
+        for dp in decks:
+            data = json.loads(dp.read_text(encoding="utf-8"))
+            report = deck_doctor.diagnose_deck(data, overwrite=True, check_assets=False)
+            if not report["ok"]:
+                failures[dp.name] = report["errors"]
+        self.assertEqual(failures, {}, "deck_doctor (no assets) must pass on every committed deck")
+
+    def test_no_assets_mode_still_catches_cyrillic_in_english_deck(self) -> None:
+        deck = _base_en_deck()
+        deck["slides"][0]["title"] = "Радар крипторынка"
+        report = deck_doctor.diagnose_deck(deck, overwrite=True, check_assets=False)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("Cyrillic" in e for e in report["errors"]))
+
+    def test_no_assets_mode_still_catches_unknown_theme(self) -> None:
+        deck = _base_en_deck()
+        deck["theme"] = "not_a_theme"
+        report = deck_doctor.diagnose_deck(deck, overwrite=True, check_assets=False)
+        self.assertFalse(report["ok"])
+
+    def test_no_assets_mode_says_assets_were_not_checked(self) -> None:
+        report = deck_doctor.diagnose_deck(_base_en_deck(), overwrite=True, check_assets=False)
+        self.assertTrue(any("assets not checked" in w for w in report["warnings"]))
+
+    def test_assets_mode_still_refuses_missing_screenshot(self) -> None:
+        deck = _base_en_deck()
+        for s in deck["slides"]:
+            for sc in s.get("screens") or []:
+                sc["src"] = "screens/__missing__.png"
+        report = deck_doctor.diagnose_deck(deck, overwrite=True, check_assets=True)
+        self.assertFalse(report["ok"])
+
+
 if __name__ == "__main__":
     unittest.main()
