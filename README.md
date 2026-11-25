@@ -27,6 +27,16 @@ decks/<slug>.json
 6. Publish Pack: out/<slug>.srt/.vtt, _chapters.txt, _post_copy.md, _metadata.json, _thumb.png
 ```
 
+## Презентация из Markdown (без JSON)
+
+```powershell
+# Пишем текст в examples/md-talk-demo.md, затем конвертируем в деку (fail-closed)
+python scripts/md_deck.py examples/md-talk-demo.md --out decks/md-talk-demo.json
+python scripts/build_deck.py decks/md-talk-demo.json --render
+```
+
+Поддерживаются типы `hero_3d`, `outro_3d`, `kpi`, `timeline`. Типы, которым нужны ассеты или символы кода, пишутся в JSON. Непонятная строка, неизвестный ключ или неподдерживаемый тип дают отказ с номером строки, файл не создаётся.
+
 ## Стили субтитров (`caption_style`)
 
 - `box` (по умолчанию) — реплика целиком в плашке, как и раньше.
