@@ -30,7 +30,7 @@
                        "tag":  "CAPTIONS",
                        "type":  "hero_3d",
                        "title":  "Caption styles",
-                       "subtitle":  "Word-by-word highlight from real word timings",
+                       "subtitle":  "Word-by-word highlight timed to the narration",
                        "pills":  [
                                      {
                                          "name":  "karaoke",
@@ -42,7 +42,7 @@
                                           "KARAOKE",
                                           "BOLD"
                                       ],
-                       "voice_text":  "Each word lights up as it is spoken. The highlight follows the real word timings from the voice track, so it stays in sync."
+                       "voice_text":  "Each word lights up as it is spoken. Timing follows each sentence of the voice track, with words spaced evenly inside it."
                    },
                    {
                        "id":  "q1",
