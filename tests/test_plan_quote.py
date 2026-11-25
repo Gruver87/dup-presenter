@@ -48,6 +48,17 @@ class QuoteSlideTests(QuoteFixture):
         errs = self._errors({"title": "Manual orders are only possible on KuCoin spot."})
         self.assertTrue(any("not verbatim" in e for e in errs))
 
+    def test_heading_fragment_is_refused(self) -> None:
+        # A heading phrase that occurs verbatim in FACTS is still not a sentence.
+        self.facts["docs"][0]["text"] += "\nManual orders run only on KuCoin spot"
+        errs = self._errors({"title": "Manual orders run only on KuCoin spot"})
+        self.assertTrue(any("full sentence" in e for e in errs), errs)
+
+    def test_too_short_sentence_is_refused(self) -> None:
+        self.facts["docs"][0]["text"] += "\nSpot only."
+        errs = self._errors({"title": "Spot only."})
+        self.assertTrue(any("full sentence" in e for e in errs), errs)
+
     def test_claim_is_refused_even_if_quoted(self) -> None:
         self.assertFalse(self._errors({"title": "Mainnet is production ready."}) == [])
 

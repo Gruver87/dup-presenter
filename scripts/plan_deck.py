@@ -349,6 +349,9 @@ def validate_kpi_slide(s: dict, facts: dict, tag: str) -> list[str]:
     return errors
 
 
+QUOTE_MIN_WORDS = 4
+
+
 def validate_quote_slide(s: dict, facts: dict, tag: str) -> list[str]:
     """A quote slide shows one sentence copied verbatim from FACTS, so the wording is attributable to the project.
 
@@ -364,6 +367,11 @@ def validate_quote_slide(s: dict, facts: dict, tag: str) -> list[str]:
         return [f"{tag}: quote subtitle (source) must be a string"]
     if KPI_HEALTH_CLAIM_RE.search(quote_raw):
         return [f"{tag}: quote is a health/soak/audit claim; keep such statements in bullets with source_ids"]
+    if not re.search(r"[.!?]$", quote_raw) or len(quote_raw.split()) < QUOTE_MIN_WORDS:
+        return [
+            f"{tag}: quote must be one full sentence ending with . ! or ? and at least "
+            f"{QUOTE_MIN_WORDS} words (headings and fragments are refused)"
+        ]
     corpus = re.sub(r"\s+", " ", build_corpus(facts))
     norm = re.sub(r"\s+", " ", quote_raw).lower()
     if norm not in corpus:
