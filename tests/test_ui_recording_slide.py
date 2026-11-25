@@ -96,5 +96,40 @@ class ClipDurationTests(unittest.TestCase):
             build_deck._media_duration_sec(Path(tempfile.gettempdir()) / "__no_such_clip__.mp4")
 
 
+class DoctorRecordingEstimateTests(unittest.TestCase):
+    """deck_doctor must size a ui_recording slide to its clip (same rule as build_deck), without needing ffprobe."""
+
+    def _slide(self, *, voice_text: str = "коротко") -> dict:
+        return {
+            "id": "s2",
+            "type": "ui_recording",
+            "title": "t",
+            "voice_text": voice_text,
+            "recording": {"src": "ui_recordings/x.mp4"},
+        }
+
+    def test_clip_longer_than_speech_extends_estimate(self) -> None:
+        import deck_doctor
+
+        sec = deck_doctor._estimate_slide_sec(self._slide(), lambda _p: 12.48)
+        self.assertEqual(sec, 14.0)  # ceil(12.48) + 1
+
+    def test_speech_longer_than_clip_keeps_speech_estimate(self) -> None:
+        import deck_doctor
+
+        long_text = " ".join(["слово"] * 60)
+        sec = deck_doctor._estimate_slide_sec(self._slide(voice_text=long_text), lambda _p: 2.0)
+        self.assertGreater(sec, 3.0)
+
+    def test_probe_failure_is_reported_as_doctor_error(self) -> None:
+        import deck_doctor
+
+        def _boom(_p: Path) -> float:
+            raise DeckValidationError("ffprobe failed on clip")
+
+        with self.assertRaises(DeckValidationError):
+            deck_doctor._estimate_slide_sec(self._slide(), _boom)
+
+
 if __name__ == "__main__":
     unittest.main()

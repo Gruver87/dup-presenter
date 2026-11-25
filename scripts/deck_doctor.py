@@ -14,8 +14,10 @@ frames per second on the reference workstation). It is guidance, not a guarantee
 from __future__ import annotations
 
 import json
+import math
 import re
 from pathlib import Path
+from typing import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = ROOT / "public"
@@ -50,11 +52,19 @@ def _slide_text(slide: dict) -> str:
     return " ".join(parts)
 
 
-def _estimate_slide_sec(slide: dict) -> float:
+def _estimate_slide_sec(slide: dict, probe_media: Callable[[Path], float]) -> float:
+    """Slide length guess. A `ui_recording` slide is never shorter than its clip + 1 s (same rule as build_deck)."""
     if isinstance(slide.get("duration_sec"), (int, float)) and slide["duration_sec"] > 0:
-        return float(slide["duration_sec"])
-    words = len(_slide_text(slide).split())
-    return round(words / WORDS_PER_SEC + SLIDE_PAD_SEC, 2)
+        base = float(slide["duration_sec"])
+    else:
+        words = len(_slide_text(slide).split())
+        base = round(words / WORDS_PER_SEC + SLIDE_PAD_SEC, 2)
+    if slide.get("type") == "ui_recording":
+        src = str((slide.get("recording") or {}).get("src", ""))
+        if src:
+            clip_sec = probe_media(PUBLIC_DIR / src)
+            base = max(base, float(math.ceil(clip_sec) + 1))
+    return round(base, 2)
 
 
 def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
@@ -65,7 +75,13 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
     if not isinstance(deck, dict):
         raise DeckDoctorError("deck must be a JSON object")
 
-    from build_deck import ALLOWED_THEMES, deck_lang, validate_deck  # noqa: E402  (lazy: avoids circular import)
+    from build_deck import (  # noqa: E402  (lazy: avoids circular import)
+        ALLOWED_THEMES,
+        DeckValidationError,
+        _media_duration_sec,
+        deck_lang,
+        validate_deck,
+    )
 
     errors: list[str] = []
     warnings: list[str] = []
@@ -103,7 +119,12 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
         elif not any(p.is_file() for p in MUSIC_DIR.glob("*")):
             errors.append("music enabled but assets/music is empty")
 
-    slide_secs = [_estimate_slide_sec(s) for s in slides]
+    slide_secs: list[float] = []
+    for s in slides:
+        try:
+            slide_secs.append(_estimate_slide_sec(s, _media_duration_sec))
+        except DeckValidationError as exc:
+            errors.append(f"slide {s.get('id')}: {exc}")
     total_sec = round(sum(slide_secs), 2)
     fps = int(deck.get("fps") or 30)
     frames = int(round(total_sec * fps))
@@ -130,7 +151,7 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False) -> dict:
             "estimated_length_sec": total_sec,
             "frames": frames,
             "estimated_render_sec": est_render_sec,
-            "estimate_basis": "deck duration_sec when set, else word count; render ~0.055 s/frame (our builds)",
+            "estimate_basis": "deck duration_sec when set, else word count; ui_recording slides at least clip+1 s (ffprobe); render ~0.055 s/frame (our builds)",
         },
     }
 
