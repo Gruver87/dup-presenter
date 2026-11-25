@@ -1,0 +1,196 @@
+{
+  "slug": "dup-skill-trust-plane",
+  "lang": "ru",
+  "theme": "quantum_ledger",
+  "director_preset": "cinema_cosmos",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.1,
+    "duck_db": -10.5
+  },
+  "background": { "enabled": false, "provider": "pixabay" },
+  "voice": {
+    "engine": "edge_tts",
+    "lang": "ru",
+    "speaker": "dmitry",
+    "fallback_speaker": "aidar",
+    "rate": "97%",
+    "ambient_volume": 0.08,
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "CONTROL PLANE",
+      "type": "hero_3d",
+      "title": "DUP Skill Trust Plane",
+      "subtitle": "Fail-closed плоскость доверия для установки Agent Skills и MCP-паков",
+      "voice_text": "DUP Skill Trust Plane — это fail-closed контрольная плоскость доверия от DUP Labs. Она проверяет пакеты навыков ИИ-агентов до установки и выдаёт строгий вердикт: разрешить или отказать.",
+      "pills": [
+        { "label": "v0.1.0 · MIT", "color": "#00f0ff" },
+        { "label": "Fail-Closed", "color": "#ff2e63" },
+        { "label": "Skill Cards v1", "color": "#10ff88" },
+        { "label": "Self-Host Docker", "color": "#ffb800" }
+      ],
+      "cube_faces": ["TRUST", "EVAL", "SCAN", "SANDBOX", "POLICY", "ALLOW"]
+    },
+    {
+      "id": "s2",
+      "tag": "ЗАЧЕМ ЭТО НУЖНО",
+      "type": "versus_split",
+      "title": "Слепая установка vs Trust Plane",
+      "subtitle": "Защита от supply-chain атак на навыки агентов до запуска в проде",
+      "voice_text": "После атак на цепочки поставок навыков ставить чужие Agent Skills вслепую опасно. Trust Plane заменяет доверие на слово жёсткой автоматической проверкой без тихих обходов.",
+      "versus": {
+        "left": {
+          "label": "Без Trust Plane",
+          "badge": "SUPPLY-CHAIN РИСК",
+          "accent": "#ff2e63",
+          "points": [
+            "Скрытая кража секретов и ключей",
+            "Загрузка и запуск произвольного кода",
+            "Отсутствие границ прав и политик"
+          ]
+        },
+        "right": {
+          "label": "DUP Skill Trust Plane",
+          "badge": "FAIL-CLOSED",
+          "accent": "#10ff88",
+          "points": [
+            "Сетевой доступ и секреты запрещены по умолчанию",
+            "Нет одного гейта — автоматический отказ",
+            "Установка только при чистом вердикте clean"
+          ]
+        },
+        "verdict": "Это контрольный пункт безопасности, а не маркетплейс: любое сомнение блокирует установку."
+      }
+    },
+    {
+      "id": "s3",
+      "tag": "АРХИТЕКТУРА",
+      "type": "ledger_layers",
+      "title": "5-ступенчатый конвейер проверок",
+      "subtitle": "Каждый пакет навыков проходит всю цепочку от статики до карточки доверия",
+      "voice_text": "Пакет навыков проходит пять последовательных уровней: статическую проверку честности, эвристики безопасности и allowlist, профиль песочницы, проверку политик и выпуск карточки Skill Card с опциональной подписью HMAC.",
+      "layers": [
+        {
+          "id": "l1",
+          "name": "1. Static / Honesty",
+          "tech": "dup-skills-eval",
+          "desc": "Проверка структуры, метаданных и честности описаний навыков",
+          "guarantee": "Ошибки схемы и несоответствия блокируют проход",
+          "accent": "#00f0ff"
+        },
+        {
+          "id": "l2",
+          "name": "2. Security + Allowlist",
+          "tech": "dup-skill-security-scan",
+          "desc": "Эвристики утечки секретов, download-exec и проверка списка разрешённых",
+          "guarantee": "Критическая находка сразу даёт вердикт malicious",
+          "accent": "#ff2e63"
+        },
+        {
+          "id": "l3",
+          "name": "3. Sandbox Profile",
+          "tech": "least-privilege",
+          "desc": "Декларация минимальных привилегий внутри этого репозитория",
+          "guarantee": "Сеть и учётные данные запрещены по умолчанию",
+          "accent": "#ffb800"
+        },
+        {
+          "id": "l4",
+          "name": "4. Policy Probe",
+          "tech": "dup-policy-gate",
+          "desc": "Проверка согласованности жёстких ограничений, включая FUTURES_BLOCK",
+          "guarantee": "Конфликт политик ведёт к немедленному отказу",
+          "accent": "#a855f7"
+        },
+        {
+          "id": "l5",
+          "name": "5. Skill Cards v1",
+          "tech": "dup.skill_card.v1 + HMAC",
+          "desc": "Выпуск машиночитаемой карточки доверия и решение check-install",
+          "guarantee": "Код выхода 0 ALLOW только при вердикте clean",
+          "accent": "#10ff88"
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "tag": "ВЕРДИКТЫ",
+      "type": "kpi",
+      "title": "Четыре честных вердикта",
+      "subtitle": "Пропуск хотя бы одного обязательного гейта всегда переводит пакет в refused",
+      "voice_text": "Система возвращает один из четырёх вердиктов. Только clean разрешает установку. Suspicious требует ручного разбора, refused означает провал или отсутствие гейта, а malicious фиксирует угрозу безопасности.",
+      "kpis": [
+        { "value": "clean", "label": "Все гейты PASS — установка разрешена", "color": "#10ff88" },
+        { "value": "suspicious", "label": "Есть предупреждения — по умолчанию блок", "color": "#ffb800" },
+        { "value": "refused", "label": "Жёсткий провал или отсутствует гейт", "color": "#a855f7" },
+        { "value": "malicious", "label": "Ошибка безопасности: секреты, download-exec", "color": "#ff2e63" }
+      ]
+    },
+    {
+      "id": "s5",
+      "tag": "CLI И HTTP API",
+      "type": "terminal",
+      "title": "Запуск через CLI, HTTP и Docker",
+      "subtitle": "Локальная проверка паков и self-host сервис на порту 8788",
+      "voice_text": "Работать с плоскостью доверия можно из командной строки или как с self-host сервисом в Docker. Команда check-install встраивается прямо в CI и возвращает ноль только для чистого пакета.",
+      "code": {
+        "filename": "dup-skill-trust-plane · CLI & HTTP",
+        "lines": [
+          { "text": "$ python -m skill_trust status", "color": "#00f0ff" },
+          { "text": "$ python -m skill_trust demo", "color": "#10ff88" },
+          { "text": "$ python -m skill_trust verify ../dup-agent-skills --out ./cards", "color": "#e2e8f0" },
+          { "text": "$ python -m skill_trust check-install ../dup-agent-skills  # exit 0 if clean", "color": "#ffb800" },
+          { "text": "$ python -m skill_trust serve --host 127.0.0.1 --port 8788", "color": "#a855f7" },
+          { "text": "POST /v1/verify  {\"pack_root\": \"/packs/dup-agent-skills\", \"write_cards\": true}", "color": "#10ff88" }
+        ]
+      }
+    },
+    {
+      "id": "s6",
+      "tag": "ПРИМЕНЕНИЕ",
+      "type": "broll_cinematic",
+      "title": "Не зависит от домена",
+      "subtitle": "Финтех, DevOps-агенты, регулируемые контуры — крипто-радар лишь первый стенд",
+      "voice_text": "Архитектура не привязана к одной отрасли: она подходит для финтеха, DevOps и любых критичных агентских систем. При этом документация честна: ключи бирж не требуются, soak-прогон не заявляется, а карточка M8ven — это верификация издателя, а не аудит.",
+      "broll": {
+        "badge": "DOMAIN-AGNOSTIC · NO KEYS · HONEST SCOPE",
+        "caption": "Self-host через Docker Compose · GET /v1/health · POST /v1/verify",
+        "callouts": [
+          "Нулевые внешние зависимости в базовом ядре",
+          "Не требует API-ключей бирж и не заявляет soak",
+          "M8ven badge = верификация издателя, не платный аудит"
+        ]
+      }
+    },
+    {
+      "id": "s7",
+      "tag": "ОТКРЫТЫЙ КОД",
+      "type": "outro_3d",
+      "title": "DUP Skill Trust Plane",
+      "subtitle": "Проверяй навыки агентов до установки — fail-closed по умолчанию",
+      "voice_text": "Исходный код, документация и быстрый демо-сценарий без ключей открыты на GitHub в репозитории DUP Labs. Подключайте плоскость доверия перед установкой любых агентских навыков.",
+      "url": "github.com/Gruver87/dup-skill-trust-plane",
+      "tagline": "github.com/Gruver87/dup-skill-trust-plane · MIT · DUP Labs",
+      "badges": [
+        { "name": "FAIL-CLOSED", "color": "#ff2e63" },
+        { "name": "SKILL CARDS V1", "color": "#10ff88" },
+        { "name": "DOCKER SELF-HOST", "color": "#00f0ff" }
+      ]
+    }
+  ]
+}
