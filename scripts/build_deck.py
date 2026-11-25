@@ -61,7 +61,9 @@ from theme_catalog import THEME_IDS  # noqa: E402
 from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_available, synth_edge_with_timings  # noqa: E402
 from audio_fx import (  # noqa: E402
     AudioFXError,
+    WordTimingUnavailable,
     build_word_captions,
+    transcribe_word_events,
     detect_speech_windows,
     ensure_sfx_files,
     normalize_mp4_loudness,
@@ -480,6 +482,26 @@ class VoiceSynth:
         return audio
 
 
+def _word_events_for_clip(audio: np.ndarray, lang: str, tag: str, engine_events: list[dict]) -> list[dict]:
+    """Word timing events for one voiced clip.
+
+    Engine events win (Edge WordBoundary). English clips without engine events get local ASR word timestamps
+    (faster-whisper) on the exact audio written to disk. If ASR is unavailable, returns [] and the caption
+    builder uses the length-based estimate; the build log says which source was used.
+    """
+    if engine_events:
+        return engine_events
+    if lang != "en":
+        return []
+    try:
+        events = transcribe_word_events(audio, SR)
+    except WordTimingUnavailable as exc:
+        print(f"[captions] {tag}: ASR word timing unavailable ({exc}); estimated timing used")
+        return []
+    print(f"[captions] {tag}: ASR word timing, {len(events)} words")
+    return events
+
+
 def synthesize_deck(deck: dict, offline_only: bool = False) -> dict:
     """Synthesize with the deck's online voice when Edge TTS is reachable; otherwise the offline fallback.
 
@@ -522,6 +544,7 @@ def synthesize_deck(deck: dict, offline_only: bool = False) -> dict:
 def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used: str) -> dict:
     VOICE_DIR.mkdir(parents=True, exist_ok=True)
     RESOLVED_JSON.parent.mkdir(parents=True, exist_ok=True)
+    lang = deck_lang(deck)  # the fallback voice always shares the deck language
 
     voice = deck.get("voice") or {}
     mode = voice.get("mode", "single")
@@ -566,9 +589,10 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
                 seg_dur = len(clip) / float(SR)
                 if seg_dur < 0.4 and len(txt) > 30:
                     raise DeckValidationError(f"Slide {sid}: TTS produced {seg_dur:.2f}s for {len(txt)} chars ({sp_id})")
+                turn_events = _word_events_for_clip(clip, lang, f"{sid} turn {t_i + 1}", bounds)
                 captions.extend(
                     build_word_captions(
-                        txt, seg_dur, boundaries=bounds, offset_sec=voice_delay_sec + cur_t, speaker=sp_tag,
+                        txt, seg_dur, boundaries=turn_events, offset_sec=voice_delay_sec + cur_t, speaker=sp_tag,
                         spoken=normalize_ru_ssml(txt) if bounds else None,
                     )
                 )
@@ -589,8 +613,9 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
                 raise DeckValidationError(
                     f"Slide {sid}: TTS produced {dur:.2f}s for {len(plain)} chars; text is not voiceable by {speaker_a}"
                 )
+            events = _word_events_for_clip(audio, lang, sid, bounds)
             captions = build_word_captions(
-                plain, dur, boundaries=bounds, offset_sec=voice_delay_sec,
+                plain, dur, boundaries=events, offset_sec=voice_delay_sec,
                 spoken=normalize_ru_ssml(plain) if bounds else None,
             )
             scene_s = max(2, math.ceil(voice_delay_sec + dur) + 1)

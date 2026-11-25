@@ -247,7 +247,7 @@ def build_word_captions(
         spans_by_token, ratio = align_word_events(align_tokens, boundaries)
         if ratio >= WORD_ALIGN_MIN_RATIO:
             aligned = spans_by_token
-            print(f"[captions] word timing from TTS events: {ratio:.0%} of words matched")
+            print(f"[captions] word timing from word events: {ratio:.0%} of words matched")
         else:
             print(f"[captions] word alignment {ratio:.0%} below {WORD_ALIGN_MIN_RATIO:.0%}; using estimated word timing")
 
@@ -297,6 +297,42 @@ def build_word_captions(
 
 WORD_ALIGN_MIN_RATIO = 0.75
 _NON_WORD_RE = re.compile(r"[\W_]+")
+ASR_MODEL = "base.en"
+_ASR_MODEL_OBJ: object | None = None
+
+
+class WordTimingUnavailable(AudioFXError):
+    """Word timing from local ASR is not available (package missing or model failed). Caller labels the estimate."""
+
+
+def transcribe_word_events(audio: np.ndarray, sr: int) -> list[dict]:
+    """Word timestamps for a clip via faster-whisper (local CPU, English model). Same event shape as Edge.
+
+    The clip must be the exact audio written to the voice file, so timings match playback.
+    Raises WordTimingUnavailable when faster-whisper or its model cannot be loaded.
+    """
+    global _ASR_MODEL_OBJ
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError as exc:
+        raise WordTimingUnavailable("faster-whisper is not installed (pip install faster-whisper)") from exc
+    from scipy.signal import resample_poly
+
+    if _ASR_MODEL_OBJ is None:
+        try:
+            _ASR_MODEL_OBJ = WhisperModel(ASR_MODEL, device="cpu", compute_type="int8")
+        except Exception as exc:  # model download/load failure: report, never guess timings
+            raise WordTimingUnavailable(f"faster-whisper model {ASR_MODEL!r} failed to load: {exc}") from exc
+    audio16 = resample_poly(audio.astype(np.float32), 16000, sr).astype(np.float32)
+    segments, _info = _ASR_MODEL_OBJ.transcribe(audio16, language="en", word_timestamps=True, vad_filter=False)
+    events: list[dict] = []
+    for seg in segments:
+        for w in seg.words or []:
+            text = w.word.strip()
+            if text:
+                events.append({"start_sec": round(float(w.start), 3), "end_sec": round(float(w.end), 3), "text": text})
+    return events
+
 
 
 def _word_core(text: str) -> str:

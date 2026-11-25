@@ -42,7 +42,7 @@
                                           "KARAOKE",
                                           "BOLD"
                                       ],
-                       "voice_text":  "Each word lights up as it is spoken. Timing follows each sentence of the voice track, with words spaced evenly inside it."
+                       "voice_text":  "Each word lights up as it is spoken. Word timing is measured from the voice track itself, so the highlight follows the speech."
                    },
                    {
                        "id":  "q1",
