@@ -46,12 +46,15 @@ class KaraokeWordTimingTests(unittest.TestCase):
         # Kokoro and Silero return no boundaries: proportional sentence spans.
         self._assert_words_everywhere(build_word_captions(NARRATION, 6.0, boundaries=None))
 
-    def test_words_with_matching_tts_boundaries(self) -> None:
-        # Edge: one real boundary per sentence.
-        bounds = [{"start_sec": 0.0, "end_sec": 1.5}, {"start_sec": 1.6, "end_sec": 3.0}, {"start_sec": 3.1, "end_sec": 5.0}]
-        self._assert_words_everywhere(build_word_captions(NARRATION, 6.0, boundaries=bounds))
+    def test_words_with_matching_tts_word_events(self) -> None:
+        # Edge WordBoundary: one event per spoken word.
+        tokens = NARRATION.split()
+        events = [{"start_sec": round(0.5 * i, 3), "end_sec": round(0.5 * i + 0.4, 3), "text": t.strip(".!?")}
+                  for i, t in enumerate(tokens)]
+        self._assert_words_everywhere(build_word_captions(NARRATION, 6.0, boundaries=events))
 
-    def test_words_with_mismatched_tts_boundaries(self) -> None:
+    def test_words_with_unusable_tts_events(self) -> None:
+        # Events without spoken text cannot be aligned: estimated timing is used, words still exist.
         bounds = [{"start_sec": 0.0, "end_sec": 2.0}]
         self._assert_words_everywhere(build_word_captions(NARRATION, 6.0, boundaries=bounds))
 

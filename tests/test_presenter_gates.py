@@ -56,15 +56,19 @@ class PresenterGatesTests(unittest.TestCase):
         self.assertAlmostEqual(wins[0][1], 3.5, delta=0.1)
 
     def test_word_captions_with_real_boundaries(self) -> None:
-        bounds = [
-            {"start_sec": 0.1, "end_sec": 2.1, "text": "Привет мир."},
-            {"start_sec": 2.4, "end_sec": 4.4, "text": "Второй тест."},
+        # Edge WordBoundary: one event per spoken word.
+        events = [
+            {"start_sec": 0.1, "end_sec": 0.6, "text": "Привет"},
+            {"start_sec": 0.7, "end_sec": 1.2, "text": "мир"},
+            {"start_sec": 2.4, "end_sec": 2.9, "text": "Второй"},
+            {"start_sec": 3.0, "end_sec": 3.5, "text": "тест"},
         ]
-        cues = audio_fx.build_word_captions("Привет мир. Второй тест.", 5.0, boundaries=bounds, offset_sec=0.2)
+        cues = audio_fx.build_word_captions("Привет мир. Второй тест.", 5.0, boundaries=events, offset_sec=0.2)
         self.assertEqual(len(cues), 2)
         self.assertAlmostEqual(cues[0]["start_sec"], 0.3, delta=0.01)
         self.assertEqual(len(cues[0]["words"]), 2)
         self.assertEqual(cues[0]["words"][0]["w"], "Привет")
+        self.assertAlmostEqual(cues[1]["words"][0]["start"], 2.6, delta=0.01)
         self.assertGreater(cues[0]["words"][1]["end"], cues[0]["words"][0]["end"])
 
     def test_pronunciation_config_overrides_applied(self) -> None:

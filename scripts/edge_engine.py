@@ -68,10 +68,14 @@ def _decode_mp3(path: Path, sr: int) -> np.ndarray:
 
 
 async def _stream_edge(voice: str, text: str, rel_rate: str, out_mp3: Path) -> list[dict]:
-    """Stream MP3 audio and capture real SentenceBoundary timings in one Edge TTS request."""
+    """Stream MP3 audio and capture real per-word timings (WordBoundary) in one Edge TTS request.
+
+    edge-tts emits either word or sentence events per request; word events are used because they carry
+    the spoken token text, which build_word_captions aligns to the caption tokens.
+    """
     import edge_tts
 
-    comm = edge_tts.Communicate(text, voice, rate=rel_rate, boundary="SentenceBoundary")
+    comm = edge_tts.Communicate(text, voice, rate=rel_rate, boundary="WordBoundary")
     boundaries: list[dict] = []
     with out_mp3.open("wb") as f:
         async for chunk in comm.stream():
@@ -80,7 +84,7 @@ async def _stream_edge(voice: str, text: str, rel_rate: str, out_mp3: Path) -> l
                 data = chunk.get("data")
                 if data:
                     f.write(data)
-            elif ctype in ("SentenceBoundary", "WordBoundary"):
+            elif ctype == "WordBoundary":
                 # Edge TTS offsets/durations are in 100-nanosecond ticks (1e7 ticks = 1 sec).
                 start_s = float(chunk.get("offset", 0)) / 10_000_000.0
                 dur_s = float(chunk.get("duration", 0)) / 10_000_000.0
@@ -99,7 +103,7 @@ def synth_edge_with_timings(
     rate: str = "95%",
     attempts: int = 5,
 ) -> tuple[np.ndarray, list[dict]]:
-    """Synthesize one utterance with Edge neural voice. Returns (mono float32 at sr, sentence boundaries)."""
+    """Synthesize one utterance with Edge neural voice. Returns (mono float32 at sr, word timing events)."""
     voice = EDGE_RU_VOICES.get(speaker)
     if voice is None:
         raise EdgeEngineError(f"unknown Edge speaker {speaker!r}; allowed: {sorted(EDGE_RU_VOICES)}")

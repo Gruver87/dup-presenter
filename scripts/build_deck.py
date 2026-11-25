@@ -454,7 +454,7 @@ class VoiceSynth:
     def synth_with_timings(
         self, speaker: str, plain: str, ssml: str | None = None
     ) -> tuple[np.ndarray, list[dict]]:
-        """Return (mono float32 audio at SR, sentence boundary timings) for one utterance."""
+        """Return (mono float32 audio at SR, word timing events) for one utterance. Events are empty when the engine gives none."""
         if speaker in EDGE_RU_VOICES:
             # Edge reads plain text; apply the same Latin->Cyrillic respelling as Silero so brand names are voiced.
             audio, boundaries = synth_edge_with_timings(speaker, normalize_ru_ssml(plain), SR, rate=self.rate)
@@ -567,7 +567,10 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
                 if seg_dur < 0.4 and len(txt) > 30:
                     raise DeckValidationError(f"Slide {sid}: TTS produced {seg_dur:.2f}s for {len(txt)} chars ({sp_id})")
                 captions.extend(
-                    build_word_captions(txt, seg_dur, boundaries=bounds, offset_sec=voice_delay_sec + cur_t, speaker=sp_tag)
+                    build_word_captions(
+                        txt, seg_dur, boundaries=bounds, offset_sec=voice_delay_sec + cur_t, speaker=sp_tag,
+                        spoken=normalize_ru_ssml(txt) if bounds else None,
+                    )
                 )
                 chunks.append(clip)
                 cur_t += seg_dur
@@ -586,7 +589,10 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
                 raise DeckValidationError(
                     f"Slide {sid}: TTS produced {dur:.2f}s for {len(plain)} chars; text is not voiceable by {speaker_a}"
                 )
-            captions = build_word_captions(plain, dur, boundaries=bounds, offset_sec=voice_delay_sec)
+            captions = build_word_captions(
+                plain, dur, boundaries=bounds, offset_sec=voice_delay_sec,
+                spoken=normalize_ru_ssml(plain) if bounds else None,
+            )
             scene_s = max(2, math.ceil(voice_delay_sec + dur) + 1)
             b_tag = f" ({len(bounds)} real bounds)" if bounds else ""
             print(f"[tts] {sid} ({speaker_a}): {dur:.2f}s{b_tag} -> slide {scene_s}s")

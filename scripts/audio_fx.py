@@ -217,44 +217,73 @@ def build_word_captions(
     boundaries: list[dict] | None = None,
     offset_sec: float = 0.0,
     speaker: str | None = None,
+    spoken: str | None = None,
 ) -> list[dict]:
-    """Build sentence CaptionCues with word-level timings (uses real TTS SentenceBoundary when available)."""
+    """Build sentence CaptionCues with word-level timings.
+
+    ``spoken`` is the text the TTS actually voiced (e.g. Latin brand names respelled for a Cyrillic voice). It is
+    used only for alignment; it must have the same whitespace token count as ``plain`` or it is ignored.
+
+    Timing sources, strongest first:
+    - ``boundaries`` are real TTS word events ({start_sec, end_sec, text}); each display token is aligned to its
+      event, so word highlight follows the voice. Tokens the TTS did not voice as one word are interpolated.
+    - Without usable events (Kokoro/Silero return none, or alignment is below WORD_ALIGN_MIN_RATIO), sentence
+      spans are split proportionally across the clip and words are spaced by length (estimate).
+    Every non-empty sentence gets words either way, so karaoke never silently falls back to box.
+    """
     sentences = _split_sentences(plain)
     if not sentences:
         return []
 
-    spans: list[tuple[float, float]] = []
-    if boundaries and len(boundaries) == len(sentences):
-        for b in boundaries:
-            s0 = max(0.0, float(b["start_sec"]))
-            s1 = max(s0 + 0.1, min(total_dur, float(b["end_sec"])))
-            spans.append((s0, s1))
-    elif boundaries and len(boundaries) > 0:
-        # Map display sentences proportionally across the real first-to-last speech span.
-        first_s = max(0.0, float(boundaries[0]["start_sec"]))
-        last_e = max(first_s + 0.2, min(total_dur, float(boundaries[-1]["end_sec"])))
-        usable = last_e - first_s
-        weights = [max(4, len(s)) for s in sentences]
-        total_w = float(sum(weights))
-        cur = first_s
-        for w in weights:
-            seg = usable * (w / total_w)
-            spans.append((cur, cur + seg))
-            cur += seg
-    else:
-        weights = [max(4, len(s)) for s in sentences]
-        total_w = float(sum(weights))
-        cur = 0.0
-        for w in weights:
-            seg = total_dur * (w / total_w)
-            spans.append((cur, cur + seg))
-            cur += seg
+    tokens_per_sentence = [s.split() for s in sentences]
+    flat_tokens = [t for toks in tokens_per_sentence for t in toks]
+
+    aligned: list[tuple[float, float]] | None = None
+    if boundaries:
+        align_tokens = flat_tokens
+        if spoken is not None and len(spoken.split()) == len(flat_tokens):
+            align_tokens = spoken.split()
+        # Alignment compares spoken tokens with events; spans are returned per display token (same count).
+        spans_by_token, ratio = align_word_events(align_tokens, boundaries)
+        if ratio >= WORD_ALIGN_MIN_RATIO:
+            aligned = spans_by_token
+            print(f"[captions] word timing from TTS events: {ratio:.0%} of words matched")
+        else:
+            print(f"[captions] word alignment {ratio:.0%} below {WORD_ALIGN_MIN_RATIO:.0%}; using estimated word timing")
 
     cues: list[dict] = []
-    for sent, (s0, s1) in zip(sentences, spans):
+    if aligned is not None:
+        pos = 0
+        for sent, toks in zip(sentences, tokens_per_sentence):
+            token_spans = aligned[pos: pos + len(toks)]
+            pos += len(toks)
+            words = [
+                {"w": tok, "start": round(offset_sec + s0, 3), "end": round(offset_sec + s1, 3)}
+                for tok, (s0, s1) in zip(toks, token_spans)
+            ]
+            cue: dict = {
+                "start_sec": words[0]["start"],
+                "end_sec": words[-1]["end"],
+                "text": sent,
+                "words": words,
+            }
+            if speaker:
+                cue["speaker"] = speaker
+            cues.append(cue)
+        return cues
+
+    if not boundaries:
+        print("[captions] word timing estimated (engine gives no word events)")
+    weights = [max(4, len(s)) for s in sentences]
+    total_w = float(sum(weights))
+    cur = 0.0
+    for sent, w in zip(sentences, weights):
+        seg = total_dur * (w / total_w)
+        s0, s1 = cur, cur + seg
+        cur += seg
         st = round(offset_sec + s0, 3)
         en = round(offset_sec + s1, 3)
-        cue: dict = {
+        cue = {
             "start_sec": st,
             "end_sec": en,
             "text": sent,
@@ -264,6 +293,77 @@ def build_word_captions(
             cue["speaker"] = speaker
         cues.append(cue)
     return cues
+
+
+WORD_ALIGN_MIN_RATIO = 0.75
+_NON_WORD_RE = re.compile(r"[\W_]+")
+
+
+def _word_core(text: str) -> str:
+    """Alphanumeric core of a token, lowercased: 'spoken.' -> 'spoken', '5%' -> '5', '-' -> ''."""
+    return _NON_WORD_RE.sub("", text).lower()
+
+
+def _fill_word_times(
+    tokens: list[str], times: list[tuple[float, float] | None], last_end: float
+) -> list[tuple[float, float]]:
+    """Give unmatched tokens times between their matched neighbours, spaced by spoken weight."""
+    out = list(times)
+    n = len(tokens)
+    prev_idx = -1
+    prev_end = 0.0
+    for i in range(n + 1):
+        if i < n and out[i] is None:
+            continue
+        gap = list(range(prev_idx + 1, i))
+        if gap:
+            start = prev_end
+            stop = out[i][0] if i < n else max(prev_end, last_end)
+            span = max(0.0, stop - start)
+            weights = [_word_weight(tokens[j]) for j in gap]
+            total_w = sum(weights) or 1.0
+            cur = start
+            for j, w in zip(gap, weights):
+                seg = span * (w / total_w)
+                out[j] = (cur, cur + seg)
+                cur += seg
+        if i < n:
+            prev_idx = i
+            prev_end = out[i][1]
+    return [t if t is not None else (0.0, 0.0) for t in out]
+
+
+def align_word_events(
+    tokens: list[str], events: list[dict]
+) -> tuple[list[tuple[float, float]], float]:
+    """Align display tokens to TTS word events. Returns (start, end) per token in seconds and the match ratio.
+
+    Matching uses alphanumeric cores (case-insensitive) with an order-preserving sequence alignment, so
+    punctuation attached to a word ('spoken.') and TTS-dropped symbols ('-') do not break it. A token the TTS
+    split or merged ('BTC/ETH' -> 'BTC', '/', 'ETH') is not matched and gets an interpolated time.
+    Ratio = matched content tokens / content tokens; callers decide whether it is good enough.
+    """
+    from difflib import SequenceMatcher
+
+    tok_idx = [i for i, t in enumerate(tokens) if _word_core(t)]
+    ev_idx = [i for i, e in enumerate(events) if _word_core(str(e.get("text", "")))]
+    if not tok_idx or not ev_idx:
+        return [(0.0, 0.0)] * len(tokens), 0.0
+
+    tok_cores = [_word_core(tokens[i]) for i in tok_idx]
+    ev_cores = [_word_core(str(events[i].get("text", ""))) for i in ev_idx]
+    times: list[tuple[float, float] | None] = [None] * len(tokens)
+    matched = 0
+    for block in SequenceMatcher(None, tok_cores, ev_cores, autojunk=False).get_matching_blocks():
+        for k in range(block.size):
+            ev = events[ev_idx[block.b + k]]
+            times[tok_idx[block.a + k]] = (
+                max(0.0, float(ev["start_sec"])),
+                max(0.0, float(ev["end_sec"])),
+            )
+            matched += 1
+    last_end = max(float(events[i]["end_sec"]) for i in ev_idx)
+    return _fill_word_times(tokens, times, last_end), matched / len(tok_idx)
 
 
 def normalize_mp4_loudness(
