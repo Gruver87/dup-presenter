@@ -1,69 +1,114 @@
 # DUP Presenter
 
-**Declarative 3D Product Presentation Engine** (JSON deck → Edge TTS / Silero / Kokoro neural voice + SFX + music ducking → 3D Remotion slides with transitions & karaoke captions → broadcast −16 LUFS 1080p MP4 + Media QA Gate + Publish Pack).
+[![CI](https://github.com/Gruver87/dup-presenter/actions/workflows/ci.yml/badge.svg)](https://github.com/Gruver87/dup-presenter/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Gruver87/dup-presenter)](https://github.com/Gruver87/dup-presenter/releases/tag/v1.2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776ab.svg)](https://www.python.org/)
+[![Node 22](https://img.shields.io/badge/Node-22-339933.svg)](package.json)
 
-Создаёт воспроизводимые продуктовые 3D-презентации (16:9 и 9:16) с живым кодом, скриншотами, 3D-архитектурой, KPI-метриками и честной проверкой фактов по исходникам репозитория — **без ручного видеомонтажа**.
+**Declarative 3D Product Presentation Engine** by **DUP Labs** (JSON/Markdown deck → neural TTS + STFT de-esser + dynamic music ducking + word-level karaoke captions → Remotion 4 3D slides & cosmic themes → broadcast `−16 LUFS` 1080p/9:16 MP4 + fail-closed Media QA Gate + Publish Pack).
 
-## Демо
+Создаёт воспроизводимые продуктовые 3D-презентации (16:9 и 9:16) с живым кодом, реальными скриншотами, записями UI, голографической 3D-архитектурой, KPI-метриками и проверкой фактов по исходникам репозитория — **без ручного видеомонтажа**.
+
+---
+
+## Демо-видео (GitHub Releases)
+
+MP4-файлы не коммитятся в git (лимит 100 МБ) — готовые рендеры с субтитрами `.srt/.vtt`, главами и отчётами Media QA Gate публикуются в **GitHub Releases**:
+
+### 1. DUP Protocol Cosmos (`quantum_ledger` · RU & EN)
+
+| Русская версия (`229.4 с`, `−16.0 LUFS`, Edge Neural `dmitry`) | English version (`245.5 s`, `−16.06 LUFS`, Kokoro `am_michael`) |
+|---|---|
+| [![DUP Protocol Cosmos RU](docs/media/dup-protocol-cosmos-ru-thumb.jpg)](https://github.com/Gruver87/dup-presenter/releases/tag/media-dup-protocol-cosmos) | [![DUP Protocol Cosmos EN](docs/media/dup-protocol-cosmos-en-thumb.jpg)](https://github.com/Gruver87/dup-presenter/releases/tag/media-dup-protocol-cosmos) |
+
+- Деки: [`decks/dup-protocol-cosmos.json`](decks/dup-protocol-cosmos.json) (RU) и [`decks/dup-protocol-cosmos-en.json`](decks/dup-protocol-cosmos-en.json) (EN), тема `quantum_ledger`, 10 сцен, флагманский слайд `protocol_cosmos`, `ledger_layers`, `tx_journey`, `mesh_network`.
+- Релиз с MP4, `.srt/.vtt`, `_chapters.txt` и `_qa.json`: [**`media-dup-protocol-cosmos`**](https://github.com/Gruver87/dup-presenter/releases/tag/media-dup-protocol-cosmos).
+
+### 2. DUP Market Radar Showcase v2 (`142 с`, `−16 LUFS`, Media QA PASS)
 
 [![Смотреть демо: DUP Market Radar](docs/media/radar-showcase-v2-thumb.jpg)](https://github.com/Gruver87/dup-presenter/releases/download/media-radar-showcase-v2/radar-showcase-v2.mp4)
 
-Видео (1920x1080, 142 с, −16 LUFS, Media QA PASS) собрано этим пайплайном из деки [`decks/radar-showcase-v2.json`](decks/radar-showcase-v2.json). MP4 лежит в [GitHub Release `media-radar-showcase-v2`](https://github.com/Gruver87/dup-presenter/releases/tag/media-radar-showcase-v2), а не в git из-за лимита 100 МБ. В релизе есть субтитры `.srt/.vtt` и главы.
+- Дека: [`decks/radar-showcase-v2.json`](decks/radar-showcase-v2.json) · Релиз: [**`media-radar-showcase-v2`**](https://github.com/Gruver87/dup-presenter/releases/tag/media-radar-showcase-v2).
+
+---
 
 ## Архитектура пайплайна
 
 ```text
-decks/<slug>.json
+decks/<slug>.json  (или examples/*.md -> scripts/md_deck.py)
    │
    ▼  python scripts/build_deck.py decks/<slug>.json --render
-1. Fail-closed валидация схемы + опциональный Claim Audit (--audit-repo)
-2. Озвучка RU (Edge TTS dmitry + офлайн-фолбэк Silero eugene) / EN (Kokoro am_michael)
+1. Fail-closed валидация схемы + deck_doctor + опциональный Claim Audit (--audit-repo)
+2. Озвучка RU (Edge TTS dmitry + офлайн Silero v5 eugene) / EN (Kokoro-82M v1.0 am_michael)
    + STFT де-эссер + детектор речи для динамического дакинга музыки
-   + пословные тайминги субтитров (SentenceBoundary + word alignment), стиль задаётся `caption_style`
+   + пословные тайминги субтитров (Edge WordBoundary RU / локальный faster-whisper ASR EN)
    + процедурные SFX (transition whoosh + UI pop)
-3. Рендер в Remotion 4 (TransitionSeries fade/slide/wipe + 3D-фон + ScreenWindow3D авто-зум)
-4. Мастеринг звука в -16 LUFS / -1.5 dBTP (two-pass ffmpeg loudnorm)
+3. Рендер в Remotion 4 (TransitionSeries fade/slide/wipe + 12 тем + 14 шаблонов 3D-слайдов)
+4. Мастеринг звука в -16.0 LUFS / -1.5 dBTP (two-pass ffmpeg loudnorm, 48 kHz AAC 320 kbps)
 5. Media QA Gate (ffprobe + LUFS + True Peak + dead-air check) -> out/<slug>_qa.json
 6. Publish Pack: out/<slug>.srt/.vtt, _chapters.txt, _post_copy.md, _metadata.json, _thumb.png
 ```
 
+Подробная схема и карта всех модулей: [**`docs/ARCHITECTURE.md`**](docs/ARCHITECTURE.md) · Полная схема де́ка: [**`docs/DECK_SCHEMA.md`**](docs/DECK_SCHEMA.md).
+
+---
+
+## 14 шаблонов слайдов (`type`)
+
+| Шаблон | Описание |
+|--------|----------|
+| `hero_3d` | Титульный слайд с градиентом, цветными бейджами и вращающимся 3D-кубом (`backfaceVisibility: hidden`) |
+| `protocol_cosmos` | Центральный вращающийся криптореактор, 6 вогнутых 3D-станций с оптоволоконными лучами и красным `fail-closed` щитом |
+| `ledger_layers` | 3D-стек слоёв архитектуры (3–6 слоёв) с пошаговым фокусом и локализованной плашкой `ГАРАНТИЯ:` / `GUARANTEE:` |
+| `tx_journey` | Жизненный цикл транзакции: сворачивание дерева Меркла, `prev_hash`-связка блоков и печать `SEALED ✓` |
+| `mesh_network` | 3D-топология 3–4 узлов сети с импульсами распространения блока, зондами согласованности и карточками восстановления |
+| `code_split` | Split-screen: слева тезисы, справа 3D-окно реального кода с построчной анимацией |
+| `screen_split` | Split-screen с реальными скриншотами и виртуальной камерой авто-зума (`focus: {x, y, zoom}`) |
+| `ui_recording` | Живая запись сценария UI через Playwright (`scripts/record_ui.py`) с авто-подгонкой длительности через `ffprobe` |
+| `arch_flow` | 3D-конвейер архитектуры с анимированными потоками пакетов |
+| `kpi` | Ключевые метрики (1–4 карточки; в `quantum_ledger` — дутые вогнутые полочки и парящие цифры) |
+| `timeline` | Пошаговый пайплайн / дорожная карта (2–6 шагов) |
+| `terminal` | Анимированный вывод терминала |
+| `quote` | Цитата в 3D-карточке (`title`, до 220 символов) с атрибуцией в `subtitle` |
+| `outro_3d` | Финальный слайд со ссылкой на репозиторий, бейджами, теглайном и 3D-кубом |
+
+## 12 визуальных тем (`theme`)
+
+Единый источник правды: `src/themes.ts` ↔ `scripts/theme_catalog.py`.
+
+- **Тёмные:** `quantum_ledger` (вогнутая космическая 3D-воронка, 22 пучка транзакций, дутые полочки и парящий текст), `neon_cyber` (по умолчанию), `cosmic_radar`, `terminal_green`, `deep_ocean`, `sunset_orange`, `cyber_magenta`, `aurora_purple`, `mono_graphite`.
+- **Светлые:** `minimal_light`, `paper_warm`, `corporate_blue`.
+
+## Стили субтитров (`caption_style`)
+
+- `box` (по умолчанию) — реплика целиком в аккуратной плашке.
+- `karaoke` — пословная подсветка по ходу речи. Источники таймингов по приоритету:
+  1. Русские голоса Edge TTS (`WordBoundary`) отдают точное время каждого слова из TTS.
+  2. Английские голоса (Kokoro-82M, Silero EN) получают точные тайминги через локальное распознавание `faster-whisper` (`base.en`, CPU).
+  3. Если ASR-пакет не установлен, слова оцениваются пропорционально длине, и в логе явно пишется `estimated` (честно, без подмены статуса).
+- `bold` — крупный белый текст с тенью без плашки (для вертикальных 9:16 роликов).
+
+---
+
 ## Презентация из Markdown (без JSON)
 
 ```powershell
-# Пишем текст в examples/md-talk-demo.md, затем конвертируем в деку (fail-closed)
 python scripts/md_deck.py examples/md-talk-demo.md --out decks/md-talk-demo.json
 python scripts/build_deck.py decks/md-talk-demo.json --render
 ```
 
-Поддерживаются типы `hero_3d`, `outro_3d`, `kpi`, `timeline`. Типы, которым нужны ассеты или символы кода, пишутся в JSON. Непонятная строка, неизвестный ключ или неподдерживаемый тип дают отказ с номером строки, файл не создаётся.
+Поддерживаются типы `hero_3d`, `outro_3d`, `kpi`, `timeline`. Непонятная строка, неизвестный ключ или неподдерживаемый тип дают fail-closed отказ с номером строки, файл не создаётся.
 
-## Стили субтитров (`caption_style`)
-
-- `box` (по умолчанию) — реплика целиком в плашке, как и раньше.
-- `karaoke` — подсветка слов по ходу речи: текущее слово голубым, сказанные белым, ещё не сказанные приглушены. Тайминги слов, по приоритету: (1) русские голоса Edge (`WordBoundary`) отдают время каждого слова из TTS; (2) английские голоса (Kokoro, Silero EN) без событий движка получают тайминги локальным распознаванием `faster-whisper` (модель `base.en`, CPU) по собранному аудио; (3) если пакет не установлен, слова оцениваются по длине предложения и слова. Источник и доля совпавших слов пишутся в лог сборки. Для пункта (2) нужен `pip install faster-whisper` (модель загружается один раз). Каждая озвученная реплика получает слова, откат на `box` в собранных деках не происходит.
-- `bold` — крупный белый текст с тенью, без плашки (для коротких вертикальных видео).
-
-Демо: `decks/caption-karaoke-demo.json`, `decks/caption-bold-demo.json` и `decks/quote-demo.json` (с новым слайдом `quote`).
-
-## Поддерживаемые шаблоны слайдов (`type`)
-
-- `hero_3d` — титульный слайд с градиентом, бейджами и вращающимся 3D-кубом.
-- `code_split` — split-screen: слева тезисы, справа 3D-окно кода с построчной анимацией.
-- `screen_split` — split-screen с реальными скриншотами и виртуальной камерой авто-зума (`focus: {x, y, zoom}`).
-- `arch_flow` — 3D-конвейер архитектуры с анимированными потоками пакетов.
-- `kpi` — ключевые метрики (1–4 карточки).
-- `timeline` — пошаговый пайплайн / дорожная карта (2–6 шагов).
-- `terminal` — анимированный вывод терминала.
-- `outro_3d` — финальный слайд со ссылкой, бейджами и 3D-кубом.
-- `quote` — одна цитата в карточке (`title`, до 220 символов) с атрибуцией в `subtitle` (необязательно).
-- `ledger_layers` — 3D-стек слоёв архитектуры / живой книги (3–6 слоёв с пошаговым фокусом и гарантией каждого слоя).
-- `tx_journey` — анимированный жизненный цикл транзакции: сворачивание дерева Меркла, запечатывание блока с `prev_hash` в цепочку и бегущий пакет по этапам.
-- `mesh_network` — 3D-топология 3–4 узлов сети с импульсами распространения блока, зондами согласованности и карточками восстановления.
-- `protocol_cosmos` — голографическая схема полного цикла протокола: центральный вращающийся криптореактор, 6 вогнутых 3D-станций с оптоволоконными лучами, пучками транзакций и отскоком невалидных пакетов на красном fail-closed щите (лучше всего раскрывается с темой `quantum_ledger`).
+---
 
 ## Быстрый старт
 
 ```powershell
+# Установка зависимостей
+npm ci
+pip install numpy scipy httpx playwright edge-tts kokoro-onnx faster-whisper
+
 # Полная сборка + рендер + -16 LUFS + Media QA + Publish Pack
 python scripts/build_deck.py decks/radar-pro.json --render
 
@@ -85,35 +130,34 @@ python scripts/make_cutdown.py decks/radar-pro.json
 # Перевести дек RU <-> EN (сохраняя код, числа и URL)
 python scripts/translate_deck.py decks/radar-pro.json --to en
 
-# Автосъёмка чистого UI через Playwright с координатами фокуса
+# Автосъёмка чистого UI / сценария через Playwright
 python scripts/capture_ui.py --url http://127.0.0.1:8080 --out live_ui.png --focus-selector "table"
+python scripts/record_ui.py scenarios/demo.json
 
-# Загрузить MP4 (>100 МБ) и пакет в GitHub Release
-python scripts/github_release_uploader.py --mp4 out/radar-pro.mp4 --repo Gruver87/dup-presenter --dry-run
-
-# Загрузить MP4 в черновики TikTok (Inbox)
-python scripts/tiktok_uploader.py --mp4 out/radar-pro.mp4 --mode inbox
-
-# Запустить локальную веб-консоль
+# Запустить локальную веб-консоль (поддержка Markdown-импорта и выбора caption_style)
 python scripts/console_server.py --open
 
 # Запустить MCP-сервер (stdio JSON-RPC 2.0 для Cursor / Claude)
 python scripts/mcp_server.py
+
+# Опубликовать MP4 (>100 МБ) и Publish Pack в GitHub Release
+python scripts/github_release_uploader.py --mp4 out/radar-pro.mp4 --repo Gruver87/dup-presenter --dry-run
 ```
 
 ## Словарь произношения
 
-Редактируется в `config/pronunciation.json` или через API консоли `GET/POST /api/pronunciation`.
+Редактируется в `config/pronunciation.json` или через API веб-консоли `GET/POST /api/pronunciation`.
 
-## Что не публикуется
+## Что не публикуется в Git
 
-- `decks/dup-protocol.json`, `decks/dup-protocol-story.json`, `decks/dup-protocol-cosmos.json` и `decks/dup-protocol-cosmos-en.json` ссылаются на скриншоты `public/screens/dup-protocol/`. Они в `.gitignore`: это снимки локальной консоли узла. На чистом клоне `deck_doctor` вернёт `missing screen file`, а рендер не начнётся (fail-closed). Деку можно собрать только на машине, где лежат эти файлы.
-- `out/` (рендеры; например, `out/dup-protocol.mp4` собран из деки с этими скриншотами) и `public/ui_recordings/` (локальные записи UI) не коммитятся и не загружаются в Release.
+- `decks/dup-protocol.json`, `decks/dup-protocol-story.json`, `decks/dup-protocol-cosmos.json` и `decks/dup-protocol-cosmos-en.json` ссылаются на локальные скриншоты `public/screens/dup-protocol/` (в `.gitignore`). На чистом клоне `deck_doctor` вернёт `missing screen file`, а рендер не начнётся (fail-closed).
+- `out/` (рендеры MP4 и отчёты), `public/voice/`, `public/music/`, `public/ui_recordings/`, `models/` и `secrets/` не коммитятся в git.
 
 ## Тесты и проверки
 
 ```powershell
 npx tsc --noEmit
+python -m py_compile scripts/*.py
 python -m unittest discover -s tests -v
 
 # Живая проверка веб-консоли в Chromium (нужна запущенная консоль на нужном порту)
@@ -121,9 +165,18 @@ python scripts/console_server.py --port 8790 --no-auto-ollama
 python scripts/console_ui_check.py --url http://127.0.0.1:8790/
 ```
 
+Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **137 Python unit/gate тестов** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+## Документация и экосистема DUP Labs
+
+- **В этом репозитории:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · [DECK_SCHEMA.md](docs/DECK_SCHEMA.md) · [CHANGELOG.md](CHANGELOG.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CITATION.cff](CITATION.cff)
+- **Смежные репозитории DUP Labs:**
+  - [`Gruver87/dup-protocol`](https://github.com/Gruver87/dup-protocol) — промышленный L1 audit-pin (Python + Rust)
+  - [`Gruver87/dup-protocol-experimental`](https://github.com/Gruver87/dup-protocol-experimental) — R&D-песочница DUP Protocol
+  - [`Gruver87/dup-market-radar`](https://github.com/Gruver87/dup-market-radar) — DUP Market Radar
+
 ## Лицензии сторонних компонентов
 
-- **Remotion**: бесплатная лицензия для физлиц и команд до 3 человек ([remotion.dev/docs/license/pricing](https://www.remotion.dev/docs/license/pricing)).
-- **Silero TTS v5** (MIT), **Kokoro-82M ONNX** (Apache-2.0), **Edge TTS** (онлайн-сервис Microsoft).
-- **Лицензия `dup-presenter`**: MIT (см. файл `LICENSE`). Это лицензия на код и шаблоны проекта, она не даёт прав на Remotion и другие сторонние компоненты.
-- **Важно про Remotion**: его коммерческое использование регулируется отдельной лицензией Remotion. Перед коммерческим использованием проверьте [условия Remotion](https://www.remotion.dev/docs/license/pricing).
+- **Лицензия `dup-presenter`**: MIT (см. [`LICENSE`](LICENSE)). Это лицензия на код и шаблоны проекта, она не даёт прав на Remotion и другие сторонние компоненты.
+- **Remotion**: бесплатная лицензия для физлиц и команд до 3 человек ([remotion.dev/docs/license/pricing](https://www.remotion.dev/docs/license/pricing)). Перед коммерческим использованием проверьте условия Remotion.
+- **Silero TTS v5** (MIT), **Kokoro-82M ONNX** (Apache-2.0), **faster-whisper** (MIT), **Edge TTS** (онлайн-сервис Microsoft).

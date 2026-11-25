@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+title: "DUP Presenter"
+message: >-
+  If you use DUP Presenter in engineering demos, product walkthroughs, or
+  research pipelines, please cite it using these metadata. Retain the MIT
+  LICENSE notice in redistributions and check third-party licenses (including
+  Remotion) before commercial use.
+type: software
+authors:
+  - family-names: Dabranski
+    given-names: Uladzimir
+    alias: Gruver87
+    website: "https://github.com/Gruver87"
+    affiliation: "DUP Labs"
+repository-code: "https://github.com/Gruver87/dup-presenter"
+url: "https://github.com/Gruver87/dup-presenter"
+abstract: >-
+  Declarative 3D Product Presentation Engine by DUP Labs: converts validated
+  JSON or Markdown decks into 1080p/vertical MP4 presentations using neural TTS
+  (Edge TTS / Silero v5 RU / Kokoro-82M v1.0 EN), word-level karaoke captions
+  (Edge WordBoundary / local faster-whisper ASR), Remotion 4 3D slide templates,
+  two-pass -16 LUFS broadcast mastering, and a fail-closed Media QA Gate.
+keywords:
+  - remotion
+  - video-generation
+  - presentation
+  - tts
+  - karaoke-captions
+  - ffmpeg
+  - python
+  - typescript
+  - mcp
+  - fail-closed
+  - dup-labs
+license: MIT
+version: "1.2.0"
+date-released: "2026-11-25"
+identifiers:
+  - type: url
+    value: "https://github.com/Gruver87/dup-presenter/releases/tag/v1.2.0"
+    description: "Release v1.2.0 — quantum_ledger cosmic theme, protocol_cosmos reactor slide, RU+EN cosmos decks, 14 slide types, 12 themes, 137 unit tests"
+  - type: url
+    value: "https://github.com/Gruver87/dup-presenter/releases/tag/media-dup-protocol-cosmos"
+    description: "Rendered showcase MP4s (RU + EN, 1920x1080, -16 LUFS, Media QA PASS)"
+preferred-citation:
+  type: software
+  authors:
+    - family-names: Dabranski
+      given-names: Uladzimir
+  title: "DUP Presenter"
+  year: 2026
+  url: "https://github.com/Gruver87/dup-presenter"
+  version: "1.2.0"

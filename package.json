@@ -1,8 +1,25 @@
 {
-  "name": "DUP_Video",
-  "version": "1.0.0",
-  "description": "My Remotion video",
-  "repository": {},
+  "name": "dup-presenter",
+  "version": "1.2.0",
+  "description": "Declarative 3D Product Presentation Engine (DUP Labs) — JSON/Markdown deck to neural TTS, karaoke captions, Remotion 4 3D slides, broadcast -16 LUFS MP4, and fail-closed Media QA Gate.",
+  "author": "Uladzimir Dabranski (DUP Labs)",
+  "homepage": "https://github.com/Gruver87/dup-presenter#readme",
+  "bugs": {
+    "url": "https://github.com/Gruver87/dup-presenter/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gruver87/dup-presenter.git"
+  },
+  "keywords": [
+    "remotion",
+    "presentation",
+    "video-generation",
+    "tts",
+    "karaoke-captions",
+    "dup-labs",
+    "fail-closed"
+  ],
   "license": "MIT",
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"
