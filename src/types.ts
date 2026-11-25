@@ -72,7 +72,8 @@ export interface ResolvedSlide {
   id: string;
   num: string;
   tag: string;
-  type: "hero_3d" | "code_split" | "screen_split" | "ui_recording" | "arch_flow" | "outro_3d" | "timeline" | "terminal" | "kpi";
+  type: "hero_3d" | "code_split" | "screen_split" | "ui_recording" | "arch_flow" | "outro_3d" | "timeline" | "terminal" | "kpi" | "quote";
+  // quote: title = the quote text (<= 220 chars), subtitle = attribution (optional)
   // ui_recording: MP4 from scripts/record_ui.py under public/ui_recordings/ (played muted inside the 3D frame)
   recording?: { src: string; caption?: string; focus?: ScreenFocus; duration_sec?: number };
   duration_sec: number;

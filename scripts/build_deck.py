@@ -36,7 +36,8 @@ VOICE_DIR = PUBLIC_DIR / "voice"
 RESOLVED_JSON = ROOT / "src" / "generated" / "deck_resolved.json"
 SR = 48000
 
-ALLOWED_TYPES = {"hero_3d", "code_split", "screen_split", "ui_recording", "arch_flow", "outro_3d", "timeline", "terminal", "kpi"}
+ALLOWED_TYPES = {"hero_3d", "code_split", "screen_split", "ui_recording", "arch_flow", "outro_3d", "timeline", "terminal", "kpi", "quote"}
+QUOTE_MAX_CHARS = 220
 # ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
 UI_RECORDING_SRC_RE = re.compile(r"ui_recordings/[a-z0-9][a-z0-9_-]{0,60}\.mp4")
 
@@ -242,6 +243,12 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
             code = slide.get("code") or {}
             if not code.get("lines"):
                 raise DeckValidationError(f"Slide {sid}: terminal requires code.lines from a real symbol")
+        if stype == "quote":
+            quote = str(slide.get("title", "")).strip()
+            if not quote or len(quote) > QUOTE_MAX_CHARS:
+                raise DeckValidationError(f"Slide {sid}: quote title must be 1..{QUOTE_MAX_CHARS} chars")
+            if "subtitle" in slide and not isinstance(slide["subtitle"], str):
+                raise DeckValidationError(f"Slide {sid}: quote subtitle (attribution) must be a string")
         if stype == "kpi":
             kpis = slide.get("kpis") or []
             if not (1 <= len(kpis) <= 4):

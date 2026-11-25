@@ -43,7 +43,7 @@ python scripts/build_deck.py decks/md-talk-demo.json --render
 - `karaoke` — подсветка слов по ходу речи: текущее слово голубым, сказанные белым, ещё не сказанные приглушены. Если тайминги слов отсутствуют, рисуется как `box`.
 - `bold` — крупный белый текст с тенью, без плашки (для коротких вертикальных видео).
 
-Демо: `decks/caption-karaoke-demo.json` и `decks/caption-bold-demo.json`.
+Демо: `decks/caption-karaoke-demo.json`, `decks/caption-bold-demo.json` и `decks/quote-demo.json` (с новым слайдом `quote`).
 
 ## Поддерживаемые шаблоны слайдов (`type`)
 
@@ -55,6 +55,7 @@ python scripts/build_deck.py decks/md-talk-demo.json --render
 - `timeline` — пошаговый пайплайн / дорожная карта (2–6 шагов).
 - `terminal` — анимированный вывод терминала.
 - `outro_3d` — финальный слайд со ссылкой, бейджами и 3D-кубом.
+- `quote` — одна цитата в карточке (`title`, до 220 символов) с атрибуцией в `subtitle` (необязательно).
 
 ## Быстрый старт
 

@@ -1618,6 +1618,40 @@ const TimelineSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
 };
 
 /* KPI: 1-4 big numbers copied verbatim from facts; each card springs in with its label. */
+/* Quote: one statement on screen with an attribution line. title = quote text, subtitle = author. */
+const QuoteSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const s = spring({ frame: frame - 8, fps, config: { damping: 200 } });
+  const rule = interpolate(frame, [18, 48], [0, 100], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return (
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 24, opacity: s, transform: `translateY(${(1 - s) * 22}px)` }}>
+      <div style={{ fontSize: IS_PORTRAIT ? 130 : 150, lineHeight: 0.6, color: CYAN, fontWeight: 900, fontFamily: "Georgia, serif", textShadow: `0 0 30px ${CYAN}88` }}>
+        “
+      </div>
+      <div
+        style={{
+          maxWidth: IS_PORTRAIT ? "100%" : 1040,
+          background: THEME.cardBg,
+          border: `1.5px solid ${CYAN}55`,
+          borderTop: `2px solid ${CYAN}`,
+          borderRadius: 22,
+          padding: IS_PORTRAIT ? "22px 24px" : "26px 32px",
+          boxShadow: "0 20px 48px rgba(0,0,0,0.6)",
+          fontSize: IS_PORTRAIT ? 46 : 52,
+          fontWeight: 800,
+          lineHeight: 1.22,
+          color: TEXT,
+        }}
+      >
+        {slide.title}
+      </div>
+      <div style={{ height: 4, width: `${rule}%`, maxWidth: 360, background: `linear-gradient(90deg, ${CYAN}, ${VIOLET})`, borderRadius: 2 }} />
+      {slide.subtitle && <div style={{ fontSize: 26, color: MUTED }}>{slide.subtitle}</div>}
+    </div>
+  );
+};
+
 const KpiSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -2364,6 +2398,7 @@ export const DupPresenter: React.FC<Props> = () => {
     if (slide.type === "timeline") return <TimelineSlide slide={slide} />;
     if (slide.type === "terminal") return <TerminalSlide slide={slide} />;
     if (slide.type === "kpi") return <KpiSlide slide={slide} />;
+    if (slide.type === "quote") return <QuoteSlide slide={slide} />;
     return null;
   };
 

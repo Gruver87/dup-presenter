@@ -1,0 +1,88 @@
+{
+    "lang":  "en",
+    "theme":  "cosmic_radar",
+    "aspect":  "16:9",
+    "burn_captions":  true,
+    "caption_style":  "box",
+    "brand":  "DUP LABS",
+    "fps":  30,
+    "width":  1920,
+    "height":  1080,
+    "voice":  {
+                  "engine":  "kokoro_v1",
+                  "lang":  "en",
+                  "speaker":  "am_michael",
+                  "rate":  "95%",
+                  "ambient_volume":  0.12,
+                  "mode":  "single"
+              },
+    "slug":  "quote-demo",
+    "music":  {
+                  "enabled":  false
+              },
+    "background":  {
+                       "enabled":  false,
+                       "provider":  "pixabay"
+                   },
+    "slides":  [
+                   {
+                       "id":  "s1",
+                       "tag":  "CAPTIONS",
+                       "type":  "hero_3d",
+                       "title":  "Caption styles",
+                       "subtitle":  "Word-by-word highlight from real word timings",
+                       "pills":  [
+                                     {
+                                         "name":  "karaoke",
+                                         "color":  "#00f5d4"
+                                     }
+                                 ],
+                       "cube_faces":  [
+                                          "BOX",
+                                          "KARAOKE",
+                                          "BOLD"
+                                      ],
+                       "voice_text":  "Each word lights up as it is spoken. The highlight follows the real word timings from the voice track, so it stays in sync."
+                   },
+                   {
+                       "id":  "q1",
+                       "tag":  "QUOTE",
+                       "type":  "quote",
+                       "title":  "Heuristic scores are not guarantees of profit.",
+                       "subtitle":  "Project README",
+                       "voice_text":  "Heuristic scores are not guarantees of profit."
+                   },
+                   {
+                       "id":  "s2",
+                       "tag":  "SUMMARY",
+                       "type":  "outro_3d",
+                       "title":  "Three presets",
+                       "subtitle":  "Box, karaoke and bold",
+                       "url":  "github.com/Gruver87/dup-presenter",
+                       "tagline":  "Set caption_style in the deck",
+                       "badges":  [
+                                      {
+                                          "name":  "box",
+                                          "color":  "#38bdf8"
+                                      },
+                                      {
+                                          "name":  "karaoke",
+                                          "color":  "#00f5d4"
+                                      },
+                                      {
+                                          "name":  "bold",
+                                          "color":  "#c084fc"
+                                      }
+                                  ],
+                       "cube_faces":  [
+                                          "BOX",
+                                          "KARAOKE",
+                                          "BOLD",
+                                          "DUP",
+                                          "RADAR",
+                                          "LABS"
+                                      ],
+                       "voice_text":  "Pick box for the classic look, karaoke for word highlight, or bold for large short-form text."
+                   }
+               ]
+}
