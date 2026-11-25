@@ -107,7 +107,7 @@ python scripts/mcp_server.py
 
 ## Что не публикуется
 
-- `decks/dup-protocol.json`, `decks/dup-protocol-story.json` и `decks/dup-protocol-cosmos.json` ссылаются на скриншоты `public/screens/dup-protocol/`. Они в `.gitignore`: это снимки локальной консоли узла. На чистом клоне `deck_doctor` вернёт `missing screen file`, а рендер не начнётся (fail-closed). Деку можно собрать только на машине, где лежат эти файлы.
+- `decks/dup-protocol.json`, `decks/dup-protocol-story.json`, `decks/dup-protocol-cosmos.json` и `decks/dup-protocol-cosmos-en.json` ссылаются на скриншоты `public/screens/dup-protocol/`. Они в `.gitignore`: это снимки локальной консоли узла. На чистом клоне `deck_doctor` вернёт `missing screen file`, а рендер не начнётся (fail-closed). Деку можно собрать только на машине, где лежат эти файлы.
 - `out/` (рендеры; например, `out/dup-protocol.mp4` собран из деки с этими скриншотами) и `public/ui_recordings/` (локальные записи UI) не коммитятся и не загружаются в Release.
 
 ## Тесты и проверки

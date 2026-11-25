@@ -8,6 +8,7 @@ interface StorySlideProps {
   dur: number;
   theme: ThemePalette;
   isPortrait: boolean;
+  lang?: string;
 }
 
 /** Shared visual helpers for the inflated/beveled 3D shelves & floating detached typography. */
@@ -112,10 +113,11 @@ const StoryHeading: React.FC<{
  * 1) LEDGER_LAYERS: Isometric 3D glass-plate stack with inflated 3D shelves,
  *    floating detached numbers/labels & concave pull-to-center framing.
  * ============================================================================ */
-export const LedgerLayersSlide: React.FC<StorySlideProps> = ({ slide, dur, theme, isPortrait }) => {
+export const LedgerLayersSlide: React.FC<StorySlideProps> = ({ slide, dur, theme, isPortrait, lang }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const isQuantum = theme.id === "quantum_ledger";
+  const guaranteePrefix = (lang || "ru").toLowerCase().startsWith("en") ? "GUARANTEE:" : "ГАРАНТИЯ:";
   const layers = slide.layers ?? [];
   const count = Math.max(1, layers.length);
   const accents = [theme.accent1, "#a855f7", theme.accent4, theme.accent2, theme.accent3, theme.accent1];
@@ -463,7 +465,7 @@ export const LedgerLayersSlide: React.FC<StorySlideProps> = ({ slide, dur, theme
                       boxShadow: "0 6px 14px rgba(0,0,0,0.45)",
                     }}
                   >
-                    <span style={{ color, marginRight: 8, fontWeight: 900 }}>ГАРАНТИЯ:</span>
+                    <span style={{ color, marginRight: 8, fontWeight: 900 }}>{guaranteePrefix}</span>
                     {layer.guarantee}
                   </div>
                 )}

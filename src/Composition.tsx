@@ -2427,7 +2427,7 @@ export const DupPresenter: React.FC<Props> = () => {
     if (slide.type === "kpi") return <KpiSlide slide={slide} />;
     if (slide.type === "quote") return <QuoteSlide slide={slide} />;
     if (slide.type === "ledger_layers") {
-      return <LedgerLayersSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+      return <LedgerLayersSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} lang={DECK.lang} />;
     }
     if (slide.type === "tx_journey") {
       return <TxJourneySlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;

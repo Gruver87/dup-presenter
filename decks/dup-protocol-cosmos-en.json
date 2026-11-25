@@ -1,0 +1,507 @@
+{
+  "slug": "dup-protocol-cosmos-en",
+  "lang": "en",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.1,
+    "duck_db": -10.5
+  },
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "voice": {
+    "engine": "kokoro_v1",
+    "lang": "en",
+    "speaker": "am_michael",
+    "rate": "96%",
+    "ambient_volume": 0.08,
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "PROLOGUE",
+      "type": "hero_3d",
+      "title": "Inside DUP Protocol",
+      "subtitle": "Living architecture of an honest ledger: Python orchestrates, Rust drives the core",
+      "voice_text": "Welcome inside DUP Protocol. Forget static slides. Let us watch a Layer 1 blockchain come alive like a cosmic engine, where every transaction flies as a beam of light, a red fail-closed shield deflects errors at the perimeter, and every accepted record is sealed forever into the ledger.",
+      "pills": [
+        {
+          "name": "Red Fail-Closed Shield",
+          "color": "#ff2e63"
+        },
+        {
+          "name": "Emerald int64 Satoshis",
+          "color": "#10ff88"
+        },
+        {
+          "name": "Golden Rust Core",
+          "color": "#ffb800"
+        }
+      ],
+      "cube_faces": [
+        "DUP L1",
+        "RUST",
+        "INT64",
+        "MERKLE",
+        "NOISE",
+        "SEALED"
+      ]
+    },
+    {
+      "id": "s2",
+      "tag": "L1 UNIVERSE",
+      "type": "protocol_cosmos",
+      "title": "The Entire Protocol as One Organism",
+      "subtitle": "Left: ingress and strict filtering · Center: crypto reactor · Right: accounting and mesh sync",
+      "voice_text": "Look at the whole protocol running in harmony. On the left, transaction streams enter through the API and immediately meet the red fail-closed shield. Any invalid signature or spam bounces off the perimeter. Valid requests flow into the golden Rust mempool and straight into the central crypto reactor powered by abs native and Rocks DB. On the right, accounting updates balances strictly in integer satoshis, consensus locks the canonical chain, and three mesh nodes broadcast the sealed block over encrypted channels.",
+      "cosmos": {
+        "core_title": "DUP CORE",
+        "core_subtitle": "Rust abs_native · Merkle · RocksDB chainstore",
+        "core_badges": [
+          "SHA-256",
+          "STATE ROOT",
+          "ROCKSDB",
+          "CHAIN 778888"
+        ],
+        "stations": [
+          {
+            "id": "api",
+            "side": "left",
+            "badge": "01 · STREAM INGRESS",
+            "title": "API & Ops Console",
+            "detail": "REST, JSON-RPC, and WebSocket accept signed transactions at the node boundary.",
+            "metric": ":8080 · :8545",
+            "color": "#00f0ff",
+            "role": "flow"
+          },
+          {
+            "id": "shield",
+            "side": "left",
+            "badge": "02 · RED SHIELD",
+            "title": "Fail-Closed Guard",
+            "detail": "Rate limits, strict validation, and refusal on error: bad packets burn at the edge.",
+            "metric": "REFUSE BAD TX",
+            "color": "#ff2e63",
+            "role": "shield"
+          },
+          {
+            "id": "mempool",
+            "side": "left",
+            "badge": "03 · RUST QUEUE",
+            "title": "Rust Mempool",
+            "detail": "Fast signature, nonce, and balance verification before block candidacy.",
+            "metric": "ADR 0021",
+            "color": "#ffb800",
+            "role": "flow"
+          },
+          {
+            "id": "exec",
+            "side": "right",
+            "badge": "04 · EXACT LEDGER",
+            "title": "Execution & int64",
+            "detail": "StateService and EVM process integer satoshis only — zero floating-point drift.",
+            "metric": "0 FLOAT · OK",
+            "color": "#10ff88",
+            "role": "verify"
+          },
+          {
+            "id": "cons",
+            "side": "right",
+            "badge": "05 · CHAIN ORDER",
+            "title": "Consensus & TipSafety",
+            "detail": "LMD-GHOST and AncestryWindow maintain a single canonical chain head.",
+            "metric": "ADR 0001",
+            "color": "#a855f7",
+            "role": "verify"
+          },
+          {
+            "id": "mesh",
+            "side": "right",
+            "badge": "06 · LIVE NETWORK",
+            "title": "3-Node Mesh",
+            "detail": "Encrypted rust-libp2p Noise spreads blocks across peers and verifies live probes.",
+            "metric": "3/3 ALIGNED",
+            "color": "#10ff88",
+            "role": "verify"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s3",
+      "tag": "LEDGER LAYERS",
+      "type": "ledger_layers",
+      "title": "Five Layers, Zero Silent Loss",
+      "subtitle": "Dimensional boundaries of the architecture: every color represents a distinct class of guarantees",
+      "voice_text": "How does this ledger record every change cleanly without losing a single byte? Data flows strictly top to bottom through explicit ports. The cyan layer admits signed requests. Violet Python orchestration holds consensus rules and secrets policy. The red network and mempool shield drops spam and forgeries. The emerald execution layer computes integer satoshi balances. And the golden abs native and Rocks DB foundation seals the page to disk.",
+      "layers": [
+        {
+          "id": "api",
+          "name": "API & Ingress Boundary",
+          "tech": "REST :8080 · JSON-RPC :8545",
+          "desc": "Admits signed requests and exposes honest live node diagnostics.",
+          "guarantee": "External callers never touch raw storage directly.",
+          "accent": "#00f0ff"
+        },
+        {
+          "id": "orch",
+          "name": "Python Orchestration",
+          "tech": "NodeOrchestrator · LMD-GHOST · TipSafety",
+          "desc": "Consensus policy, SecretManagerPort boundaries, and domain ports.",
+          "guarantee": "Auditable control logic with zero hidden cross-layer shortcuts.",
+          "accent": "#a855f7"
+        },
+        {
+          "id": "shield",
+          "name": "Network & Mempool Shield",
+          "tech": "rust-libp2p Noise · Rust Mempool",
+          "desc": "Encrypted transport, anti-spam rate limits, and instant invalid tx rejection.",
+          "guarantee": "Bad signature or flood triggers a red refusal at the edge.",
+          "accent": "#ff2e63"
+        },
+        {
+          "id": "exec",
+          "name": "Execution & Satoshis",
+          "tech": "StateService · TxPipeline · EVM",
+          "desc": "Deterministic transaction execution and canonical state transitions.",
+          "guarantee": "All monetary values use integer satoshis int64 — zero floats.",
+          "accent": "#10ff88"
+        },
+        {
+          "id": "persist",
+          "name": "Crypto Seal & RocksDB",
+          "tech": "Rust abs_native · SHA-256 · Merkle",
+          "desc": "State root calculation, prev_hash chaining, and atomic persistence.",
+          "guarantee": "Atomic RocksDB commit ensures no accepted record ever vanishes.",
+          "accent": "#ffb800"
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "tag": "BEAM PATH",
+      "type": "tx_journey",
+      "title": "Anatomy of One Transaction",
+      "subtitle": "From a cyan signature pulse through the red filter and golden Merkle tree to the emerald block seal",
+      "voice_text": "Let us trace a single transaction beam from start to finish. First, the sender signs a transfer in exact satoshis. Next, the red Rust mempool filter blocks spam, replay nonces, and insufficient balances. Then the golden crypto core folds valid transactions into a Merkle tree and state root. Finally, the new block locks onto the previous hash, snaps shut with an emerald seal, and commits atomically to Rocks DB.",
+      "journey": {
+        "tx_label": "TX #7a9f",
+        "amount_label": "100,000 sat",
+        "signature_label": "ECDSA ✓",
+        "merkle_leaves": [
+          "tx·a41f",
+          "tx·9c02",
+          "tx·e718",
+          "TX* 7a9f"
+        ],
+        "blocks": [
+          {
+            "height": "#49343",
+            "hash": "0x2b91c...8a1f",
+            "tx_count": "11 tx"
+          },
+          {
+            "height": "#49344",
+            "hash": "0x445ec...7db2",
+            "tx_count": "16 tx"
+          },
+          {
+            "height": "#49345",
+            "hash": "0x5465a...6194",
+            "tx_count": "14 tx"
+          },
+          {
+            "height": "#49346",
+            "hash": "0x9fd8a...2867",
+            "tx_count": "15 tx",
+            "sealed": true
+          }
+        ],
+        "steps": [
+          {
+            "title": "Signature",
+            "badge": "ECDSA",
+            "detail": "Cyan pulse: integer satoshi amount plus cryptographic signature.",
+            "accent": "#00f0ff"
+          },
+          {
+            "title": "Red Filter",
+            "badge": "FAIL-CLOSED",
+            "detail": "Rust mempool rejects spam, duplicate nonces, and low balance.",
+            "accent": "#ff2e63"
+          },
+          {
+            "title": "Merkle Tree",
+            "badge": "GOLD HASH",
+            "detail": "Golden SHA-256 folds every transaction into one verifiable root.",
+            "accent": "#ffb800"
+          },
+          {
+            "title": "Chain Link",
+            "badge": "PREV_HASH",
+            "detail": "New block anchors to the previous hash so history cannot be forged.",
+            "accent": "#a855f7"
+          },
+          {
+            "title": "Emerald Seal",
+            "badge": "ROCKSDB ✓",
+            "detail": "Atomic disk commit stitches the page into the ledger forever.",
+            "accent": "#10ff88"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s5",
+      "tag": "THREE NODES",
+      "type": "mesh_network",
+      "title": "Three Nodes in One Pulse",
+      "subtitle": "Encrypted rust-libp2p Noise channels, emerald live probes, and red fail-closed stop on divergence",
+      "voice_text": "Immediately after sealing, the new block ripples across the three-node mesh over encrypted Rust libp2p Noise channels. Peers exchange live probes to verify both block height and matching state roots. If a node lags behind, CatchUp and ForkReconcile pull missing headers and verify every link. And if state ever diverges, a red fail-closed stop withdraws readiness instead of painting a false green light.",
+      "mesh": {
+        "protocol_label": "rust-libp2p Noise · ADR 0020",
+        "chain_id": "778888",
+        "probe_label": "wire_probe_ok · state_consistent",
+        "nodes": [
+          {
+            "id": "node1",
+            "role": "Prod-mesh leader",
+            "endpoint": "127.0.0.1:18180",
+            "status": "ALIGNED",
+            "height": "49347"
+          },
+          {
+            "id": "node2",
+            "role": "Prod-mesh peer",
+            "endpoint": "127.0.0.1:18181",
+            "status": "ALIGNED",
+            "height": "49347"
+          },
+          {
+            "id": "node3",
+            "role": "Prod-mesh peer",
+            "endpoint": "127.0.0.1:18182",
+            "status": "ALIGNED",
+            "height": "49347"
+          }
+        ],
+        "recovery_steps": [
+          {
+            "title": "Live Probe Over Blind Trust",
+            "desc": "Every peer proves active connectivity and state root parity via wire_probe_ok and state_consistent.",
+            "accent": "#10ff88"
+          },
+          {
+            "title": "Auto Catch-Up & Reconcile",
+            "desc": "CatchUpPathA and ForkReconcile synchronize lagging peers with full header re-verification.",
+            "accent": "#00f0ff"
+          },
+          {
+            "title": "Red Stop on Failure",
+            "desc": "Peer loss or state mismatch withdraws readiness fail-closed — health status never lies.",
+            "accent": "#ff2e63"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s6",
+      "tag": "RUST CORE",
+      "type": "code_split",
+      "title": "The Golden abs_native Core",
+      "subtitle": "Real Rust code on disk: hashing, Merkle proofs, and canonical encoding bridged via PyO3",
+      "voice_text": "At the heart of speed and determinism sits the real abs native Rust crate. Critical cryptography, state root computation, and Rocks DB persistence execute natively in Rust, while Python remains a clean, readable orchestrator above it.",
+      "bullets": [
+        {
+          "title": "Golden Cryptography",
+          "desc": "SHA-256, ECDSA, Keccak, and Merkle proofs compiled inside Rust crate abs_native.",
+          "accent": "#ffb800"
+        },
+        {
+          "title": "Emerald Determinism",
+          "desc": "Canonical serialization ensures identical block hashes across every peer.",
+          "accent": "#10ff88"
+        },
+        {
+          "title": "Clean Hybrid Boundary",
+          "desc": "ADR 0009: hot path in Rust, orchestration and domain ports in Python.",
+          "accent": "#00f0ff"
+        }
+      ],
+      "code": {
+        "filename": "native/abs_native/src/lib.rs · L56-68",
+        "lines": [
+          {
+            "text": "fn sha256_hex_bytes(data: &[u8]) -> String {",
+            "color": "#ffb800"
+          },
+          {
+            "text": "    hex::encode(Sha256::digest(data))",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "pub(crate) fn hash_string(data: &str) -> String {",
+            "color": "#00f0ff"
+          },
+          {
+            "text": "    sha256_hex_bytes(data.as_bytes())",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "// Deterministic state roots & Merkle proofs in Rust",
+            "color": "#10ff88"
+          },
+          {
+            "text": "// Fail-closed commit -> RocksDB chainstore",
+            "color": "#ff2e63"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s7",
+      "tag": "LIVE CONSOLE",
+      "type": "screen_split",
+      "title": "Live Operator Console",
+      "subtitle": "Five real Ops Console views captured from a running 3-node prod-profile mesh (chain 778888)",
+      "voice_text": "Now see the exact same architecture running live on the operator console. Live node overview, three-peer mesh alignment, sealed evidence packs, orientation-only markets, and real-time node telemetry. The bridge stays off on the mesh, with zero simulated numbers.",
+      "bullets": [
+        {
+          "title": "Live Mesh 778888",
+          "desc": "Real block height, two connected peers, and aligned sync status with zero mocks.",
+          "accent": "#10ff88"
+        },
+        {
+          "title": "Evidence Registry",
+          "desc": "Sealed STRICT soak packs paired with an explicit R&D scope disclaimer.",
+          "accent": "#ffb800"
+        },
+        {
+          "title": "Full Telemetry",
+          "desc": "Live scrapes of latency, Rust mempool queues, and rejected invalid packets.",
+          "accent": "#00f0ff"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/dup-protocol/console-overview.png",
+          "caption": "Ops Console · Live Node Overview · 127.0.0.1:18180"
+        },
+        {
+          "src": "screens/dup-protocol/console-mesh-sync.png",
+          "caption": "Ops Console · Mesh & Sync · aligned"
+        },
+        {
+          "src": "screens/dup-protocol/console-evidence.png",
+          "caption": "Ops Console · Sealed STRICT Evidence Packs"
+        },
+        {
+          "src": "screens/dup-protocol/console-markets.png",
+          "caption": "Ops Console · Markets (Orientation Only)"
+        },
+        {
+          "src": "screens/dup-protocol/console-metrics.png",
+          "caption": "Ops Console · Live Node Metrics"
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "tag": "DISK EVIDENCE",
+      "type": "kpi",
+      "title": "Backed by Artifacts on Disk",
+      "subtitle": "Numbers from EVIDENCE_MATRIX — every PASS is anchored to saved logs and reports",
+      "voice_text": "Behind the cosmic visuals stand verifiable facts on disk. Forty-eight-hour strict soak packs on the private mesh across libp2p, EVM, and the Rust mempool. Zero hard fails across runs and zero floating-point arithmetic in money. Three nodes in the production profile, and two clear repositories: the audit-freeze pin and the experimental lab.",
+      "kpis": [
+        {
+          "value": "48 h",
+          "label": "STRICT soak packs: libp2p, EVM, Rust Mempool"
+        },
+        {
+          "value": "0",
+          "label": "hard_fails in soak runs & zero float in money"
+        },
+        {
+          "value": "3 nodes",
+          "label": "private prod-profile mesh (chain 778888)"
+        },
+        {
+          "value": "2 repos",
+          "label": "audit-pin dup-protocol & R&D experimental"
+        }
+      ]
+    },
+    {
+      "id": "s9",
+      "tag": "PHILOSOPHY",
+      "type": "quote",
+      "title": "Engineering trust is never built on loud promises — it is built on a system that refuses to lie.",
+      "subtitle": "DUP Protocol principle · fail-closed · verifiable packs on disk",
+      "voice_text": "That is why we show not only what works, but the honest boundaries of the project. Real trust in a blockchain begins where the system refuses to lie.",
+      "bullets": []
+    },
+    {
+      "id": "s10",
+      "tag": "FINALE",
+      "type": "outro_3d",
+      "title": "DUP Protocol — Honest L1 Foundation",
+      "subtitle": "Private prod-profile R&D mesh today · external security audit and public mainnet ahead",
+      "voice_text": "Today, DUP Protocol is a running private mesh backed by verifiable evidence packs on disk, with an external security audit and public mainnet ahead. Explore the code and reports on GitHub under DUP Labs.",
+      "url": "github.com/Gruver87/dup-protocol",
+      "tagline": "github.com/Gruver87/dup-protocol · dup-protocol-experimental · not public mainnet",
+      "badges": [
+        {
+          "name": "Fail-Closed L1",
+          "color": "#ff2e63"
+        },
+        {
+          "name": "48h STRICT Packs",
+          "color": "#10ff88"
+        },
+        {
+          "name": "Rust + Python",
+          "color": "#ffb800"
+        }
+      ],
+      "cube_faces": [
+        "DUP LABS",
+        "RUST",
+        "INT64",
+        "NOISE",
+        "ROCKSDB",
+        "HONEST"
+      ]
+    }
+  ]
+}
