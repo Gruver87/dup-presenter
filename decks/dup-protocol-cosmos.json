@@ -1,0 +1,508 @@
+{
+  "slug": "dup-protocol-cosmos",
+  "lang": "ru",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.1,
+    "duck_db": -10.5
+  },
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "voice": {
+    "engine": "edge_tts",
+    "lang": "ru",
+    "speaker": "dmitry",
+    "rate": "98%",
+    "ambient_volume": 0.08,
+    "mode": "single",
+    "fallback_speaker": "eugene"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "ПРОЛОГ",
+      "type": "hero_3d",
+      "title": "DUP Protocol изнутри",
+      "subtitle": "Живая архитектура честной книги: Python оркестрирует, Rust держит ядро",
+      "voice_text": "Добро пожаловать внутрь DUP Protocol. Забудьте скучные слайды: сейчас мы увидим блокчейн как живой космический механизм, где каждая транзакция летит пучком света, красный щит fail-closed отбрасывает ошибки, а каждая принятая запись навсегда запечатывается в книгу.",
+      "pills": [
+        {
+          "name": "Красный щит Fail-Closed",
+          "color": "#ff2e63"
+        },
+        {
+          "name": "Зелёные сатоши int64",
+          "color": "#10ff88"
+        },
+        {
+          "name": "Золотое ядро Rust",
+          "color": "#ffb800"
+        }
+      ],
+      "cube_faces": [
+        "DUP L1",
+        "RUST",
+        "INT64",
+        "MERKLE",
+        "NOISE",
+        "SEALED"
+      ]
+    },
+    {
+      "id": "s2",
+      "tag": "ВСЕЛЕННАЯ L1",
+      "type": "protocol_cosmos",
+      "title": "Весь протокол как единый организм",
+      "subtitle": "Слева — вход и жёсткая фильтрация, в центре — криптоядро, справа — учёт и синхронизация меша",
+      "voice_text": "Посмотрите на весь процесс целиком. Слева потоки транзакций входят через API и сразу встречают красный щит fail-closed — любая битая подпись или спам отскакивает на пороге. Валидные запросы проходят в золотой мемпул на Rust и попадают в центральный крипто-реактор abs_native и RocksDB. Справа слой учёта считает балансы в целых сатоши, консенсус выбирает каноническую цепь, а три узла меша мгновенно разносят новый блок по шифрованной сети.",
+      "cosmos": {
+        "core_title": "DUP CORE",
+        "core_subtitle": "Rust abs_native · Merkle · RocksDB chainstore",
+        "core_badges": [
+          "SHA-256",
+          "STATE ROOT",
+          "ROCKSDB",
+          "CHAIN 778888"
+        ],
+        "stations": [
+          {
+            "id": "api",
+            "side": "left",
+            "badge": "01 · ВХОД ПОТОКА",
+            "title": "API и Ops Console",
+            "detail": "REST, JSON-RPC и WebSocket принимают подписанные транзакции на границе узла.",
+            "metric": ":8080 · :8545",
+            "color": "#00f0ff",
+            "role": "flow"
+          },
+          {
+            "id": "shield",
+            "side": "left",
+            "badge": "02 · КРАСНЫЙ ЩИТ",
+            "title": "Защита Fail-Closed",
+            "detail": "Лимиты трафика, проверка формата и отказ при сбое: битые пакеты сгорают на периметре.",
+            "metric": "REFUSE BAD TX",
+            "color": "#ff2e63",
+            "role": "shield"
+          },
+          {
+            "id": "mempool",
+            "side": "left",
+            "badge": "03 · ОЧЕРЕДЬ RUST",
+            "title": "Rust Mempool",
+            "detail": "Быстрая проверка подписи, nonce и баланса до попадания в кандидат блока.",
+            "metric": "ADR 0021",
+            "color": "#ffb800",
+            "role": "flow"
+          },
+          {
+            "id": "exec",
+            "side": "right",
+            "badge": "04 · ТОЧНЫЙ УЧЁТ",
+            "title": "Исполнение и int64",
+            "detail": "StateService и EVM работают строго с целыми сатоши — ноль ошибок округления float.",
+            "metric": "0 FLOAT · OK",
+            "color": "#10ff88",
+            "role": "verify"
+          },
+          {
+            "id": "cons",
+            "side": "right",
+            "badge": "05 · ПОРЯДОК ЦЕПИ",
+            "title": "Консенсус и TipSafety",
+            "detail": "LMD-GHOST и AncestryWindow удерживают единую каноническую вершину цепи.",
+            "metric": "ADR 0001",
+            "color": "#a855f7",
+            "role": "verify"
+          },
+          {
+            "id": "mesh",
+            "side": "right",
+            "badge": "06 · ЖИВАЯ СЕТЬ",
+            "title": "3-узловой Mesh",
+            "detail": "Шифрованный rust-libp2p Noise разносит блок на узлы и проверяет живыми зондами.",
+            "metric": "3/3 ALIGNED",
+            "color": "#10ff88",
+            "role": "verify"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s3",
+      "tag": "СЛОИ КНИГИ",
+      "type": "ledger_layers",
+      "title": "Пять слоёв — ни одной потери",
+      "subtitle": "Объёмные рубежи архитектуры: каждый цвет отвечает за свой класс гарантий",
+      "voice_text": "Как эта книга простыми слоями всё записывает и ничего не теряет? Данные идут строго сверху вниз через порты. Голубой слой принимает запрос. Фиолетовая оркестрация на Python держит правила консенсуса. Красный защитный контур сети и мемпула отбрасывает спам и подделки. Зелёный слой учёта пересчитывает балансы в целых сатоши. А золотой фундамент abs_native и RocksDB запечатывает страницу на диске.",
+      "layers": [
+        {
+          "id": "api",
+          "name": "API и граница входа",
+          "tech": "REST :8080 · JSON-RPC :8545",
+          "desc": "Приём подписанных запросов и честная диагностика состояния узла.",
+          "guarantee": "Внешний мир никогда не касается хранилища напрямую.",
+          "accent": "#00f0ff"
+        },
+        {
+          "id": "orch",
+          "name": "Оркестрация Python",
+          "tech": "NodeOrchestrator · LMD-GHOST · TipSafety",
+          "desc": "Политика консенсуса, секреты через SecretManagerPort и порты домена.",
+          "guarantee": "Прозрачная для аудита логика без скрытых обходных путей.",
+          "accent": "#a855f7"
+        },
+        {
+          "id": "shield",
+          "name": "Щит сети и мемпула",
+          "tech": "rust-libp2p Noise · Rust Mempool",
+          "desc": "Шифрование каналов, анти-спам и мгновенный отсев невалидных транзакций.",
+          "guarantee": "Битая подпись или перегруз — красный отказ на входе.",
+          "accent": "#ff2e63"
+        },
+        {
+          "id": "exec",
+          "name": "Исполнение и сатоши",
+          "tech": "StateService · TxPipeline · EVM",
+          "desc": "Детерминированное применение транзакций и обновление состояний.",
+          "guarantee": "Все деньги строго в целых сатоши int64 — ноль float.",
+          "accent": "#10ff88"
+        },
+        {
+          "id": "persist",
+          "name": "Крипто-печать и RocksDB",
+          "tech": "Rust abs_native · SHA-256 · Merkle",
+          "desc": "Вычисление корня состояния, привязка prev_hash и запись на диск.",
+          "guarantee": "Атомарный коммит в RocksDB — ни одна строка не пропадает.",
+          "accent": "#ffb800"
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "tag": "ПУТЬ ПУЧКА",
+      "type": "tx_journey",
+      "title": "Анатомия одной транзакции",
+      "subtitle": "От голубого импульса подписи через красный фильтр и золотое дерево Меркла к зелёной печати блока",
+      "voice_text": "Проследим, как пучок одной транзакции проходит цепочку. Сначала отправитель подписывает перевод в сатоши. На втором этапе красный фильтр мемпула на Rust отсеивает любые ошибки и пропускает только честные транзакции. Далее золотое криптоядро сворачивает их в дерево Меркла и корень состояния. Новый блок вшивает хеш предыдущего, защёлкивается зелёной печатью и атомарно ложится в RocksDB.",
+      "journey": {
+        "tx_label": "TX #7a9f",
+        "amount_label": "100 000 sat",
+        "signature_label": "ECDSA ✓",
+        "merkle_leaves": [
+          "tx·a41f",
+          "tx·9c02",
+          "tx·e718",
+          "TX* 7a9f"
+        ],
+        "blocks": [
+          {
+            "height": "#49343",
+            "hash": "0x2b91c...8a1f",
+            "tx_count": "11 tx"
+          },
+          {
+            "height": "#49344",
+            "hash": "0x445ec...7db2",
+            "tx_count": "16 tx"
+          },
+          {
+            "height": "#49345",
+            "hash": "0x5465a...6194",
+            "tx_count": "14 tx"
+          },
+          {
+            "height": "#49346",
+            "hash": "0x9fd8a...2867",
+            "tx_count": "15 tx",
+            "sealed": true
+          }
+        ],
+        "steps": [
+          {
+            "title": "Подпись",
+            "badge": "ECDSA",
+            "detail": "Голубой импульс: сумма в целых сатоши и криптоподпись.",
+            "accent": "#00f0ff"
+          },
+          {
+            "title": "Красный фильтр",
+            "badge": "FAIL-CLOSED",
+            "detail": "Rust-мемпул режет спам, двойной nonce и нехватку баланса.",
+            "accent": "#ff2e63"
+          },
+          {
+            "title": "Дерево Меркла",
+            "badge": "GOLD HASH",
+            "detail": "Золотой SHA-256 сворачивает все транзакции в единый корень.",
+            "accent": "#ffb800"
+          },
+          {
+            "title": "Связка цепи",
+            "badge": "PREV_HASH",
+            "detail": "Новый блок привязывается к прошлому — историю не подменить.",
+            "accent": "#a855f7"
+          },
+          {
+            "title": "Зелёная печать",
+            "badge": "ROCKSDB ✓",
+            "detail": "Атомарная запись на диск — страница вшита в книгу навсегда.",
+            "accent": "#10ff88"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s5",
+      "tag": "ТРИ УЗЛА",
+      "type": "mesh_network",
+      "title": "Три узла в едином ритме",
+      "subtitle": "Шифрованные каналы rust-libp2p Noise, зелёные зонды и красная защита от расхождений",
+      "voice_text": "Дальше новый блок мгновенно разлетается по трём узлам меша через шифрованный rust-libp2p Noise. Узлы обмениваются живыми зондами и сверяют высоту и корень состояния. Если один узел отстал, его догоняют CatchUp и ForkReconcile. А если состояние не сошлось — срабатывает красный стоп, и система честно снимает готовность вместо фальшивого зелёного индикатора.",
+      "mesh": {
+        "protocol_label": "rust-libp2p Noise · ADR 0020",
+        "chain_id": "778888",
+        "probe_label": "wire_probe_ok · state_consistent",
+        "nodes": [
+          {
+            "id": "node1",
+            "role": "Prod-mesh leader",
+            "endpoint": "127.0.0.1:18180",
+            "status": "ALIGNED",
+            "height": "49347"
+          },
+          {
+            "id": "node2",
+            "role": "Prod-mesh peer",
+            "endpoint": "127.0.0.1:18181",
+            "status": "ALIGNED",
+            "height": "49347"
+          },
+          {
+            "id": "node3",
+            "role": "Prod-mesh peer",
+            "endpoint": "127.0.0.1:18182",
+            "status": "ALIGNED",
+            "height": "49347"
+          }
+        ],
+        "recovery_steps": [
+          {
+            "title": "Зелёный зонд вместо веры",
+            "desc": "Каждый узел подтверждает живую связь и совпадение корня: wire_probe_ok и state_consistent.",
+            "accent": "#10ff88"
+          },
+          {
+            "title": "Автодогон и сверка веток",
+            "desc": "CatchUpPathA и ForkReconcile подтягивают отставший узел с полной перепроверкой заголовков.",
+            "accent": "#00f0ff"
+          },
+          {
+            "title": "Красный стоп при сбое",
+            "desc": "Потеря пиров или рассинхрон снимают готовность fail-closed — статус никогда не врёт.",
+            "accent": "#ff2e63"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s6",
+      "tag": "ЯДРО RUST",
+      "type": "code_split",
+      "title": "Золотое ядро abs_native",
+      "subtitle": "Реальный код на Rust: хеши, дерево Меркла и канонизация через PyO3",
+      "voice_text": "Сердце скорости и детерминизма — реальный модуль abs_native на Rust. Вся критическая криптография, расчёт корней состояния и быстрая запись в RocksDB выполняются в нативном коде, а Python сверху остаётся чистым и понятным оркестратором.",
+      "bullets": [
+        {
+          "title": "Золотой стандарт криптографии",
+          "desc": "SHA-256, ECDSA, Keccak и Merkle-доказательства внутри Rust crate abs_native.",
+          "accent": "#ffb800"
+        },
+        {
+          "title": "Изумрудный детерминизм",
+          "desc": "Каноническая сериализация гарантирует одинаковый хеш блока на каждом узле.",
+          "accent": "#10ff88"
+        },
+        {
+          "title": "Граница без компромиссов",
+          "desc": "ADR 0009: горячий путь в Rust, оркестрация и порты в Python.",
+          "accent": "#00f0ff"
+        }
+      ],
+      "code": {
+        "filename": "native/abs_native/src/lib.rs · L56-68",
+        "lines": [
+          {
+            "text": "fn sha256_hex_bytes(data: &[u8]) -> String {",
+            "color": "#ffb800"
+          },
+          {
+            "text": "    hex::encode(Sha256::digest(data))",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "pub(crate) fn hash_string(data: &str) -> String {",
+            "color": "#00f0ff"
+          },
+          {
+            "text": "    sha256_hex_bytes(data.as_bytes())",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "// Deterministic state roots & Merkle proofs in Rust",
+            "color": "#10ff88"
+          },
+          {
+            "text": "// Fail-closed commit -> RocksDB chainstore",
+            "color": "#ff2e63"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s7",
+      "tag": "ЖИВОЙ ПУЛЬТ",
+      "type": "screen_split",
+      "title": "Живой пульт оператора",
+      "subtitle": "Пять реальных экранов Ops Console на работающем 3-узловом меше (chain 778888)",
+      "voice_text": "А вот эта же архитектура вживую на экране оператора. Обзор живого узла, синхронизация трёх пиров, реестр запечатанных доказательств, справочные рынки только для ориентации и сотни живых метрик в реальном времени. Мост на меше выключен, никаких симуляций.",
+      "bullets": [
+        {
+          "title": "Живой меш 778888",
+          "desc": "Реальная высота блоков, два пира и зелёный статус выравнивания без моков.",
+          "accent": "#10ff88"
+        },
+        {
+          "title": "Реестр доказательств",
+          "desc": "Запечатанные STRICT-пакеты с честным предупреждением о границах R&D.",
+          "accent": "#ffb800"
+        },
+        {
+          "title": "Полная телеметрия",
+          "desc": "Скрейп задержек, мемпула на Rust и счётчиков отбитых невалидных пакетов.",
+          "accent": "#00f0ff"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/dup-protocol/console-overview.png",
+          "caption": "Ops Console · Обзор живого узла · 127.0.0.1:18180"
+        },
+        {
+          "src": "screens/dup-protocol/console-mesh-sync.png",
+          "caption": "Ops Console · Сетка и синхронизация · aligned"
+        },
+        {
+          "src": "screens/dup-protocol/console-evidence.png",
+          "caption": "Ops Console · Запечатанные STRICT-пакеты"
+        },
+        {
+          "src": "screens/dup-protocol/console-markets.png",
+          "caption": "Ops Console · Рынки (только ориентация)"
+        },
+        {
+          "src": "screens/dup-protocol/console-metrics.png",
+          "caption": "Ops Console · Живые метрики узла"
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "tag": "ФАКТЫ С ДИСКА",
+      "type": "kpi",
+      "title": "Доказано артефактами на диске",
+      "subtitle": "Числа из EVIDENCE_MATRIX — каждый PASS закреплён логами и отчётами",
+      "voice_text": "За красивой визуализацией стоят сухие проверяемые цифры. Сорок восемь часов строгих прогонов на приватном меше для libp2p, EVM и мемпула на Rust. Ноль жёстких сбоев и ноль чисел с плавающей точкой в деньгах. Три узла в prod-профиле и два чистых репозитория: промышленный пин и песочница исследований.",
+      "kpis": [
+        {
+          "value": "48 ч",
+          "label": "STRICT soak-пакеты: libp2p, EVM, Rust Mempool"
+        },
+        {
+          "value": "0",
+          "label": "hard_fails в прогонах и ноль float в деньгах"
+        },
+        {
+          "value": "3 узла",
+          "label": "приватный prod-profile mesh (chain 778888)"
+        },
+        {
+          "value": "2 репо",
+          "label": "аудит-пин dup-protocol и R&D experimental"
+        }
+      ]
+    },
+    {
+      "id": "s9",
+      "tag": "ФИЛОСОФИЯ",
+      "type": "quote",
+      "title": "Доверие в инженерии строится не на громких словах, а на системе, которая отказывается врать.",
+      "subtitle": "Принцип DUP Protocol · fail-closed · проверяемые пакеты на диске",
+      "voice_text": "Именно поэтому мы показываем не только то, что работает, но и честные границы проекта. Настоящее доверие в блокчейне начинается там, где система отказывается врать.",
+      "bullets": []
+    },
+    {
+      "id": "s10",
+      "tag": "ФИНАЛ",
+      "type": "outro_3d",
+      "title": "DUP Protocol — честный фундамент L1",
+      "subtitle": "R&D и промышленный профиль приватного меша · внешний аудит впереди",
+      "voice_text": "DUP Protocol сейчас — это рабочий приватный меш с проверяемыми пакетами доказательств, а публичный мейннет и внешний аудит безопасности впереди. Весь код и отчёты открыты на GitHub в репозиториях DUP Labs.",
+      "url": "github.com/Gruver87/dup-protocol",
+      "tagline": "github.com/Gruver87/dup-protocol · dup-protocol-experimental · не публичный мейннет",
+      "badges": [
+        {
+          "name": "Fail-Closed L1",
+          "color": "#ff2e63"
+        },
+        {
+          "name": "48h STRICT Packs",
+          "color": "#10ff88"
+        },
+        {
+          "name": "Rust + Python",
+          "color": "#ffb800"
+        }
+      ],
+      "cube_faces": [
+        "DUP LABS",
+        "RUST",
+        "INT64",
+        "NOISE",
+        "ROCKSDB",
+        "HONEST"
+      ]
+    }
+  ]
+}

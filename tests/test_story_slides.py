@@ -90,10 +90,51 @@ def _valid_mesh_network() -> dict:
     }
 
 
+def _valid_protocol_cosmos() -> dict:
+    return {
+        "id": "s_cosmos",
+        "tag": "КОСМОС",
+        "type": "protocol_cosmos",
+        "title": "Весь протокол изнутри",
+        "voice_text": "Весь протокол работает как единая система.",
+        "cosmos": {
+            "core_title": "DUP CORE",
+            "core_subtitle": "Rust abs_native · RocksDB",
+            "core_badges": ["SHA-256", "MERKLE", "INT64"],
+            "stations": [
+                {"id": "l1", "side": "left", "badge": "01 · API", "title": "Вход", "detail": "REST и RPC", "metric": ":8080", "color": "#00f0ff"},
+                {"id": "l2", "side": "left", "badge": "02 · SHIELD", "title": "Щит", "detail": "Fail-closed", "metric": "0 BYPASS", "color": "#ff2e63", "role": "shield"},
+                {"id": "l3", "side": "left", "badge": "03 · POOL", "title": "Мемпул", "detail": "Rust", "metric": "ADR 0021", "color": "#ffb800"},
+                {"id": "r1", "side": "right", "badge": "04 · EXEC", "title": "Учёт", "detail": "Сатоши", "metric": "INT64", "color": "#10ff88"},
+                {"id": "r2", "side": "right", "badge": "05 · CONS", "title": "Консенсус", "detail": "LMD-GHOST", "metric": "TIPSAFE", "color": "#a855f7"},
+                {"id": "r3", "side": "right", "badge": "06 · MESH", "title": "Меш", "detail": "3 узла", "metric": "ALIGNED", "color": "#10ff88"},
+            ],
+        },
+    }
+
+
 class StorySlideValidationTests(unittest.TestCase):
     def test_valid_story_slides_pass(self) -> None:
-        for slide in (_valid_ledger_layers(), _valid_tx_journey(), _valid_mesh_network()):
-            build_deck.validate_deck(_base_deck(slide), check_assets=False)
+        for slide in (_valid_ledger_layers(), _valid_tx_journey(), _valid_mesh_network(), _valid_protocol_cosmos()):
+            d = _base_deck(slide)
+            d["theme"] = "quantum_ledger"
+            build_deck.validate_deck(d, check_assets=False)
+
+    def test_protocol_cosmos_refuses_unbalanced_or_missing_stations(self) -> None:
+        s = _valid_protocol_cosmos()
+        s["cosmos"]["stations"] = s["cosmos"]["stations"][:5]
+        with self.assertRaises(build_deck.DeckValidationError):
+            build_deck.validate_deck(_base_deck(s), check_assets=False)
+
+        s2 = copy.deepcopy(_valid_protocol_cosmos())
+        s2["cosmos"]["stations"][0]["side"] = "right"
+        with self.assertRaises(build_deck.DeckValidationError):
+            build_deck.validate_deck(_base_deck(s2), check_assets=False)
+
+        s3 = copy.deepcopy(_valid_protocol_cosmos())
+        s3["cosmos"]["core_badges"] = ["ONLY_ONE"]
+        with self.assertRaises(build_deck.DeckValidationError):
+            build_deck.validate_deck(_base_deck(s3), check_assets=False)
 
     def test_ledger_layers_refuses_too_few_or_duplicate_ids(self) -> None:
         s = _valid_ledger_layers()

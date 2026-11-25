@@ -50,6 +50,7 @@ ALLOWED_TYPES = {
     "ledger_layers",
     "tx_journey",
     "mesh_network",
+    "protocol_cosmos",
 }
 QUOTE_MAX_CHARS = 220
 # ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
@@ -338,6 +339,36 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
             for r_idx, rs in enumerate(rec_steps):
                 if not isinstance(rs, dict) or not str(rs.get("title", "")).strip() or not str(rs.get("desc", "")).strip():
                     raise DeckValidationError(f"Slide {sid}: mesh.recovery_steps[{r_idx}] needs title and desc")
+        if stype == "protocol_cosmos":
+            cosmos = slide.get("cosmos")
+            if not isinstance(cosmos, dict):
+                raise DeckValidationError(f"Slide {sid}: protocol_cosmos requires a cosmos object")
+            for req in ("core_title", "core_subtitle"):
+                if not isinstance(cosmos.get(req), str) or not cosmos[req].strip():
+                    raise DeckValidationError(f"Slide {sid}: cosmos missing non-empty string {req!r}")
+            c_badges = cosmos.get("core_badges")
+            if not isinstance(c_badges, list) or not (2 <= len(c_badges) <= 4) or not all(
+                isinstance(b, str) and b.strip() for b in c_badges
+            ):
+                raise DeckValidationError(f"Slide {sid}: cosmos.core_badges must be 2..4 non-empty strings")
+            stations = cosmos.get("stations")
+            if not isinstance(stations, list) or len(stations) != 6:
+                raise DeckValidationError(f"Slide {sid}: cosmos.stations must have exactly 6 items (3 left, 3 right)")
+            left_n = sum(1 for st in stations if isinstance(st, dict) and st.get("side") == "left")
+            right_n = sum(1 for st in stations if isinstance(st, dict) and st.get("side") == "right")
+            if left_n != 3 or right_n != 3:
+                raise DeckValidationError(f"Slide {sid}: cosmos.stations must have 3 'left' and 3 'right' items")
+            st_ids: set[str] = set()
+            for st_idx, st in enumerate(stations):
+                if not isinstance(st, dict):
+                    raise DeckValidationError(f"Slide {sid}: cosmos.stations[{st_idx}] must be an object")
+                stid = st.get("id")
+                if not isinstance(stid, str) or not stid.strip() or stid in st_ids:
+                    raise DeckValidationError(f"Slide {sid}: cosmos station #{st_idx} missing or duplicate id {stid!r}")
+                st_ids.add(stid)
+                for req in ("badge", "title", "detail", "metric", "color"):
+                    if not isinstance(st.get(req), str) or not st[req].strip():
+                        raise DeckValidationError(f"Slide {sid}: cosmos station {stid!r} missing {req!r}")
         if stype == "kpi":
             kpis = slide.get("kpis") or []
             if not (1 <= len(kpis) <= 4):

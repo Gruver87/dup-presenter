@@ -19,7 +19,8 @@ import { slide as slideTransition } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
 import rawDeck from "./generated/deck_resolved.json";
 import { resolveTheme } from "./themes";
-import { LedgerLayersSlide, MeshNetworkSlide, TxJourneySlide } from "./StorySlides";
+import { QuantumWarpBackdrop } from "./CosmosBackdrop";
+import { LedgerLayersSlide, MeshNetworkSlide, ProtocolCosmosSlide, TxJourneySlide } from "./StorySlides";
 import type { CaptionCue, ResolvedDeck, ResolvedSlide, ScreenFocus } from "./types";
 
 const DECK = rawDeck as unknown as ResolvedDeck;
@@ -99,6 +100,7 @@ const PINK = THEME.accent4;
 const TEXT = THEME.text;
 const MUTED = THEME.muted;
 const IS_COSMIC = THEME.id === "cosmic_radar";
+const IS_QUANTUM = THEME.id === "quantum_ledger";
 const IS_LIGHT = THEME.id === "minimal_light" || THEME.id === "paper_warm" || THEME.id === "corporate_blue";
 
 const GRADIENT_TITLE: React.CSSProperties = {
@@ -1208,23 +1210,31 @@ const BulletItem: React.FC<{ title: string; desc: string; delay: number; accent?
         gap: 16,
         alignItems: "flex-start",
         padding: IS_PORTRAIT ? "14px 18px" : "15px 20px",
-        borderRadius: 16,
-        background: THEME.cardBg,
-        border: `1px solid ${THEME.cardBorder}`,
-        borderTop: `1.5px solid ${accent}88`,
+        borderRadius: IS_QUANTUM ? 20 : 16,
+        background: IS_QUANTUM
+          ? `radial-gradient(ellipse at 50% -15%, rgba(255,255,255,0.18) 0%, transparent 52%), radial-gradient(ellipse at 50% 120%, ${accent}30 0%, transparent 58%), linear-gradient(155deg, ${accent}22 0%, rgba(8,18,46,0.92) 60%, rgba(3,8,24,0.96) 100%)`
+          : THEME.cardBg,
+        border: `${IS_QUANTUM ? 1.5 : 1}px solid ${IS_QUANTUM ? `${accent}77` : THEME.cardBorder}`,
+        borderTop: `2px solid ${accent}${IS_QUANTUM ? "dd" : "88"}`,
         boxShadow: IS_LIGHT
           ? "0 10px 26px rgba(15,23,42,0.12)"
+          : IS_QUANTUM
+          ? `0 7px 0 rgba(3,8,22,0.95), 0 10px 0 ${accent}44, 0 22px 44px rgba(0,0,0,0.72), 0 0 28px ${accent}2a, inset 0 2px 3px rgba(255,255,255,0.26), inset 0 -6px 14px rgba(0,0,0,0.48)`
           : `0 16px 38px rgba(0,0,0,0.52), inset 0 1px 0 rgba(255,255,255,0.10)`,
       }}
     >
-      <div style={{ width: 11, height: 11, marginTop: 9, borderRadius: "50%", backgroundColor: accent, boxShadow: `0 0 14px ${accent}`, flexShrink: 0 }} />
+      <div style={{ width: 12, height: 12, marginTop: 9, borderRadius: "50%", backgroundColor: accent, boxShadow: `0 0 16px ${accent}`, flexShrink: 0 }} />
       <div>
         <div
           style={{
             fontSize: IS_PORTRAIT ? 25 : 26,
-            fontWeight: 800,
-            color: TEXT,
-            textShadow: IS_LIGHT ? "none" : "0 2px 8px rgba(0,0,0,0.75)",
+            fontWeight: IS_QUANTUM ? 900 : 800,
+            color: IS_QUANTUM ? "#ffffff" : TEXT,
+            textShadow: IS_LIGHT
+              ? "none"
+              : IS_QUANTUM
+              ? `0 2px 0 #050d20, 0 4px 0 #020714, 0 10px 18px rgba(0,0,0,0.92), 0 0 18px ${accent}99`
+              : "0 2px 8px rgba(0,0,0,0.75)",
           }}
         >
           {title}
@@ -1634,17 +1644,22 @@ const QuoteSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
       </div>
       <div
         style={{
-          maxWidth: IS_PORTRAIT ? "100%" : 1040,
-          background: THEME.cardBg,
-          border: `1.5px solid ${CYAN}55`,
-          borderTop: `2px solid ${CYAN}`,
-          borderRadius: 22,
-          padding: IS_PORTRAIT ? "22px 24px" : "26px 32px",
-          boxShadow: "0 20px 48px rgba(0,0,0,0.6)",
+          maxWidth: IS_PORTRAIT ? "100%" : 1120,
+          background: IS_QUANTUM
+            ? `radial-gradient(ellipse at 50% -10%, rgba(255,255,255,0.20) 0%, transparent 52%), radial-gradient(ellipse at 50% 120%, ${CYAN}30 0%, transparent 60%), linear-gradient(155deg, rgba(10,22,56,0.94) 0%, rgba(4,10,28,0.96) 100%)`
+            : THEME.cardBg,
+          border: `2px solid ${CYAN}${IS_QUANTUM ? "bb" : "55"}`,
+          borderTop: `2.5px solid ${CYAN}`,
+          borderRadius: 24,
+          padding: IS_PORTRAIT ? "22px 24px" : "30px 38px",
+          boxShadow: IS_QUANTUM
+            ? `0 10px 0 rgba(3,8,22,0.96), 0 14px 0 ${CYAN}55, 0 32px 68px rgba(0,0,0,0.82), 0 0 48px ${CYAN}40, inset 0 2px 4px rgba(255,255,255,0.30)`
+            : "0 20px 48px rgba(0,0,0,0.6)",
           fontSize: IS_PORTRAIT ? 46 : 52,
-          fontWeight: 800,
+          fontWeight: 900,
           lineHeight: 1.22,
-          color: TEXT,
+          color: IS_QUANTUM ? "#ffffff" : TEXT,
+          textShadow: IS_QUANTUM ? `0 2px 0 #051024, 0 5px 0 #020714, 0 14px 24px rgba(0,0,0,0.95), 0 0 24px ${CYAN}99` : undefined,
         }}
       >
         {slide.title}
@@ -1664,26 +1679,34 @@ const KpiSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
     <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: IS_PORTRAIT ? 28 : 22 }}>
       <EmbossedTitle fontSize={IS_PORTRAIT ? 52 : 58} lineHeight={1.08}>{slide.title}</EmbossedTitle>
       {slide.subtitle && <div style={{ fontSize: 24, color: MUTED }}>{slide.subtitle}</div>}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 24, marginTop: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 26, marginTop: 10, perspective: 1700 }}>
         {kpis.map((k, i) => {
           const s = spring({ frame: frame - (10 + i * 10), fps, config: { damping: 180 } });
           const accent = [CYAN, BLUE, VIOLET, PINK][i % 4];
+          const tiltY = IS_QUANTUM && !IS_PORTRAIT && cols === 2 ? (i % 2 === 0 ? 6 : -6) : 0;
           const numLiftShadow = IS_LIGHT
             ? `0 2px 0 rgba(15,23,42,0.18), 0 8px 18px rgba(15,23,42,0.16)`
+            : IS_QUANTUM
+            ? `0 2px 0 #0a1e40, 0 4px 0 #071630, 0 6px 0 #040d20, 0 8px 0 #020714, 0 20px 34px rgba(0,0,0,0.96), 0 0 34px ${accent}ee, 0 0 60px ${accent}66`
             : `0 1px 0 #0b2444, 0 2px 0 #091d38, 0 3px 0 #07162e, 0 4px 0 #050f22, 0 6px 0 #020814, 0 14px 28px rgba(0,0,0,0.88), 0 0 26px ${accent}cc, 0 0 48px ${accent}55`;
           return (
             <div
               key={`${k.value}-${i}`}
               style={{
                 opacity: s,
-                transform: `scale(${0.9 + 0.1 * s}) translateY(${(1 - s) * 18}px)`,
-                background: THEME.cardBg,
-                border: `1.5px solid ${accent}55`,
-                borderTop: `2px solid ${accent}`,
-                borderRadius: 22,
-                padding: IS_PORTRAIT ? "20px 22px" : "24px 28px",
+                transform: `rotateY(${tiltY}deg) scale(${0.9 + 0.1 * s}) translateY(${(1 - s) * 18}px)`,
+                transformStyle: "preserve-3d",
+                background: IS_QUANTUM
+                  ? `radial-gradient(ellipse at 50% -12%, rgba(255,255,255,0.22) 0%, transparent 52%), radial-gradient(ellipse at 50% 125%, ${accent}38 0%, transparent 60%), linear-gradient(155deg, ${accent}24 0%, rgba(7,16,42,0.94) 58%, rgba(3,8,24,0.96) 100%)`
+                  : THEME.cardBg,
+                border: `${IS_QUANTUM ? 2 : 1.5}px solid ${accent}${IS_QUANTUM ? "bb" : "55"}`,
+                borderTop: `2.5px solid ${accent}`,
+                borderRadius: 24,
+                padding: IS_PORTRAIT ? "20px 22px" : "26px 30px",
                 boxShadow: IS_LIGHT
                   ? `0 12px 28px rgba(15,23,42,0.10)`
+                  : IS_QUANTUM
+                  ? `0 10px 0 rgba(3,8,22,0.96), 0 14px 0 ${accent}55, 0 30px 64px rgba(0,0,0,0.82), 0 0 42px ${accent}44, inset 0 2px 4px rgba(255,255,255,0.32), inset 0 -8px 18px rgba(0,0,0,0.52)`
                   : `0 20px 48px rgba(0,0,0,0.62), 0 0 30px ${accent}28, inset 0 1px 0 rgba(255,255,255,0.12)`,
                 display: "flex",
                 flexDirection: "column",
@@ -1691,15 +1714,16 @@ const KpiSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
                 gap: 12,
               }}
             >
-              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, transformStyle: "preserve-3d" }}>
                 <div
                   style={{
-                    fontSize: IS_PORTRAIT ? 68 : 86,
+                    fontSize: IS_PORTRAIT ? 68 : 92,
                     fontWeight: 900,
-                    lineHeight: 0.98,
+                    lineHeight: 0.96,
                     letterSpacing: "-0.02em",
                     color: IS_LIGHT ? accent : "#ffffff",
                     textShadow: numLiftShadow,
+                    transform: IS_QUANTUM ? "translateZ(30px) translateY(-6px)" : undefined,
                   }}
                 >
                   <AnimatedKpiValue value={k.value} startFrame={10 + i * 10 + 6} />
@@ -2411,6 +2435,9 @@ export const DupPresenter: React.FC<Props> = () => {
     if (slide.type === "mesh_network") {
       return <MeshNetworkSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
     }
+    if (slide.type === "protocol_cosmos") {
+      return <ProtocolCosmosSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
     return null;
   };
 
@@ -2447,7 +2474,7 @@ export const DupPresenter: React.FC<Props> = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: BG }}>
-      <Aurora3DBackdrop />
+      {IS_QUANTUM ? <QuantumWarpBackdrop width={WIDTH} height={HEIGHT} /> : <Aurora3DBackdrop />}
       <Audio
         src={staticFile(DECK.ambient_file)}
         volume={(f) => (DECK.voice?.ambient_volume ?? 0.16) * computeDuckFactor(f, Math.max(0.55, duckRatio))}

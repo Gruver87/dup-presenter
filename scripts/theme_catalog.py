@@ -23,6 +23,7 @@ THEME_CATALOG: list[dict[str, str]] = [
     {"id": "mono_graphite", "label": "Mono Graphite (графит, без цвета)", "mode": "dark"},
     {"id": "paper_warm", "label": "Paper Warm (бумага, светлая)", "mode": "light"},
     {"id": "corporate_blue", "label": "Corporate Blue (деловая, светлая)", "mode": "light"},
+    {"id": "quantum_ledger", "label": "Quantum Ledger (космическая 3D-воронка + свет транзакций)", "mode": "dark"},
 ]
 
 THEME_IDS: tuple[str, ...] = tuple(t["id"] for t in THEME_CATALOG)

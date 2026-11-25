@@ -94,6 +94,24 @@ export interface MeshNetworkData {
   recovery_steps: BulletData[];
 }
 
+export interface CosmosStationItem {
+  id: string;
+  side: "left" | "right";
+  badge: string;
+  title: string;
+  detail: string;
+  metric: string;
+  color: string;
+  role?: "shield" | "flow" | "verify";
+}
+
+export interface ProtocolCosmosData {
+  core_title: string;
+  core_subtitle: string;
+  core_badges: string[];
+  stations: CosmosStationItem[];
+}
+
 export interface CaptionWord {
   w: string;
   start: number;
@@ -133,7 +151,8 @@ export interface ResolvedSlide {
     | "quote"
     | "ledger_layers"
     | "tx_journey"
-    | "mesh_network";
+    | "mesh_network"
+    | "protocol_cosmos";
   // quote: title = the quote text (<= 220 chars), subtitle = attribution (optional)
   // ui_recording: MP4 from scripts/record_ui.py under public/ui_recordings/ (played muted inside the 3D frame)
   recording?: { src: string; caption?: string; focus?: ScreenFocus; duration_sec?: number };
@@ -165,6 +184,7 @@ export interface ResolvedSlide {
   layers?: LedgerLayerItem[];
   journey?: TxJourneyData;
   mesh?: MeshNetworkData;
+  cosmos?: ProtocolCosmosData;
   captions?: CaptionCue[];
 }
 

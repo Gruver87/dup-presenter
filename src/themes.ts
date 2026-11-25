@@ -9,7 +9,8 @@ export type ThemeId =
   | "aurora_purple"
   | "mono_graphite"
   | "paper_warm"
-  | "corporate_blue";
+  | "corporate_blue"
+  | "quantum_ledger";
 
 export interface ThemePalette {
   id: ThemeId;
@@ -276,6 +277,28 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
     glow3: "rgba(67,56,202,0.08)",
     captionBg: "rgba(11,31,58,0.90)",
     captionText: "#f1f5f9",
+  },
+  quantum_ledger: {
+    id: "quantum_ledger",
+    name: "Quantum Ledger",
+    bg: "#020512",
+    text: "#f8fafc",
+    muted: "#bfd6f6",
+    accent1: "#00f0ff",
+    accent2: "#10ff88",
+    accent3: "#ffb800",
+    accent4: "#ff2e63",
+    cardBg: "rgba(9,18,44,0.82)",
+    cardBorder: "rgba(0,240,255,0.28)",
+    codeBg: "#040a1c",
+    codeHeaderBg: "rgba(14,28,62,0.92)",
+    grid1: "rgba(0,240,255,0.26)",
+    grid2: "rgba(16,255,136,0.20)",
+    glow1: "rgba(0,240,255,0.26)",
+    glow2: "rgba(255,46,99,0.22)",
+    glow3: "rgba(16,255,136,0.20)",
+    captionBg: "rgba(2,6,20,0.90)",
+    captionText: "#f8fafc",
   },
 };
 
