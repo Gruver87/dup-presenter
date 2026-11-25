@@ -44,6 +44,59 @@ def _compact_voice(text: str, max_chars: int = 165) -> str:
     return " ".join(picked)
 
 
+CHART_TYPES = frozenset({"chart_story"})
+
+
+def _repair_adjacent_charts(
+    mid: list[dict],
+    hero: dict,
+    outro: dict,
+    pool: list[dict],
+    used_ids: set[str],
+    order_map: dict[str, int],
+) -> list[dict]:
+    """Ensure no two chart slides are adjacent in the final short (fail-closed).
+
+    A conflicting middle slide is replaced by the first unused non-chart slide from the deck.
+    If no middle slot or no replacement exists, raise instead of silently producing a bad short.
+    """
+    current = list(mid)
+    for _ in range(len(current) + 2):
+        picked = [hero, *current, outro]
+        conflict = next(
+            (
+                i
+                for i in range(len(picked) - 1)
+                if picked[i].get("type") in CHART_TYPES and picked[i + 1].get("type") in CHART_TYPES
+            ),
+            None,
+        )
+        if conflict is None:
+            return current
+        # Prefer replacing the later slide of the pair when it is a middle slide, else the earlier one.
+        target_pos = conflict + 1 if 1 <= conflict + 1 <= len(current) else conflict
+        if not (1 <= target_pos <= len(current)):
+            raise ValueError(
+                "make_cutdown: adjacent chart_story slides at the hero/outro boundary cannot be separated "
+                "(no middle slot); reorder the deck or add a non-chart slide"
+            )
+        victim = current[target_pos - 1]
+        replacement = next(
+            (s for s in pool if s.get("type") not in CHART_TYPES and s["id"] not in used_ids),
+            None,
+        )
+        if replacement is None:
+            raise ValueError(
+                f"make_cutdown: adjacent chart_story slides around {victim['id']!r} and no unused "
+                "non-chart slide exists to replace it; add a non-chart slide to the deck"
+            )
+        used_ids.discard(victim["id"])
+        used_ids.add(replacement["id"])
+        current = [s for s in current if s is not victim] + [replacement]
+        current.sort(key=lambda s: order_map[s["id"]])
+    raise ValueError("make_cutdown: could not resolve adjacent chart_story slides")
+
+
 def build_short_cutdown(deck: dict, max_slides: int = 4, max_chars_per_slide: int = 165) -> dict:
     """Create a validated 9:16 vertical Short deck from an existing 16:9 deck."""
     slides = deck.get("slides") or []
@@ -81,6 +134,7 @@ def build_short_cutdown(deck: dict, max_slides: int = 4, max_chars_per_slide: in
     # Restore narrative order from original deck
     order_map = {s["id"]: i for i, s in enumerate(slides)}
     selected_mid.sort(key=lambda s: order_map[s["id"]])
+    selected_mid = _repair_adjacent_charts(selected_mid, hero, outro, middle_pool, used_ids, order_map)
     picked = [copy.deepcopy(hero), *[copy.deepcopy(s) for s in selected_mid], copy.deepcopy(outro)]
 
     for i, s in enumerate(picked, start=1):
