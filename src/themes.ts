@@ -1,5 +1,6 @@
 export type ThemeId =
   | "neon_cyber"
+  | "cosmic_radar"
   | "minimal_light"
   | "terminal_green"
   | "deep_ocean"
@@ -55,6 +56,28 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
     glow3: "rgba(56,189,248,0.18)",
     captionBg: "rgba(5,7,20,0.82)",
     captionText: "#f8fafc",
+  },
+  cosmic_radar: {
+    id: "cosmic_radar",
+    name: "Cosmic Radar",
+    bg: "#03071a",
+    text: "#ffffff",
+    muted: "#dbeafe",
+    accent1: "#00ffd5",
+    accent2: "#38bdf8",
+    accent3: "#c084fc",
+    accent4: "#fbbf24",
+    cardBg: "rgba(8,18,46,0.78)",
+    cardBorder: "rgba(56,189,248,0.42)",
+    codeBg: "#070e24",
+    codeHeaderBg: "rgba(18,36,76,0.94)",
+    grid1: "rgba(0,255,213,0.30)",
+    grid2: "rgba(192,132,252,0.30)",
+    glow1: "rgba(0,255,213,0.34)",
+    glow2: "rgba(192,132,252,0.36)",
+    glow3: "rgba(56,189,248,0.30)",
+    captionBg: "rgba(4,9,26,0.88)",
+    captionText: "#ffffff",
   },
   minimal_light: {
     id: "minimal_light",

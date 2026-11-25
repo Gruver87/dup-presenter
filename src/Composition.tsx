@@ -96,11 +96,565 @@ const VIOLET = THEME.accent3;
 const PINK = THEME.accent4;
 const TEXT = THEME.text;
 const MUTED = THEME.muted;
+const IS_COSMIC = THEME.id === "cosmic_radar";
+const IS_LIGHT = THEME.id === "minimal_light" || THEME.id === "paper_warm" || THEME.id === "corporate_blue";
 
 const GRADIENT_TITLE: React.CSSProperties = {
-  background: `linear-gradient(95deg, ${CYAN} 0%, ${BLUE} 48%, ${VIOLET} 100%)`,
+  background: IS_COSMIC
+    ? `linear-gradient(100deg, #ffffff 0%, ${CYAN} 32%, ${BLUE} 68%, ${VIOLET} 100%)`
+    : `linear-gradient(95deg, ${CYAN} 0%, ${BLUE} 48%, ${VIOLET} 100%)`,
   WebkitBackgroundClip: "text",
   WebkitTextFillColor: "transparent",
+};
+
+// 3D lifted/embossed gradient title: extrusion shadow layer beneath + bright high-contrast gradient face on top
+const EmbossedTitle: React.FC<{
+  children: React.ReactNode;
+  fontSize: number;
+  lineHeight?: number;
+  opacity?: number;
+}> = ({ children, fontSize, lineHeight = 1.06, opacity = 1 }) => {
+  const depthShadow = IS_LIGHT
+    ? "0 2px 0 rgba(15,23,42,0.14), 0 8px 18px rgba(15,23,42,0.16)"
+    : `0 1px 0 #0a2540, 0 2px 0 #091d38, 0 3px 0 #07162e, 0 4px 0 #050e22, 0 6px 0 #030714, 0 14px 28px rgba(0,0,0,0.88), 0 0 28px ${CYAN}55`;
+  return (
+    <div style={{ position: "relative", display: "inline-block", opacity }}>
+      {/* Extruded 3D depth + lift shadow layer */}
+      <div
+        aria-hidden
+        style={{
+          fontSize,
+          fontWeight: 900,
+          lineHeight,
+          letterSpacing: "-0.015em",
+          color: "transparent",
+          textShadow: depthShadow,
+          userSelect: "none",
+        }}
+      >
+        {children}
+      </div>
+      {/* Bright crisp foreground gradient face */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          fontSize,
+          fontWeight: 900,
+          lineHeight,
+          letterSpacing: "-0.015em",
+          ...GRADIENT_TITLE,
+          filter: IS_LIGHT ? "none" : `drop-shadow(0 0 12px ${CYAN}40)`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Deterministic stars for deep-space backdrop
+const COSMIC_STARS = Array.from({ length: 92 }, (_, i) => ({
+  x: ((i * 223 + 47) % Math.max(200, WIDTH)),
+  y: ((i * 157 + 31) % Math.max(200, HEIGHT)),
+  r: (i % 4 === 0 ? 2.4 : i % 3 === 0 ? 1.7 : 1.1),
+  phase: i * 0.7,
+  speed: 0.05 + (i % 5) * 0.025,
+  color: i % 9 === 0 ? "#fde68a" : i % 5 === 0 ? "#bae6fd" : "#ffffff",
+}));
+
+// Selected top-100 coins orbiting the radar planet (balanced count, no clutter)
+const ORBIT_COINS = [
+  { sym: "BTC", icon: "₿", color: "#f7931a", rx: 1.38, ry: 0.44, tilt: -18, speed: 0.012, phase: 0.2 },
+  { sym: "ETH", icon: "Ξ", color: "#818cf8", rx: 1.54, ry: 0.52, tilt: 14, speed: -0.010, phase: 1.3 },
+  { sym: "SOL", icon: "◎", color: "#14f195", rx: 1.24, ry: 0.38, tilt: 28, speed: 0.015, phase: 2.4 },
+  { sym: "BNB", icon: "◆", color: "#f3ba2f", rx: 1.66, ry: 0.58, tilt: -26, speed: -0.0085, phase: 3.1 },
+  { sym: "XRP", icon: "✕", color: "#38bdf8", rx: 1.44, ry: 0.48, tilt: 8, speed: 0.011, phase: 4.0 },
+  { sym: "HYPE", icon: "⚡", color: "#00ffd5", rx: 1.30, ry: 0.40, tilt: -34, speed: 0.016, phase: 4.9 },
+  { sym: "ZEC", icon: "ⓩ", color: "#f4b728", rx: 1.74, ry: 0.60, tilt: 22, speed: -0.009, phase: 5.6 },
+  { sym: "XMR", icon: "ɱ", color: "#fb923c", rx: 1.50, ry: 0.46, tilt: -10, speed: 0.013, phase: 0.9 },
+  { sym: "DOGE", icon: "Ð", color: "#facc15", rx: 1.62, ry: 0.54, tilt: 32, speed: -0.011, phase: 2.0 },
+  { sym: "LINK", icon: "⬡", color: "#60a5fa", rx: 1.34, ry: 0.42, tilt: -22, speed: 0.014, phase: 3.7 },
+  { sym: "ADA", icon: "₳", color: "#22d3ee", rx: 1.70, ry: 0.56, tilt: 16, speed: 0.0095, phase: 5.1 },
+];
+
+// Stylised continent & city-light clusters (lat, lon in radians) projected onto the spinning globe
+const EARTH_LAND_POINTS: { lat: number; lon: number; hot?: boolean }[] = (() => {
+  const clusters: { latDeg: number; lonDeg: number; spreadLat: number; spreadLon: number; n: number }[] = [
+    // Eurasia
+    { latDeg: 48, lonDeg: 35, spreadLat: 16, spreadLon: 32, n: 26 },
+    { latDeg: 36, lonDeg: 105, spreadLat: 16, spreadLon: 26, n: 22 },
+    // Africa
+    { latDeg: 4, lonDeg: 22, spreadLat: 24, spreadLon: 16, n: 18 },
+    // North America
+    { latDeg: 42, lonDeg: -98, spreadLat: 16, spreadLon: 24, n: 22 },
+    // South America
+    { latDeg: -18, lonDeg: -60, spreadLat: 22, spreadLon: 13, n: 16 },
+    // Australia
+    { latDeg: -25, lonDeg: 134, spreadLat: 10, spreadLon: 14, n: 10 },
+  ];
+  const pts: { lat: number; lon: number; hot?: boolean }[] = [];
+  let seed = 17;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+  for (const c of clusters) {
+    for (let i = 0; i < c.n; i++) {
+      const lat = ((c.latDeg + (rand() - 0.5) * 2 * c.spreadLat) * Math.PI) / 180;
+      const lon = ((c.lonDeg + (rand() - 0.5) * 2 * c.spreadLon) * Math.PI) / 180;
+      pts.push({ lat, lon, hot: i % 5 === 0 });
+    }
+  }
+  return pts;
+})();
+
+// Compact animated candlestick + EMA mini-chart for KPI cards & Hero HUD
+const CryptoMiniChart: React.FC<{
+  seed?: number;
+  accent?: string;
+  width?: number;
+  height?: number;
+  bars?: number;
+}> = ({ seed = 1, accent = CYAN, width = 260, height = 64, bars = 18 }) => {
+  const frame = useCurrentFrame();
+  const phase = frame * 0.06 + seed * 1.7;
+  const candles = Array.from({ length: bars }, (_, i) => {
+    const t = i * 0.55 + phase * 0.35;
+    const base = 0.5 + 0.26 * Math.sin(t) + 0.12 * Math.cos(t * 2.1 + seed);
+    const delta = 0.14 * Math.sin(t * 1.7 + i * 0.9 + seed);
+    const open = Math.min(0.86, Math.max(0.14, base - delta * 0.5));
+    const close = Math.min(0.86, Math.max(0.14, base + delta * 0.5));
+    const high = Math.min(0.95, Math.max(open, close) + 0.07 + 0.04 * Math.abs(Math.sin(t * 2.7)));
+    const low = Math.max(0.05, Math.min(open, close) - 0.07 - 0.04 * Math.abs(Math.cos(t * 2.3)));
+    const up = close >= open;
+    return { open, close, high, low, up };
+  });
+  const step = width / bars;
+  const emaPts = candles
+    .map((c, i) => `${(i * step + step * 0.5).toFixed(1)},${((1 - (c.open + c.close) * 0.5) * height).toFixed(1)}`)
+    .join(" ");
+
+  return (
+    <svg width={width} height={height} style={{ display: "block", overflow: "visible" }}>
+      <defs>
+        <linearGradient id={`ema-${seed}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={accent} stopOpacity={0.3} />
+          <stop offset="100%" stopColor={accent} stopOpacity={1} />
+        </linearGradient>
+      </defs>
+      {candles.map((c, i) => {
+        const cx = i * step + step * 0.5;
+        const yHigh = (1 - c.high) * height;
+        const yLow = (1 - c.low) * height;
+        const yTop = (1 - Math.max(c.open, c.close)) * height;
+        const bodyH = Math.max(3, Math.abs(c.close - c.open) * height);
+        const col = c.up ? "#00ffd5" : "#f43f5e";
+        return (
+          <g key={i}>
+            <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={col} strokeWidth={1.4} strokeOpacity={0.75} />
+            <rect
+              x={cx - step * 0.28}
+              y={yTop}
+              width={Math.max(4, step * 0.56)}
+              height={bodyH}
+              rx={1.5}
+              fill={col}
+              fillOpacity={0.86}
+            />
+          </g>
+        );
+      })}
+      <polyline points={emaPts} fill="none" stroke={`url(#ema-${seed})`} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+// Packet flow: four exchange feeds stream into the Rust scoring core at the planet centre (cosmic theme only).
+const EXCHANGE_NODES: { name: string; x: number; y: number; color: string }[] = [
+  { name: "Binance", x: 0.4, y: 0.08, color: "#facc15" },
+  { name: "Bybit", x: 0.66, y: 0.08, color: "#fb923c" },
+  { name: "KuCoin", x: 0.4, y: 0.83, color: "#00ffd5" },
+  { name: "MEXC", x: 0.66, y: 0.83, color: "#38bdf8" },
+];
+
+const ExchangeFlowLayer: React.FC<{ cx: number; cy: number }> = ({ cx, cy }) => {
+  const frame = useCurrentFrame();
+  const paths = EXCHANGE_NODES.map((node, idx) => {
+    const ax = node.x * WIDTH;
+    const ay = node.y * HEIGHT;
+    const mx = (ax + cx) / 2;
+    const my = (ay + cy) / 2;
+    const dx = cx - ax;
+    const dy = cy - ay;
+    const len = Math.hypot(dx, dy) || 1;
+    // Bow the feed toward the middle of the frame so the paths read as a curved data bus.
+    const bend = 0.22 * len;
+    const qx = mx - (dy / len) * bend;
+    const qy = my + (dx / len) * bend;
+    const point = (t: number) => ({
+      x: (1 - t) * (1 - t) * ax + 2 * (1 - t) * t * qx + t * t * cx,
+      y: (1 - t) * (1 - t) * ay + 2 * (1 - t) * t * qy + t * t * cy,
+    });
+    const packets = [0, 1 / 3, 2 / 3].map((k) => {
+      const t = (frame * 0.011 + k + idx * 0.19) % 1;
+      const p = point(t);
+      // Fade in at the exchange and out just before reaching the sphere
+      const alpha = Math.min(1, t / 0.12) * Math.min(1, (0.94 - t) / 0.18);
+      return { ...p, alpha: Math.max(0, alpha) };
+    });
+    return { node, ax, ay, qx, qy, cx, cy, packets };
+  });
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0 }}>
+        {paths.map(({ node, ax, ay, qx, qy, packets }) => (
+          <g key={node.name}>
+            <path
+              d={`M ${ax} ${ay} Q ${qx} ${qy} ${cx} ${cy}`}
+              fill="none"
+              stroke={node.color}
+              strokeWidth={1.8}
+              strokeOpacity={0.36}
+              strokeDasharray="5 8"
+            />
+            {packets.map((p, k) => (
+              <g key={k}>
+                <circle cx={p.x} cy={p.y} r={11} fill={node.color} fillOpacity={0.28 * p.alpha} />
+                <circle cx={p.x} cy={p.y} r={4.2} fill="#ffffff" fillOpacity={0.96 * p.alpha} />
+              </g>
+            ))}
+            <circle cx={ax} cy={ay} r={6.5} fill={node.color} fillOpacity={0.95} />
+            <text
+              x={ax}
+              y={ay - 14}
+              textAnchor="middle"
+              fill={node.color}
+              fillOpacity={0.95}
+              fontFamily="Consolas, monospace"
+              fontSize={15}
+              fontWeight={800}
+              letterSpacing={1.4}
+            >
+              {node.name.toUpperCase()}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </AbsoluteFill>
+  );
+};
+
+// KPI values like "4 488", "~150 мс", "0 float" count up from zero. Values with decimals or ranges stay static.
+const parseKpiValue = (raw: string): { prefix: string; num: number; suffix: string; grouped: boolean } | null => {
+  if (/[.,/–-]\d/.test(raw)) return null;
+  const m = raw.match(/^(\D*?)(\d[\d ]*\d|\d)(\D*)$/);
+  if (!m) return null;
+  const digits = m[2].replace(/ /g, "");
+  const num = Number(digits);
+  if (!Number.isFinite(num)) return null;
+  return { prefix: m[1], num, suffix: m[3], grouped: num >= 1000 };
+};
+
+const AnimatedKpiValue: React.FC<{ value: string; startFrame: number; durationFrames?: number }> = ({
+  value,
+  startFrame,
+  durationFrames = 40,
+}) => {
+  const frame = useCurrentFrame();
+  const parsed = parseKpiValue(value);
+  if (!parsed) return <>{value}</>;
+  const p = interpolate(frame, [startFrame, startFrame + durationFrames], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const eased = 1 - Math.pow(1 - p, 3);
+  const current = Math.round(parsed.num * eased);
+  const text = parsed.grouped ? current.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") : current.toString();
+  return <>{`${parsed.prefix}${text}${parsed.suffix}`}</>;
+};
+
+// Spinning 3D Earth-Radar + orbiting Top-100 coins + deep-space starfield & background crypto chart
+const CosmicEarthRadarLayer: React.FC = () => {
+  const frame = useCurrentFrame();
+  const cx = IS_PORTRAIT ? WIDTH * 0.5 : WIDTH * 0.52;
+  const cy = IS_PORTRAIT ? HEIGHT * 0.50 : HEIGHT * 0.52;
+  const R = IS_PORTRAIT ? 215 : 270;
+  const spin = frame * 0.011;
+  const sweepDeg = (frame * 1.9) % 360;
+
+  // Project spinning meridians
+  const meridians = Array.from({ length: 12 }, (_, m) => {
+    const lon = (m / 12) * Math.PI * 2 + spin;
+    const pts: string[] = [];
+    for (let s = -12; s <= 12; s++) {
+      const lat = (s / 12) * (Math.PI * 0.48);
+      const z = Math.cos(lat) * Math.cos(lon);
+      if (z >= -0.05) {
+        const x = cx + R * Math.cos(lat) * Math.sin(lon);
+        const y = cy - R * Math.sin(lat);
+        pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+      }
+    }
+    return pts.join(" ");
+  });
+
+  // Project spinning continent lights on front hemisphere
+  const visibleLights = EARTH_LAND_POINTS.map((p, idx) => {
+    const lon = p.lon + spin;
+    const z = Math.cos(p.lat) * Math.cos(lon);
+    if (z <= 0.04) return null;
+    const x = cx + R * Math.cos(p.lat) * Math.sin(lon);
+    const y = cy - R * Math.sin(p.lat);
+    // Radar sweep highlight when beam passes over this point's angle
+    const ang = ((Math.atan2(y - cy, x - cx) * 180) / Math.PI + 360) % 360;
+    const diff = (sweepDeg - ang + 360) % 360;
+    const ping = diff < 32 ? 1 - diff / 32 : 0;
+    return { idx, x, y, z, hot: p.hot, ping };
+  }).filter((v): v is { idx: number; x: number; y: number; z: number; hot: boolean | undefined; ping: number } => v !== null);
+
+  // Orbiting Top-100 coins split into back (behind Earth) and front (in front of Earth)
+  const projectedCoins = ORBIT_COINS.map((c) => {
+    const a = frame * c.speed + c.phase;
+    const ox = Math.cos(a) * R * c.rx;
+    const oy = Math.sin(a) * R * c.ry;
+    const z = Math.sin(a); // -1 = far behind planet, +1 = close in front
+    const rad = (c.tilt * Math.PI) / 180;
+    const rx = ox * Math.cos(rad) - oy * Math.sin(rad);
+    const ry = ox * Math.sin(rad) + oy * Math.cos(rad);
+    const scale = 0.72 + (z + 1) * 0.24;
+    const opacity = 0.32 + (z + 1) * 0.34;
+    return { ...c, x: cx + rx, y: cy + ry, z, scale, opacity };
+  });
+
+  const backCoins = projectedCoins.filter((c) => c.z < 0);
+  const frontCoins = projectedCoins.filter((c) => c.z >= 0);
+
+  // Background holographic candlestick wave along lower third
+  const bgBars = IS_PORTRAIT ? 28 : 48;
+  const bgStep = WIDTH / bgBars;
+  const bgCandles = Array.from({ length: bgBars }, (_, i) => {
+    const t = i * 0.38 + frame * 0.025;
+    const mid = 0.5 + 0.24 * Math.sin(t) + 0.14 * Math.cos(t * 1.9);
+    const d = 0.12 * Math.sin(t * 2.3 + i);
+    const o = mid - d * 0.5;
+    const c = mid + d * 0.5;
+    const h = Math.max(o, c) + 0.07;
+    const l = Math.min(o, c) - 0.07;
+    return { i, o, c, h, l, up: c >= o };
+  });
+  const chartTop = HEIGHT - (IS_PORTRAIT ? 340 : 250);
+  const chartH = IS_PORTRAIT ? 180 : 155;
+
+  const renderCoin = (c: (typeof projectedCoins)[number]) => (
+    <div
+      key={c.sym}
+      style={{
+        position: "absolute",
+        left: c.x,
+        top: c.y,
+        transform: `translate(-50%, -50%) scale(${c.scale.toFixed(3)})`,
+        opacity: c.opacity,
+        display: "flex",
+        alignItems: "center",
+        gap: 7,
+        padding: "5px 12px 5px 7px",
+        borderRadius: 999,
+        background: "rgba(4, 10, 28, 0.82)",
+        border: `1.5px solid ${c.color}cc`,
+        boxShadow: `0 0 18px ${c.color}55, 0 8px 20px rgba(0,0,0,0.6)`,
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          background: `radial-gradient(circle at 30% 30%, #ffffff, ${c.color} 55%, ${c.color}aa 100%)`,
+          color: "#020512",
+          fontWeight: 900,
+          fontSize: 13,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: `0 0 10px ${c.color}`,
+        }}
+      >
+        {c.icon}
+      </div>
+      <span
+        style={{
+          fontFamily: "Consolas, 'Cascadia Code', monospace",
+          fontSize: 13,
+          fontWeight: 800,
+          letterSpacing: 1,
+          color: "#ffffff",
+          textShadow: `0 0 8px ${c.color}`,
+        }}
+      >
+        {c.sym}
+      </span>
+    </div>
+  );
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none", overflow: "hidden" }}>
+      {/* Deep-space starfield with twinkling */}
+      <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0 }}>
+        {COSMIC_STARS.map((st, idx) => {
+          const tw = 0.35 + 0.65 * Math.abs(Math.sin(frame * st.speed + st.phase));
+          const sx = (st.x + frame * 0.08 * (idx % 3 === 0 ? 1.4 : 0.6)) % WIDTH;
+          return (
+            <circle
+              key={idx}
+              cx={sx}
+              cy={st.y}
+              r={st.r}
+              fill={st.color}
+              fillOpacity={tw * 0.85}
+            />
+          );
+        })}
+
+        {/* Holographic candlestick chart ribbon across lower background */}
+        <g opacity={0.34}>
+          {bgCandles.map((bc) => {
+            const x = bc.i * bgStep + bgStep * 0.5;
+            const yH = chartTop + (1 - bc.h) * chartH;
+            const yL = chartTop + (1 - bc.l) * chartH;
+            const yT = chartTop + (1 - Math.max(bc.o, bc.c)) * chartH;
+            const bH = Math.max(4, Math.abs(bc.c - bc.o) * chartH);
+            const col = bc.up ? "#00ffd5" : "#f43f5e";
+            return (
+              <g key={bc.i}>
+                <line x1={x} y1={yH} x2={x} y2={yL} stroke={col} strokeWidth={1.7} />
+                <rect x={x - bgStep * 0.24} y={yT} width={bgStep * 0.48} height={bH} rx={2} fill={col} />
+              </g>
+            );
+          })}
+          <polyline
+            points={bgCandles
+              .map((bc) => `${(bc.i * bgStep + bgStep * 0.5).toFixed(1)},${(chartTop + (1 - (bc.o + bc.c) * 0.5) * chartH).toFixed(1)}`)
+              .join(" ")}
+            fill="none"
+            stroke="#fbbf24"
+            strokeWidth={2.6}
+          />
+        </g>
+      </svg>
+
+      {/* Exchange feeds streaming into the Rust core at the planet centre */}
+      <ExchangeFlowLayer cx={cx} cy={cy} />
+
+      {/* Coins passing behind the planet */}
+      {backCoins.map(renderCoin)}
+
+      {/* Spinning 3D Earth-Radar sphere */}
+      <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0, opacity: 0.84 }}>
+        <defs>
+          <radialGradient id="earthOcean" cx="35%" cy="32%" r="68%">
+            <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.92} />
+            <stop offset="38%" stopColor="#1d4ed8" stopOpacity={0.94} />
+            <stop offset="76%" stopColor="#1e1b4b" stopOpacity={0.96} />
+            <stop offset="100%" stopColor="#03071a" stopOpacity={0.98} />
+          </radialGradient>
+          <radialGradient id="earthAtmo" cx="50%" cy="50%" r="50%">
+            <stop offset="72%" stopColor="#00ffd5" stopOpacity={0} />
+            <stop offset="90%" stopColor="#38bdf8" stopOpacity={0.52} />
+            <stop offset="100%" stopColor="#c084fc" stopOpacity={0} />
+          </radialGradient>
+          <linearGradient id="anamorphicFlare" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#00ffd5" stopOpacity={0} />
+            <stop offset="50%" stopColor="#bae6fd" stopOpacity={0.65} />
+            <stop offset="100%" stopColor="#c084fc" stopOpacity={0} />
+          </linearGradient>
+          <clipPath id="earthClip">
+            <circle cx={cx} cy={cy} r={R} />
+          </clipPath>
+        </defs>
+
+        {/* Outer orbital radar rings around the planet */}
+        {[1.18, 1.42, 1.68].map((mult, idx) => (
+          <ellipse
+            key={idx}
+            cx={cx}
+            cy={cy}
+            rx={R * mult}
+            ry={R * mult * 0.36}
+            fill="none"
+            stroke={[CYAN, BLUE, VIOLET][idx]}
+            strokeWidth={idx === 0 ? 1.6 : 1.1}
+            strokeDasharray={idx === 1 ? "8 10" : undefined}
+            strokeOpacity={0.42 - idx * 0.08}
+            transform={`rotate(${idx === 0 ? -16 : idx === 1 ? 14 : -8} ${cx} ${cy})`}
+          />
+        ))}
+
+        {/* Atmosphere halo */}
+        <circle cx={cx} cy={cy} r={R * 1.16} fill="url(#earthAtmo)" />
+
+        {/* Planet sphere */}
+        <circle cx={cx} cy={cy} r={R} fill="url(#earthOcean)" stroke="#38bdf8" strokeWidth={2} strokeOpacity={0.65} />
+
+        {/* Spinning latitude & longitude wireframe + continent city lights clipped to sphere */}
+        <g clipPath="url(#earthClip)">
+          {[-0.6, -0.3, 0, 0.3, 0.6].map((latFrac, idx) => {
+            const ly = cy - R * latFrac;
+            const lr = R * Math.sqrt(Math.max(0.01, 1 - latFrac * latFrac));
+            return (
+              <ellipse
+                key={idx}
+                cx={cx}
+                cy={ly}
+                rx={lr}
+                ry={lr * 0.12}
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth={0.9}
+                strokeOpacity={0.28}
+              />
+            );
+          })}
+          {meridians.map((pts, idx) => (
+            <polyline key={idx} points={pts} fill="none" stroke="#00ffd5" strokeWidth={0.95} strokeOpacity={0.26} />
+          ))}
+
+          {/* Spinning continent lights & radar ping flashes */}
+          {visibleLights.map((p) => {
+            const baseCol = p.hot ? "#fbbf24" : "#00ffd5";
+            const r = (p.hot ? 3.2 : 2.1) + p.ping * 3.5;
+            return (
+              <g key={p.idx}>
+                {p.ping > 0.2 && (
+                  <circle cx={p.x} cy={p.y} r={r + 7 * p.ping} fill="none" stroke="#00ffd5" strokeWidth={1.3} strokeOpacity={p.ping * 0.7} />
+                )}
+                <circle cx={p.x} cy={p.y} r={r} fill={p.ping > 0.3 ? "#ffffff" : baseCol} fillOpacity={0.42 + p.z * 0.55} />
+              </g>
+            );
+          })}
+
+          {/* Radar sweep beam rotating across Earth */}
+          <g transform={`rotate(${sweepDeg} ${cx} ${cy})`}>
+            <path
+              d={`M ${cx} ${cy} L ${cx + R * 1.1} ${cy} A ${R * 1.1} ${R * 1.1} 0 0 0 ${cx + R * 0.78} ${cy - R * 0.78} Z`}
+              fill="#00ffd5"
+              fillOpacity={0.18}
+            />
+            <line x1={cx} y1={cy} x2={cx + R * 1.05} y2={cy} stroke="#00ffd5" strokeWidth={2.2} strokeOpacity={0.85} />
+          </g>
+        </g>
+
+        {/* Crisp rim highlight on planet edge + subtle anamorphic horizon flare */}
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="#00ffd5" strokeWidth={2.2} strokeOpacity={0.78} />
+        <ellipse cx={cx} cy={cy - R * 0.92} rx={R * 1.45} ry={3.5} fill="url(#anamorphicFlare)" opacity={0.7} />
+      </svg>
+
+      {/* Coins passing in front of the planet */}
+      {frontCoins.map(renderCoin)}
+    </AbsoluteFill>
+  );
 };
 
 const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
@@ -243,50 +797,54 @@ const Aurora3DBackdrop: React.FC = () => {
         />
       </div>
 
-      {/* 3D orbital radar rings tilted in deep background */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          perspective: 1100,
-          pointerEvents: "none",
-          opacity: 0.28,
-        }}
-      >
+      {/* 3D orbital radar rings tilted in deep background (or full Cosmic Earth-Radar + orbiting coins) */}
+      {IS_COSMIC ? (
+        <CosmicEarthRadarLayer />
+      ) : (
         <div
           style={{
-            width: IS_PORTRAIT ? 760 : 1080,
-            height: IS_PORTRAIT ? 760 : 1080,
-            position: "relative",
-            transformStyle: "preserve-3d",
-            transform: `rotateX(64deg) rotateY(${Math.sin(frame / 90) * 10}deg) rotateZ(${frame * 0.18}deg)`,
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            perspective: 1100,
+            pointerEvents: "none",
+            opacity: 0.28,
           }}
         >
-          {[1.0, 0.74, 0.48].map((scale, idx) => (
-            <div
-              key={idx}
-              style={{
-                position: "absolute",
-                inset: `${(1 - scale) * 50}%`,
-                borderRadius: "50%",
-                border: `${idx === 0 ? 2 : 1.5}px ${idx === 1 ? "dashed" : "solid"} ${[CYAN, BLUE, VIOLET][idx]}`,
-                boxShadow: `0 0 24px ${[CYAN, BLUE, VIOLET][idx]}55`,
-              }}
-            />
-          ))}
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: "50%",
-              background: `conic-gradient(from ${radarAngle}deg, ${CYAN}44 0deg, transparent 58deg, transparent 360deg)`,
+              width: IS_PORTRAIT ? 760 : 1080,
+              height: IS_PORTRAIT ? 760 : 1080,
+              position: "relative",
+              transformStyle: "preserve-3d",
+              transform: `rotateX(64deg) rotateY(${Math.sin(frame / 90) * 10}deg) rotateZ(${frame * 0.18}deg)`,
             }}
-          />
+          >
+            {[1.0, 0.74, 0.48].map((scale, idx) => (
+              <div
+                key={idx}
+                style={{
+                  position: "absolute",
+                  inset: `${(1 - scale) * 50}%`,
+                  borderRadius: "50%",
+                  border: `${idx === 0 ? 2 : 1.5}px ${idx === 1 ? "dashed" : "solid"} ${[CYAN, BLUE, VIOLET][idx]}`,
+                  boxShadow: `0 0 24px ${[CYAN, BLUE, VIOLET][idx]}55`,
+                }}
+              />
+            ))}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: "50%",
+                background: `conic-gradient(from ${radarAngle}deg, ${CYAN}44 0deg, transparent 58deg, transparent 360deg)`,
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Floating 3D wireframe shards with parallax */}
       {HEX_SHARDS.map((h, idx) => {
@@ -649,12 +1207,24 @@ const BulletItem: React.FC<{ title: string; desc: string; delay: number; accent?
         borderRadius: 16,
         background: THEME.cardBg,
         border: `1px solid ${THEME.cardBorder}`,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+        borderTop: `1.5px solid ${accent}88`,
+        boxShadow: IS_LIGHT
+          ? "0 10px 26px rgba(15,23,42,0.12)"
+          : `0 16px 38px rgba(0,0,0,0.52), inset 0 1px 0 rgba(255,255,255,0.10)`,
       }}
     >
-      <div style={{ width: 11, height: 11, marginTop: 9, borderRadius: "50%", backgroundColor: accent, boxShadow: `0 0 12px ${accent}`, flexShrink: 0 }} />
+      <div style={{ width: 11, height: 11, marginTop: 9, borderRadius: "50%", backgroundColor: accent, boxShadow: `0 0 14px ${accent}`, flexShrink: 0 }} />
       <div>
-        <div style={{ fontSize: IS_PORTRAIT ? 24 : 25, fontWeight: 700, color: TEXT }}>{title}</div>
+        <div
+          style={{
+            fontSize: IS_PORTRAIT ? 25 : 26,
+            fontWeight: 800,
+            color: TEXT,
+            textShadow: IS_LIGHT ? "none" : "0 2px 8px rgba(0,0,0,0.75)",
+          }}
+        >
+          {title}
+        </div>
         <div style={{ fontSize: IS_PORTRAIT ? 19 : 19, color: MUTED, marginTop: 4, lineHeight: 1.35 }}>{desc}</div>
       </div>
     </div>
@@ -877,20 +1447,64 @@ const Hero3DSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: IS_PORTRAIT ? "column" : "row", alignItems: "center", gap: IS_PORTRAIT ? 56 : 70 }}>
       <div style={{ flex: 1.25, display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-        <div style={{ fontSize: IS_PORTRAIT ? 84 : 112, fontWeight: 900, lineHeight: 1.04, opacity: s, ...GRADIENT_TITLE }}>
+        <EmbossedTitle fontSize={IS_PORTRAIT ? 84 : 112} lineHeight={1.04} opacity={s}>
           {slide.title}
-        </div>
-        {slide.subtitle && <div style={{ fontSize: IS_PORTRAIT ? 30 : 34, color: TEXT, lineHeight: 1.32 }}>{slide.subtitle}</div>}
+        </EmbossedTitle>
+        {slide.subtitle && (
+          <div style={{ fontSize: IS_PORTRAIT ? 30 : 34, color: TEXT, lineHeight: 1.32, textShadow: IS_LIGHT ? "none" : "0 2px 14px rgba(0,0,0,0.85)" }}>
+            {slide.subtitle}
+          </div>
+        )}
         <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap" }}>
           {(slide.pills ?? []).map((p, idx) => {
             const cs = spring({ frame: frame - (14 + idx * 7), fps, config: { damping: 180 } });
             return (
-              <div key={p.name} style={{ opacity: cs, padding: "12px 22px", borderRadius: 14, background: THEME.cardBg, border: `1px solid ${p.color}`, color: p.color, fontSize: 21, fontWeight: 700 }}>
+              <div
+                key={p.name}
+                style={{
+                  opacity: cs,
+                  padding: "12px 22px",
+                  borderRadius: 14,
+                  background: THEME.cardBg,
+                  border: `1.5px solid ${p.color}`,
+                  boxShadow: IS_LIGHT ? "none" : `0 10px 26px rgba(0,0,0,0.5), 0 0 18px ${p.color}33`,
+                  color: p.color,
+                  fontSize: 21,
+                  fontWeight: 800,
+                }}
+              >
                 {p.name}
               </div>
             );
           })}
         </div>
+        {IS_COSMIC && (
+          <div
+            style={{
+              marginTop: 12,
+              padding: "14px 20px",
+              borderRadius: 16,
+              background: "rgba(5, 12, 30, 0.80)",
+              border: `1px solid ${CYAN}44`,
+              boxShadow: `0 16px 36px rgba(0,0,0,0.55), 0 0 24px ${CYAN}22`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 20,
+              maxWidth: IS_PORTRAIT ? "100%" : 660,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 12, fontFamily: "Consolas, monospace", letterSpacing: 1.8, color: CYAN, fontWeight: 700 }}>
+                LIVE MARKET PULSE · SPOT SCANNER
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: TEXT, marginTop: 4 }}>
+                BTC · ETH · SOL · HYPE · BNB
+              </div>
+            </div>
+            <CryptoMiniChart seed={7} accent={CYAN} width={220} height={54} bars={16} />
+          </div>
+        )}
       </div>
       <div style={{ flex: 0.75, display: "flex", justifyContent: "center" }}>
         <Cube3D size={IS_PORTRAIT ? 200 : 230} faces={slide.cube_faces} />
@@ -902,7 +1516,7 @@ const Hero3DSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
 const CodeSplitSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => (
   <div style={{ width: "100%", display: "flex", flexDirection: IS_PORTRAIT ? "column" : "row", gap: IS_PORTRAIT ? 32 : 52, alignItems: "center" }}>
     <div style={{ flex: 0.95, display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
-      <div style={{ fontSize: IS_PORTRAIT ? 52 : 58, fontWeight: 900, lineHeight: 1.08, ...GRADIENT_TITLE }}>{slide.title}</div>
+      <EmbossedTitle fontSize={IS_PORTRAIT ? 52 : 58} lineHeight={1.08}>{slide.title}</EmbossedTitle>
       {slide.subtitle && <div style={{ fontSize: 24, color: MUTED, marginBottom: 4 }}>{slide.subtitle}</div>}
       {(slide.bullets ?? []).map((b, idx) => (
         <BulletItem key={b.title} title={b.title} desc={b.desc} delay={10 + idx * 10} accent={b.accent ?? [CYAN, BLUE, VIOLET][idx % 3]} />
@@ -925,7 +1539,7 @@ const TimelineSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
   });
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: IS_PORTRAIT ? 28 : 22 }}>
-      <div style={{ fontSize: IS_PORTRAIT ? 52 : 58, fontWeight: 900, lineHeight: 1.08, ...GRADIENT_TITLE }}>{slide.title}</div>
+      <EmbossedTitle fontSize={IS_PORTRAIT ? 52 : 58} lineHeight={1.08}>{slide.title}</EmbossedTitle>
       {slide.subtitle && <div style={{ fontSize: 24, color: MUTED }}>{slide.subtitle}</div>}
       <div style={{ position: "relative", paddingLeft: 56, display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ position: "absolute", left: 27, top: 18, bottom: 18, width: 4, borderRadius: 4, background: "rgba(255,255,255,0.10)" }}>
@@ -993,29 +1607,51 @@ const KpiSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
   const cols = IS_PORTRAIT ? 1 : Math.min(Math.max(kpis.length, 1), 2);
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: IS_PORTRAIT ? 28 : 22 }}>
-      <div style={{ fontSize: IS_PORTRAIT ? 52 : 58, fontWeight: 900, lineHeight: 1.08, ...GRADIENT_TITLE }}>{slide.title}</div>
+      <EmbossedTitle fontSize={IS_PORTRAIT ? 52 : 58} lineHeight={1.08}>{slide.title}</EmbossedTitle>
       {slide.subtitle && <div style={{ fontSize: 24, color: MUTED }}>{slide.subtitle}</div>}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 24, marginTop: 8 }}>
         {kpis.map((k, i) => {
           const s = spring({ frame: frame - (10 + i * 10), fps, config: { damping: 180 } });
-          const accent = [CYAN, BLUE, VIOLET][i % 3];
+          const accent = [CYAN, BLUE, VIOLET, PINK][i % 4];
+          const numLiftShadow = IS_LIGHT
+            ? `0 2px 0 rgba(15,23,42,0.18), 0 8px 18px rgba(15,23,42,0.16)`
+            : `0 1px 0 #0b2444, 0 2px 0 #091d38, 0 3px 0 #07162e, 0 4px 0 #050f22, 0 6px 0 #020814, 0 14px 28px rgba(0,0,0,0.88), 0 0 26px ${accent}cc, 0 0 48px ${accent}55`;
           return (
             <div
               key={`${k.value}-${i}`}
               style={{
                 opacity: s,
-                transform: `scale(${0.9 + 0.1 * s})`,
+                transform: `scale(${0.9 + 0.1 * s}) translateY(${(1 - s) * 18}px)`,
                 background: THEME.cardBg,
-                border: `1px solid ${THEME.cardBorder}`,
-                borderRadius: 20,
-                padding: IS_PORTRAIT ? "20px 22px" : "26px 30px",
-                boxShadow: `0 0 24px ${accent}33`,
+                border: `1.5px solid ${accent}55`,
+                borderTop: `2px solid ${accent}`,
+                borderRadius: 22,
+                padding: IS_PORTRAIT ? "20px 22px" : "24px 28px",
+                boxShadow: IS_LIGHT
+                  ? `0 12px 28px rgba(15,23,42,0.10)`
+                  : `0 20px 48px rgba(0,0,0,0.62), 0 0 30px ${accent}28, inset 0 1px 0 rgba(255,255,255,0.12)`,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                gap: 12,
               }}
             >
-              <div style={{ fontSize: IS_PORTRAIT ? 64 : 80, fontWeight: 900, lineHeight: 1, color: accent, textShadow: `0 0 18px ${accent}` }}>
-                {k.value}
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
+                <div
+                  style={{
+                    fontSize: IS_PORTRAIT ? 68 : 86,
+                    fontWeight: 900,
+                    lineHeight: 0.98,
+                    letterSpacing: "-0.02em",
+                    color: IS_LIGHT ? accent : "#ffffff",
+                    textShadow: numLiftShadow,
+                  }}
+                >
+                  <AnimatedKpiValue value={k.value} startFrame={10 + i * 10 + 6} />
+                </div>
+                <CryptoMiniChart seed={i + 2} accent={accent} width={IS_PORTRAIT ? 150 : 175} height={54} bars={12} />
               </div>
-              <div style={{ fontSize: IS_PORTRAIT ? 24 : 26, color: TEXT, marginTop: 12, lineHeight: 1.3 }}>{k.label}</div>
+              <div style={{ fontSize: IS_PORTRAIT ? 24 : 25, fontWeight: 600, color: TEXT, lineHeight: 1.3 }}>{k.label}</div>
             </div>
           );
         })}
@@ -1065,7 +1701,7 @@ const TerminalWindow: React.FC<{ filename: string; lines: { text: string; color?
 const TerminalSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => (
   <div style={{ width: "100%", display: "flex", flexDirection: IS_PORTRAIT ? "column" : "row", gap: IS_PORTRAIT ? 32 : 52, alignItems: "center" }}>
     <div style={{ flex: 0.95, display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
-      <div style={{ fontSize: IS_PORTRAIT ? 52 : 58, fontWeight: 900, lineHeight: 1.08, ...GRADIENT_TITLE }}>{slide.title}</div>
+      <EmbossedTitle fontSize={IS_PORTRAIT ? 52 : 58} lineHeight={1.08}>{slide.title}</EmbossedTitle>
       {slide.subtitle && <div style={{ fontSize: 24, color: MUTED, marginBottom: 4 }}>{slide.subtitle}</div>}
       {(slide.bullets ?? []).map((b, idx) => (
         <BulletItem key={b.title} title={b.title} desc={b.desc} delay={10 + idx * 10} accent={b.accent ?? [CYAN, BLUE, VIOLET][idx % 3]} />
@@ -1087,7 +1723,7 @@ const ScreenSplitSlide: React.FC<{ slide: ResolvedSlide; dur: number }> = ({ sli
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: IS_PORTRAIT ? "column" : "row", gap: IS_PORTRAIT ? 32 : 48, alignItems: "center" }}>
       <div style={{ flex: 0.88, display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
-        <div style={{ fontSize: IS_PORTRAIT ? 48 : 54, fontWeight: 900, lineHeight: 1.08, ...GRADIENT_TITLE }}>{slide.title}</div>
+        <EmbossedTitle fontSize={IS_PORTRAIT ? 48 : 54} lineHeight={1.08}>{slide.title}</EmbossedTitle>
         {slide.subtitle && <div style={{ fontSize: 23, color: MUTED, marginBottom: 4 }}>{slide.subtitle}</div>}
         {(slide.bullets ?? []).map((b, idx) => (
           <BulletItem key={b.title} title={b.title} desc={b.desc} delay={10 + idx * 10} accent={b.accent ?? [CYAN, BLUE, VIOLET][idx % 3]} />
@@ -1114,7 +1750,7 @@ const ArchFlowSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
     return (
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 22 }}>
         <div>
-          <div style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.08, ...GRADIENT_TITLE }}>{slide.title}</div>
+          <EmbossedTitle fontSize={52} lineHeight={1.08}>{slide.title}</EmbossedTitle>
           {slide.subtitle && <div style={{ fontSize: 24, color: MUTED, marginTop: 6 }}>{slide.subtitle}</div>}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -1176,7 +1812,7 @@ const ArchFlowSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
     <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 18 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
-          <div style={{ fontSize: 58, fontWeight: 900, lineHeight: 1.06, ...GRADIENT_TITLE }}>{slide.title}</div>
+          <EmbossedTitle fontSize={58} lineHeight={1.06}>{slide.title}</EmbossedTitle>
           {slide.subtitle && <div style={{ fontSize: 24, color: MUTED, marginTop: 6 }}>{slide.subtitle}</div>}
         </div>
         <div
@@ -1441,7 +2077,7 @@ const Outro3DSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: IS_PORTRAIT ? "column" : "row", alignItems: "center", justifyContent: "space-between", gap: IS_PORTRAIT ? 48 : 60, opacity: s }}>
       <div style={{ flex: 1.2, display: "flex", flexDirection: "column", gap: 22, width: "100%" }}>
-        <div style={{ fontSize: IS_PORTRAIT ? 68 : 92, fontWeight: 900, lineHeight: 1.05, ...GRADIENT_TITLE }}>{slide.title}</div>
+        <EmbossedTitle fontSize={IS_PORTRAIT ? 68 : 92} lineHeight={1.05}>{slide.title}</EmbossedTitle>
         {slide.url && <div style={{ fontSize: IS_PORTRAIT ? 34 : 46, fontWeight: 700, color: TEXT, wordBreak: "break-all" }}>{slide.url}</div>}
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 6 }}>
           {(slide.badges ?? []).map((repo) => (
@@ -1485,6 +2121,7 @@ const CaptionOverlay: React.FC<{ captions?: CaptionCue[] }> = ({ captions }) => 
           padding: IS_PORTRAIT ? "14px 22px" : "10px 22px",
           borderRadius: 14,
           border: `1px solid ${THEME.cardBorder}`,
+          fontFamily: "Segoe UI, Inter, Arial, sans-serif",
           fontSize: IS_PORTRAIT ? 28 : 24,
           fontWeight: 600,
           lineHeight: 1.32,
@@ -1498,33 +2135,7 @@ const CaptionOverlay: React.FC<{ captions?: CaptionCue[] }> = ({ captions }) => 
             [{active.speaker}]
           </span>
         )}
-        {active.words && active.words.length > 0 ? (
-          <span>
-            {active.words.map((wd, idx) => {
-              const isCurrent = sec >= wd.start && sec <= wd.end;
-              const isSpoken = sec > wd.end;
-              return (
-                <span
-                  key={`${idx}-${wd.w}`}
-                  style={{
-                    display: "inline-block",
-                    marginRight: 7,
-                    padding: isCurrent ? "1px 7px" : "1px 1px",
-                    borderRadius: 7,
-                    background: isCurrent ? `${CYAN}2e` : "transparent",
-                    color: isCurrent ? CYAN : isSpoken ? THEME.captionText : `${THEME.captionText}b8`,
-                    textShadow: isCurrent ? `0 0 14px ${CYAN}88` : "none",
-                    transform: isCurrent ? "scale(1.04)" : "scale(1)",
-                  }}
-                >
-                  {wd.w}
-                </span>
-              );
-            })}
-          </span>
-        ) : (
-          active.text
-        )}
+        {active.text}
       </div>
     </div>
   );

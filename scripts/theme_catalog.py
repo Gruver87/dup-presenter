@@ -13,6 +13,7 @@ from __future__ import annotations
 
 THEME_CATALOG: list[dict[str, str]] = [
     {"id": "neon_cyber", "label": "Neon Cyber (тёмная неон)", "mode": "dark"},
+    {"id": "cosmic_radar", "label": "Cosmic Radar (космос + 3D Земля + монеты)", "mode": "dark"},
     {"id": "minimal_light", "label": "Minimal Light (светлая)", "mode": "light"},
     {"id": "terminal_green", "label": "Terminal Green (матрица/код)", "mode": "dark"},
     {"id": "deep_ocean", "label": "Deep Ocean (глубокий синий)", "mode": "dark"},

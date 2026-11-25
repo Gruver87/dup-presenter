@@ -1,0 +1,348 @@
+{
+  "slug": "radar-showcase-v2",
+  "lang": "ru",
+  "theme": "neon_cyber",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": false,
+    "volume": 0.12
+  },
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "edge_tts",
+    "lang": "ru",
+    "speaker": "dmitry",
+    "rate": "95%",
+    "ambient_volume": 0.16,
+    "mode": "single",
+    "fallback_speaker": "eugene"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "ОБЗОР",
+      "type": "hero_3d",
+      "title": "Радар крипторынка",
+      "subtitle": "Гибридный Python + Rust список наблюдения для крипторынка",
+      "voice_ssml": "<speak><prosody rate=\"95%\">DUP Market Radar — это гибридный список наблюдения на Python и Rust для крипторынка.<break time=\"250ms\"/> Он охватывает спот, фьючерсы только для наблюдения, мемы, стейблы и листинги.<break time=\"250ms\"/> Ручные ордера и опциональный автотрейд работают только на KuCoin spot.</prosody></speak>",
+      "pills": [
+        {
+          "name": "Секторы рынка",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "KuCoin spot",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Python + Rust",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "RADAR",
+        "RUST",
+        "PYTHON",
+        "SPOT",
+        "MTF",
+        "DUP"
+      ],
+      "voice_text": "DUP Market Radar — это гибридный список наблюдения на Python и Rust для крипторынка. Он охватывает спот, фьючерсы только для наблюдения, мемы, стейблы и листинги. Ручные ордера и опциональный автотрейд работают только на KuCoin spot."
+    },
+    {
+      "id": "s2",
+      "tag": "ИНТЕРФЕЙС",
+      "type": "screen_split",
+      "title": "Живой дашборд",
+      "subtitle": "Список наблюдения, скоринг и зоны входа в одном окне",
+      "bullets": [
+        {
+          "title": "Скоринг и MTF",
+          "desc": "Нативный модуль на Rust оценивает импульс, объём и расхождения по таймфреймам",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Подсказки и риски",
+          "desc": "По каждой монете видны зона возможного входа, сигналы риска и режим проверки",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Контроль торговли",
+          "desc": "Ручные кнопки KuCoin с подтверждением; фьючерсы исключены из автоисполнения",
+          "accent": "#c084fc"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/radar_live_watchlist_2x.png",
+          "caption": "DUP Market Radar · Watchlist и скоринг · бумажный режим (dry_run), автоисполнение ON"
+        }
+      ],
+      "voice_text": "На главном экране показан живой список наблюдения. Нативный модуль на Rust считает рейтинг монет по объёму и динамике на нескольких таймфреймах, выделяет зоны входа и риски. Справа доступны ручные кнопки покупки и продажи на KuCoin с подтверждением, а фьючерсы исключены из автоисполнения."
+    },
+    {
+      "id": "s3",
+      "tag": "РЫНОК",
+      "type": "screen_split",
+      "title": "Обзор топ-100",
+      "subtitle": "Долгосрочный контекст рынка на горизонте шести месяцев",
+      "bullets": [
+        {
+          "title": "Топ-100 по капитализации",
+          "desc": "Отдельная вкладка с ценой, капитализацией и динамикой за двести дней",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Быстрый контекст",
+          "desc": "Помогает отличить локальный отскок от общего движения всего крипторынка",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Единый интерфейс",
+          "desc": "Переключение между списком наблюдения, сделками и обзором рынка в один клик",
+          "accent": "#c084fc"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/radar_live_markets.png",
+          "caption": "DUP Market Radar · Markets топ-100 (~6 месяцев)"
+        }
+      ],
+      "voice_text": "Во вкладке обзора рынка собрана сотня крупнейших монет с капитализацией и динамикой за шесть месяцев. Это даёт общий контекст перед оценкой сигналов в списке наблюдения и помогает видеть состояние рынка целиком."
+    },
+    {
+      "id": "s4",
+      "tag": "АРХИТЕКТУРА",
+      "type": "arch_flow",
+      "title": "Механизм работы",
+      "subtitle": "Пятислойный конвейер от загрузки данных до API и торговли",
+      "arch": {
+        "nodes": [
+          {
+            "id": "n1",
+            "label": "Адаптеры бирж",
+            "path": "native/radar_ingest/src/lib.rs"
+          },
+          {
+            "id": "n2",
+            "label": "Ядро типов",
+            "path": "native/radar_core/src/lib.rs"
+          },
+          {
+            "id": "n3",
+            "label": "Нативный скоринг",
+            "path": "native/radar_native/src/lib.rs"
+          },
+          {
+            "id": "n4",
+            "label": "API приложение",
+            "path": "src/radar/api/app.py"
+          },
+          {
+            "id": "n5",
+            "label": "Авто-движок",
+            "path": "src/radar/trade/auto_engine.py"
+          }
+        ],
+        "edges": [
+          {
+            "from": "n1",
+            "to": "n2",
+            "label": "Tick"
+          },
+          {
+            "from": "n2",
+            "to": "n3",
+            "label": "скоринг"
+          },
+          {
+            "from": "n3",
+            "to": "n4",
+            "label": "результаты"
+          },
+          {
+            "from": "n4",
+            "to": "n5",
+            "label": "торговые вызовы"
+          }
+        ]
+      },
+      "voice_text": "Архитектура разделена на пять слоёв: адаптеры загрузки данных с бирж, общее ядро типов на Rust, скоринг в нативном модуле, API-приложение и авто-движок торговли. Данные проходят по конвейеру от адаптеров через ядро к скорингу, интерфейсу и опциональному исполнению."
+    },
+    {
+      "id": "s5",
+      "tag": "ЯДРО",
+      "type": "code_split",
+      "title": "Агрегация баров",
+      "subtitle": "Агрегатор баров в ядре на Rust",
+      "bullets": [
+        {
+          "title": "push",
+          "desc": "Принимает тик и возвращает закрытый бар при смене интервала",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "flush",
+          "desc": "Выдаёт незавершённый бар в конце потока",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Целочисленные деньги",
+          "desc": "Фиксированная точка вместо float на денежных путях",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "native/radar_core/src/lib.rs · L122-126",
+        "lines": [
+          {
+            "text": "pub struct BarAggregator {",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    interval_sec: u32,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    current: Option<Bar>,",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "}",
+            "color": "#f8fafc"
+          }
+        ]
+      },
+      "voice_text": "В ядре на Rust реализован BarAggregator. Метод push принимает тик и возвращает закрытый бар при смене интервала, а flush выдаёт незавершённый бар в конце потока."
+    },
+    {
+      "id": "s6",
+      "tag": "ТОРГОВЛЯ",
+      "type": "code_split",
+      "title": "Разделение USDT",
+      "subtitle": "Равные доли и жёсткие ограничения авто-движка",
+      "bullets": [
+        {
+          "title": "Равные части",
+          "desc": "Делит микро-USDT на равные доли, остаток идёт в первую",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Авто по умолчанию выключен",
+          "desc": "Включается только с ключами и dry_run=false",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Никаких фьючерсов",
+          "desc": "Авто-движок никогда не торгует фьючерсами",
+          "accent": "#c084fc"
+        }
+      ],
+      "code": {
+        "filename": "src/radar/trade/auto_engine.py · L89-102",
+        "lines": [
+          {
+            "text": "def split_equal_micros(amount_micro: int, parts: int) -> Tuple[int, ...]:",
+            "color": "#38bdf8"
+          },
+          {
+            "text": "    \"\"\"Split USDT micros into equal parts; remainder goes to the first part.\"\"\"",
+            "color": "#94a3b8"
+          },
+          {
+            "text": "    if amount_micro < 0 or parts < 1 or parts > 8 or amount_micro >= 10**24:",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "        return tuple()",
+            "color": "#00f5d4"
+          },
+          {
+            "text": "    base = amount_micro // parts",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    out = [base] * parts",
+            "color": "#f8fafc"
+          },
+          {
+            "text": "    out[0] += amount_micro - base * parts",
+            "color": "#f8fafc"
+          }
+        ]
+      },
+      "voice_text": "Функция split_equal_micros делит микро-USDT на равные части, остаток уходит в первую долю. Авто-движок по умолчанию выключен и никогда не торгует фьючерсами."
+    },
+    {
+      "id": "s7",
+      "tag": "ЭТАПЫ",
+      "type": "timeline",
+      "title": "Путь оператора",
+      "subtitle": "От наблюдения к ручной и авто-торговле",
+      "bullets": [
+        {
+          "title": "Наблюдение",
+          "desc": "Список наблюдения, MTF, дашборд и Telegram-алерты — основной продукт",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Ручная покупка",
+          "desc": "KuCoin Buy/Sell с обязательным подтверждением",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Автоисполнение",
+          "desc": "По умолчанию OFF; включается с ключами и dry_run=false",
+          "accent": "#c084fc"
+        },
+        {
+          "title": "Защита",
+          "desc": "Аварийный стоп, дневные и временные ограничители, отказ при сбое",
+          "accent": "#f472b6"
+        }
+      ],
+      "voice_text": "Путь оператора начинается с наблюдения: список наблюдения, MTF, дашборд и Telegram-алерты. Затем идёт ручная покупка на KuCoin с подтверждением. Автоисполнение по умолчанию выключено и защищено аварийным стопом и ограничителями."
+    },
+    {
+      "id": "s8",
+      "tag": "ИТОГ",
+      "type": "outro_3d",
+      "title": "Не финансовый совет",
+      "subtitle": "Эвристики не гарантируют прибыль",
+      "url": "github.com/Gruver87/dup-market-radar",
+      "tagline": "Эвристики не гарантируют прибыль",
+      "badges": [
+        {
+          "name": "Риски на вас",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Честные ограничения",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Открытый код",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "DUP",
+        "RADAR",
+        "RUST",
+        "SPOT",
+        "SAFE",
+        "LABS"
+      ],
+      "voice_text": "Проект не является финансовым советом, а эвристические рейтинги не гарантируют прибыль. Автор и DUP Labs не несут ответственности за убытки. Код доступен в репозитории на GitHub."
+    }
+  ]
+}

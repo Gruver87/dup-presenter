@@ -51,10 +51,16 @@ def capture_shot(
     focus_selector: str = "",
     zoom: float = 1.45,
     timeout_ms: int = 20000,
+    device_scale: int = 1,
 ) -> dict:
-    """Capture a borderless screenshot via Playwright Chromium and compute optional focus coordinates."""
+    """Capture a borderless screenshot via Playwright Chromium and compute optional focus coordinates.
+
+    device_scale=2 produces a 2x raster so small UI text stays legible after 3D zoom in the video.
+    """
     if not url.startswith(("http://", "https://", "file://")):
         raise CaptureUIError(f"Unsupported URL scheme: {url!r}")
+    if device_scale not in (1, 2, 3):
+        raise CaptureUIError(f"device_scale must be 1, 2 or 3, got {device_scale!r}")
     if Path(out_name).name != out_name or not out_name.lower().endswith(".png"):
         raise CaptureUIError(f"out_name must be a plain .png filename inside public/screens, got {out_name!r}")
 
@@ -70,7 +76,7 @@ def capture_shot(
     with sync_playwright() as p:
         browser = _launch_browser(p)
         try:
-            page = browser.new_page(viewport={"width": width, "height": height}, device_scale_factor=1)
+            page = browser.new_page(viewport={"width": width, "height": height}, device_scale_factor=device_scale)
             page.goto(url, wait_until="networkidle", timeout=timeout_ms)
             for sel in click_selectors or []:
                 page.locator(sel).first.click(timeout=5000)
@@ -114,6 +120,7 @@ def main() -> int:
     parser.add_argument("--click", action="append", default=[], help="Optional CSS selector(s) to click before shot")
     parser.add_argument("--focus-selector", default="", help="Optional CSS selector for ScreenWindow3D auto-zoom")
     parser.add_argument("--zoom", type=float, default=1.45)
+    parser.add_argument("--device-scale", type=int, default=1, choices=[1, 2, 3], help="2 = retina raster for crisp text")
     parser.add_argument("--spec", default="", help="Optional JSON spec containing a list of shots")
     args = parser.parse_args()
 
@@ -139,6 +146,7 @@ def main() -> int:
             click_selectors=args.click,
             focus_selector=args.focus_selector,
             zoom=args.zoom,
+            device_scale=args.device_scale,
         )
         print(json.dumps(res, ensure_ascii=False, indent=2))
         return 0

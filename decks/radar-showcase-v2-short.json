@@ -1,0 +1,190 @@
+{
+  "slug": "radar-showcase-v2-short",
+  "lang": "ru",
+  "theme": "neon_cyber",
+  "aspect": "9:16",
+  "burn_captions": true,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": false,
+    "volume": 0.12
+  },
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "edge_tts",
+    "lang": "ru",
+    "speaker": "dmitry",
+    "rate": "95%",
+    "ambient_volume": 0.16,
+    "mode": "single",
+    "fallback_speaker": "eugene"
+  },
+  "slides": [
+    {
+      "id": "short_1",
+      "tag": "ОБЗОР",
+      "type": "hero_3d",
+      "title": "Радар крипторынка",
+      "subtitle": "Гибридный Python + Rust список наблюдения для крипторынка",
+      "pills": [
+        {
+          "name": "Секторы рынка",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "KuCoin spot",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Python + Rust",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "RADAR",
+        "RUST",
+        "PYTHON",
+        "SPOT",
+        "MTF",
+        "DUP"
+      ],
+      "voice_text": "DUP Market Radar — это гибридный список наблюдения на Python и Rust для крипторынка. Он охватывает спот, фьючерсы только для наблюдения, мемы, стейблы и листинги."
+    },
+    {
+      "id": "short_2",
+      "tag": "ИНТЕРФЕЙС",
+      "type": "screen_split",
+      "title": "Живой дашборд",
+      "subtitle": "Список наблюдения, скоринг и зоны входа в одном окне",
+      "bullets": [
+        {
+          "title": "Скоринг и MTF",
+          "desc": "Нативный модуль на Rust оценивает импульс, объём и расхождения по таймфреймам",
+          "accent": "#00f5d4"
+        },
+        {
+          "title": "Подсказки и риски",
+          "desc": "По каждой монете видны зона возможного входа, сигналы риска и режим проверки",
+          "accent": "#38bdf8"
+        },
+        {
+          "title": "Контроль торговли",
+          "desc": "Ручные кнопки KuCoin с подтверждением; фьючерсы исключены из автоисполнения",
+          "accent": "#c084fc"
+        }
+      ],
+      "screens": [
+        {
+          "src": "screens/radar_live_watchlist_2x.png",
+          "caption": "DUP Market Radar · Watchlist и скоринг · бумажный режим (dry_run), автоисполнение ON"
+        }
+      ],
+      "voice_text": "На главном экране показан живой список наблюдения."
+    },
+    {
+      "id": "short_3",
+      "tag": "АРХИТЕКТУРА",
+      "type": "arch_flow",
+      "title": "Механизм работы",
+      "subtitle": "Пятислойный конвейер от загрузки данных до API и торговли",
+      "arch": {
+        "nodes": [
+          {
+            "id": "n1",
+            "label": "Адаптеры бирж",
+            "path": "native/radar_ingest/src/lib.rs"
+          },
+          {
+            "id": "n2",
+            "label": "Ядро типов",
+            "path": "native/radar_core/src/lib.rs"
+          },
+          {
+            "id": "n3",
+            "label": "Нативный скоринг",
+            "path": "native/radar_native/src/lib.rs"
+          },
+          {
+            "id": "n4",
+            "label": "API приложение",
+            "path": "src/radar/api/app.py"
+          },
+          {
+            "id": "n5",
+            "label": "Авто-движок",
+            "path": "src/radar/trade/auto_engine.py"
+          }
+        ],
+        "edges": [
+          {
+            "from": "n1",
+            "to": "n2",
+            "label": "Tick"
+          },
+          {
+            "from": "n2",
+            "to": "n3",
+            "label": "скоринг"
+          },
+          {
+            "from": "n3",
+            "to": "n4",
+            "label": "результаты"
+          },
+          {
+            "from": "n4",
+            "to": "n5",
+            "label": "торговые вызовы"
+          }
+        ]
+      },
+      "voice_text": "Архитектура разделена на пять слоёв: адаптеры загрузки данных с бирж, общее ядро типов на Rust, скоринг в нативном модуле, API-приложение и авто-движок торговли."
+    },
+    {
+      "id": "short_4",
+      "tag": "ИТОГ",
+      "type": "outro_3d",
+      "title": "Не финансовый совет",
+      "subtitle": "Эвристики не гарантируют прибыль",
+      "url": "github.com/Gruver87/dup-market-radar",
+      "tagline": "Эвристики не гарантируют прибыль",
+      "badges": [
+        {
+          "name": "Риски на вас",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Честные ограничения",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Открытый код",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "DUP",
+        "RADAR",
+        "RUST",
+        "SPOT",
+        "SAFE",
+        "LABS"
+      ],
+      "voice_text": "Проект не является финансовым советом, а эвристические рейтинги не гарантируют прибыль. Автор и DUP Labs не несут ответственности за убытки."
+    }
+  ],
+  "transition": {
+    "style": "slide",
+    "frames": 10
+  },
+  "sfx": {
+    "enabled": true,
+    "volume": 0.22
+  }
+}

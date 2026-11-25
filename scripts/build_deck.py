@@ -702,7 +702,10 @@ def main() -> int:
             print("[ERROR] --skip-tts used but deck_resolved.json does not exist", file=sys.stderr)
             return 2
         resolved = json.loads(RESOLVED_JSON.read_text(encoding="utf-8"))
-        # Apply theme/aspect/caption/transition/sfx switches from deck even on --skip-tts
+        # Apply slug/theme/aspect/caption/transition/sfx switches from deck even on --skip-tts.
+        # slug must come from the deck: it names the output MP4/SRT/pack, and a stale cached slug
+        # silently overwrote a previous render.
+        resolved["slug"] = deck["slug"]
         aspect = deck.get("aspect", resolved.get("aspect", "16:9"))
         resolved["aspect"] = aspect
         resolved["width"], resolved["height"] = ASPECT_DIMS[aspect]
@@ -720,6 +723,11 @@ def main() -> int:
                 sf = ensure_sfx_files(SR)
                 resolved["sfx_transition_file"] = sf["transition"]
                 resolved["sfx_pop_file"] = sf["pop"]
+        music_cfg = deck.get("music") or {}
+        if music_cfg.get("enabled"):
+            attach_music(deck, resolved)
+        else:
+            resolved.pop("music_file", None)
         RESOLVED_JSON.write_text(json.dumps(resolved, ensure_ascii=False, indent=2), encoding="utf-8")
         write_subtitles(resolved)
 
