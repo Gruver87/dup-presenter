@@ -2,6 +2,16 @@
 
 All notable changes to **DUP Presenter** are documented in this file. Dates and versions match actual commits and verified runs on disk.
 
+## [Unreleased]
+
+### Changed
+- **Canonical studio demo is `decks/studio-universal-demo-v2.json`** (slug `studio-universal-demo-v2`): 7 slides with `outro_3d` CTA, chart slides separated, portrait chart/versus layout fixed.
+- **`decks/studio-universal-demo.json` is restored to the v1.3.0 snapshot** (6 slides, no outro) so that the existing `studio-universal-demo*` MP4s still match their source deck. It is superseded and kept only for reproducibility.
+
+### Fixed
+- `make_cutdown` now fails closed on two adjacent `chart_story` slides in a 9:16 short: the second chart is replaced by a non-chart slide from the same deck, or the build raises.
+- Portrait (9:16) `chart_story` bar/line/donut and `versus_split` cards fill the canvas instead of letterboxing.
+
 ## [1.3.0] — 2026-11-26
 
 ### Fixed
