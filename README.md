@@ -111,6 +111,10 @@ python scripts/mcp_server.py
 ```powershell
 npx tsc --noEmit
 python -m unittest discover -s tests -v
+
+# Живая проверка веб-консоли в Chromium (нужна запущенная консоль на нужном порту)
+python scripts/console_server.py --port 8790 --no-auto-ollama
+python scripts/console_ui_check.py --url http://127.0.0.1:8790/
 ```
 
 ## Лицензии сторонних компонентов
