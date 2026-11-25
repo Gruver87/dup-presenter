@@ -236,7 +236,7 @@
       "type": "screen_split",
       "title": "Консоль узла",
       "subtitle": "Живой 3-узловой меш, снимки из Ops Console",
-      "voice_ssml": "<speak><prosody rate=\"95%\">На экране веб-консоль узла: обзор, синхронизация и страница доказательств.<break time=\"250ms\"/> Меш работает в prod-профиле с идентификатором цепи 778888, мост выключен.</prosody></speak>",
+      "voice_ssml": "<speak><prosody rate=\"95%\">На экране веб-консоль узла: обзор, синхронизация, доказательства, рыночные данные и живые метрики.<break time=\"250ms\"/> Меш работает в prod-профиле с идентификатором цепи 778888, мост выключен, рыночные данные только для ориентации.</prosody></speak>",
       "bullets": [
         {
           "title": "Обзор",
@@ -266,6 +266,14 @@
         {
           "src": "screens/dup-protocol/console-evidence.png",
           "caption": "Ops Console · Доказательства (STRICT)"
+        },
+        {
+          "src": "screens/dup-protocol/console-markets.png",
+          "caption": "Ops Console · Рынки (только ориентация)"
+        },
+        {
+          "src": "screens/dup-protocol/console-metrics.png",
+          "caption": "Ops Console · Живые метрики"
         }
       ]
     },
