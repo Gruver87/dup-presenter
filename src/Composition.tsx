@@ -2139,7 +2139,101 @@ const Outro3DSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
   );
 };
 
-const CaptionOverlay: React.FC<{ captions?: CaptionCue[] }> = ({ captions }) => {
+// Burned-in subtitle presets (deck field caption_style). Timing base is slide-local, same as the cues.
+const captionWrapStyle = (): React.CSSProperties => ({
+  position: "absolute",
+  left: IS_PORTRAIT ? 40 : 120,
+  right: IS_PORTRAIT ? 40 : 120,
+  bottom: IS_PORTRAIT ? 48 : 26,
+  display: "flex",
+  justifyContent: "center",
+  pointerEvents: "none",
+});
+
+const CaptionKaraokeLayer: React.FC<{ cue: CaptionCue; sec: number }> = ({ cue, sec }) => {
+  const words = cue.words ?? [];
+  return (
+    <div style={captionWrapStyle()}>
+      <div
+        style={{
+          background: THEME.captionBg,
+          color: THEME.captionText,
+          padding: IS_PORTRAIT ? "14px 22px" : "10px 22px",
+          borderRadius: 14,
+          border: `1px solid ${THEME.cardBorder}`,
+          fontFamily: "Segoe UI, Inter, Arial, sans-serif",
+          fontSize: IS_PORTRAIT ? 28 : 24,
+          fontWeight: 700,
+          lineHeight: 1.32,
+          textAlign: "center",
+          maxWidth: "100%",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.45)",
+        }}
+      >
+        {cue.speaker && (
+          <span style={{ color: cue.speaker === "B" ? PINK : CYAN, marginRight: 10, fontFamily: "Consolas, monospace" }}>
+            [{cue.speaker}]
+          </span>
+        )}
+        {words.map((w, i) => {
+          const current = sec >= w.start && sec < w.end;
+          const spoken = sec >= w.end;
+          return (
+            <span
+              key={`${i}-${w.start}`}
+              style={{
+                color: current ? CYAN : spoken ? THEME.captionText : "rgba(226,232,240,0.45)",
+                textShadow: current ? `0 0 14px ${CYAN}` : undefined,
+              }}
+            >
+              {w.w}
+              {i < words.length - 1 ? " " : ""}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const CaptionBoldLayer: React.FC<{ cue: CaptionCue }> = ({ cue }) => (
+  <div style={captionWrapStyle()}>
+    <div
+      style={{
+        color: "#ffffff",
+        fontFamily: "Segoe UI Black, Segoe UI, Inter, Arial, sans-serif",
+        fontSize: IS_PORTRAIT ? 58 : 46,
+        fontWeight: 900,
+        lineHeight: 1.12,
+        textAlign: "center",
+        maxWidth: "100%",
+        textShadow: "0 0 4px #000, 0 0 10px #000, 0 4px 18px rgba(0,0,0,0.9)",
+      }}
+    >
+      {cue.speaker && (
+        <span style={{ color: cue.speaker === "B" ? PINK : CYAN, marginRight: 14 }}>[{cue.speaker}]</span>
+      )}
+      {cue.text}
+    </div>
+  </div>
+);
+
+const CaptionOverlay: React.FC<{ captions?: CaptionCue[]; style?: "box" | "karaoke" | "bold" }> = ({
+  captions,
+  style = "box",
+}) => {
+  const frame = useCurrentFrame();
+  if (!captions || captions.length === 0) return null;
+  const sec = frame / FPS;
+  const cue = captions.find((c) => sec >= c.start_sec && sec <= c.end_sec);
+  if (!cue) return null;
+  if (style === "bold") return <CaptionBoldLayer cue={cue} />;
+  // karaoke needs word timings; cues without them (proportional fallback) render as the boxed style.
+  if (style === "karaoke" && cue.words && cue.words.length > 0) return <CaptionKaraokeLayer cue={cue} sec={sec} />;
+  return <CaptionOverlayBox captions={captions} />;
+};
+
+const CaptionOverlayBox: React.FC<{ captions?: CaptionCue[] }> = ({ captions }) => {
   const frame = useCurrentFrame();
   if (!captions || captions.length === 0) return null;
   const sec = frame / FPS;
@@ -2291,7 +2385,7 @@ export const DupPresenter: React.FC<Props> = () => {
         >
           {renderSlideBody(slide, durationInFrames)}
         </SlideChrome>
-        {showCaptions && <CaptionOverlay captions={slide.captions} />}
+        {showCaptions && <CaptionOverlay captions={slide.captions} style={DECK.caption_style ?? "box"} />}
         <Sequence from={voiceDelayFrames}>
           <Audio src={staticFile(slide.voice_file)} startFrom={0} />
         </Sequence>

@@ -19,13 +19,21 @@ decks/<slug>.json
 1. Fail-closed валидация схемы + опциональный Claim Audit (--audit-repo)
 2. Озвучка RU (Edge TTS dmitry + офлайн-фолбэк Silero eugene) / EN (Kokoro am_michael)
    + STFT де-эссер + детектор речи для динамического дакинга музыки
-   + пословные караоке-субтитры (SentenceBoundary + word alignment)
+   + пословные тайминги субтитров (SentenceBoundary + word alignment), стиль задаётся `caption_style`
    + процедурные SFX (transition whoosh + UI pop)
 3. Рендер в Remotion 4 (TransitionSeries fade/slide/wipe + 3D-фон + ScreenWindow3D авто-зум)
 4. Мастеринг звука в -16 LUFS / -1.5 dBTP (two-pass ffmpeg loudnorm)
 5. Media QA Gate (ffprobe + LUFS + True Peak + dead-air check) -> out/<slug>_qa.json
 6. Publish Pack: out/<slug>.srt/.vtt, _chapters.txt, _post_copy.md, _metadata.json, _thumb.png
 ```
+
+## Стили субтитров (`caption_style`)
+
+- `box` (по умолчанию) — реплика целиком в плашке, как и раньше.
+- `karaoke` — подсветка слов по ходу речи: текущее слово голубым, сказанные белым, ещё не сказанные приглушены. Если тайминги слов отсутствуют, рисуется как `box`.
+- `bold` — крупный белый текст с тенью, без плашки (для коротких вертикальных видео).
+
+Демо: `decks/caption-karaoke-demo.json` и `decks/caption-bold-demo.json`.
 
 ## Поддерживаемые шаблоны слайдов (`type`)
 

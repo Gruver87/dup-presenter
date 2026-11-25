@@ -80,6 +80,9 @@ from tts_engines import (  # noqa: E402
 
 ALLOWED_THEMES = set(THEME_IDS)
 ALLOWED_TRANSITIONS = {"fade", "slide", "wipe", "none"}
+# box: current boxed cue (default, unchanged output). karaoke: word-by-word highlight from word timings.
+# bold: large text without a box, for short-form/vertical videos.
+ALLOWED_CAPTION_STYLES = {"box", "karaoke", "bold"}
 ASPECT_DIMS = {"16:9": (1920, 1080), "9:16": (1080, 1920)}
 ALLOWED_SPEAKERS_BY_LANG = {
     "ru": {"xenia", "eugene", "aidar", "baya", "kseniya"} | set(EDGE_RU_VOICES),
@@ -118,6 +121,12 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
     theme = deck.get("theme", "neon_cyber")
     if theme not in ALLOWED_THEMES:
         raise DeckValidationError(f"Unsupported theme {theme!r}; allowed: {sorted(ALLOWED_THEMES)}")
+
+    caption_style = deck.get("caption_style", "box")
+    if not isinstance(caption_style, str) or caption_style not in ALLOWED_CAPTION_STYLES:
+        raise DeckValidationError(
+            f"Unsupported caption_style {caption_style!r}; allowed: {sorted(ALLOWED_CAPTION_STYLES)}"
+        )
 
     aspect = deck.get("aspect", "16:9")
     if aspect not in ASPECT_DIMS:
@@ -647,6 +656,7 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
     resolved["height"] = h
     resolved["theme"] = deck.get("theme", "neon_cyber")
     resolved["burn_captions"] = deck.get("burn_captions", True)
+    resolved["caption_style"] = deck.get("caption_style", "box")
     resolved["transition_style"] = tr_style
     resolved["transition_frames"] = tr_frames
     resolved["sfx_enabled"] = sfx_enabled
@@ -772,6 +782,7 @@ def main() -> int:
         resolved["width"], resolved["height"] = ASPECT_DIMS[aspect]
         resolved["theme"] = deck.get("theme", resolved.get("theme", "neon_cyber"))
         resolved["burn_captions"] = deck.get("burn_captions", resolved.get("burn_captions", True))
+        resolved["caption_style"] = deck.get("caption_style", "box")
         tr = deck.get("transition") or {}
         if tr:
             resolved["transition_style"] = tr.get("style", resolved.get("transition_style", "fade"))

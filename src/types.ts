@@ -109,6 +109,8 @@ export interface ResolvedDeck {
   theme?: ThemeId;
   aspect?: "16:9" | "9:16";
   burn_captions?: boolean;
+  // box = boxed cue (default); karaoke = word-by-word highlight from word timings; bold = large text, no box.
+  caption_style?: "box" | "karaoke" | "bold";
   brand: string;
   fps: number;
   width: number;
