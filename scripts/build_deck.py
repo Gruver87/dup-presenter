@@ -342,21 +342,6 @@ def _split_sentences(text: str) -> list[str]:
     return parts or ([text] if text else [])
 
 
-def _build_proportional_captions(text: str, total_dur: float) -> list[dict]:
-    sentences = _split_sentences(text)
-    if not sentences:
-        return []
-    weights = [max(4, len(s)) for s in sentences]
-    total_w = float(sum(weights))
-    cues = []
-    cur = 0.0
-    for s, w in zip(sentences, weights):
-        seg = total_dur * (w / total_w)
-        cues.append({"start_sec": round(cur, 2), "end_sec": round(cur + seg, 2), "text": s})
-        cur += seg
-    return cues
-
-
 def _fmt_ts(sec: float, sep: str) -> str:
     ms = int(round(max(0.0, sec) * 1000))
     h, rem = divmod(ms, 3_600_000)

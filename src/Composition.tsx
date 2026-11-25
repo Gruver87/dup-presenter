@@ -2262,7 +2262,7 @@ const CaptionOverlay: React.FC<{ captions?: CaptionCue[]; style?: "box" | "karao
   const cue = captions.find((c) => sec >= c.start_sec && sec <= c.end_sec);
   if (!cue) return null;
   if (style === "bold") return <CaptionBoldLayer cue={cue} />;
-  // karaoke needs word timings; cues without them (proportional fallback) render as the boxed style.
+  // Every voiced cue carries word timings (audio_fx.build_word_captions). A cue without them is a defensive case, shown as box.
   if (style === "karaoke" && cue.words && cue.words.length > 0) return <CaptionKaraokeLayer cue={cue} sec={sec} />;
   return <CaptionOverlayBox captions={captions} />;
 };

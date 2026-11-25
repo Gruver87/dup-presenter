@@ -22,6 +22,40 @@ def _deck(**extra) -> dict:
     return data
 
 
+from audio_fx import build_word_captions  # noqa: E402
+
+NARRATION = "First sentence here. Second one follows! Is there a third?"
+
+
+class KaraokeWordTimingTests(unittest.TestCase):
+    """Karaoke must never silently degrade to box for a voiced narration: every cue carries words."""
+
+    def _assert_words_everywhere(self, cues: list[dict]) -> None:
+        self.assertTrue(cues, "voiced narration must produce caption cues")
+        for cue in cues:
+            self.assertTrue(cue.get("words"), f"cue without words: {cue.get('text')!r}")
+            self.assertEqual(
+                [w["w"] for w in cue["words"]],
+                cue["text"].split(),
+                "word tokens must match the cue text",
+            )
+            for w in cue["words"]:
+                self.assertLessEqual(w["start"], w["end"])
+
+    def test_words_without_tts_boundaries(self) -> None:
+        # Kokoro and Silero return no boundaries: proportional sentence spans.
+        self._assert_words_everywhere(build_word_captions(NARRATION, 6.0, boundaries=None))
+
+    def test_words_with_matching_tts_boundaries(self) -> None:
+        # Edge: one real boundary per sentence.
+        bounds = [{"start_sec": 0.0, "end_sec": 1.5}, {"start_sec": 1.6, "end_sec": 3.0}, {"start_sec": 3.1, "end_sec": 5.0}]
+        self._assert_words_everywhere(build_word_captions(NARRATION, 6.0, boundaries=bounds))
+
+    def test_words_with_mismatched_tts_boundaries(self) -> None:
+        bounds = [{"start_sec": 0.0, "end_sec": 2.0}]
+        self._assert_words_everywhere(build_word_captions(NARRATION, 6.0, boundaries=bounds))
+
+
 class CaptionStyleSchemaTests(unittest.TestCase):
     def test_default_is_box_and_valid(self) -> None:
         build_deck.validate_deck(_deck(), check_assets=False)
