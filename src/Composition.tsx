@@ -993,7 +993,9 @@ const Cube3D: React.FC<{ size?: number; faces?: string[] }> = ({
     fontWeight: 800,
     color: TEXT,
     letterSpacing: 3,
-    backfaceVisibility: "visible",
+    // Hide the far side of each face: otherwise the back walls show through the transparent front
+    // face as mirrored text (seen as reversed labels on the cube). Near faces stay visible.
+    backfaceVisibility: "hidden",
     borderRadius: 12,
   };
 
