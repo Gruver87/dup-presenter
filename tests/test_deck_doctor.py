@@ -103,6 +103,32 @@ class DeckDoctorTests(unittest.TestCase):
         self.assertTrue(any("cannot read deck" in e for e in missing["errors"]))
 
 
+# (words of narration, measured TTS seconds) from our build logs; see scripts/calibrate_speech.py for the fit.
+_CALIB_EN = [(24, 8.11), (16, 6.74), (35, 18.05), (60, 26.05), (46, 23.15), (27, 13.10), (43, 21.50),
+             (37, 20.07), (35, 16.83), (36, 19.71), (31, 15.06), (30, 11.46)]
+_CALIB_RU = [(25, 8.78), (7, 2.71), (23, 8.91), (20, 7.44), (35, 18.36), (42, 21.14), (31, 14.66),
+             (37, 18.79), (25, 12.19), (21, 12.82), (29, 18.43), (26, 14.06)]
+
+
+class SpeechModelCalibrationTests(unittest.TestCase):
+    """The doctor's speech-length model must stay close to what the TTS actually produced."""
+
+    def _check(self, lang: str, points: list[tuple[int, float]]) -> None:
+        errs = [abs(deck_doctor.estimate_speech_sec(w, lang) - t) for w, t in points]
+        self.assertLess(sum(errs) / len(errs), 2.0, f"{lang}: mean abs error too large")
+        self.assertLess(max(errs), 4.5, f"{lang}: worst point too far off")
+
+    def test_english_model_matches_recorded_tts(self) -> None:
+        self._check("en", _CALIB_EN)
+
+    def test_russian_model_matches_recorded_tts(self) -> None:
+        self._check("ru", _CALIB_RU)
+
+    def test_narration_words_drive_estimate_not_on_screen_text(self) -> None:
+        slide = {"id": "s1", "type": "hero_3d", "title": "x " * 200, "voice_text": "short line here"}
+        self.assertEqual(deck_doctor._voice_words(slide), 3)
+
+
 class DoctorWithoutAssetsTests(unittest.TestCase):
     """CI has no local assets. These run the doctor's non-asset checks on every committed deck."""
 

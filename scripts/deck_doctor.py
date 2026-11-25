@@ -27,10 +27,11 @@ OUT_DIR = ROOT / "out"
 CYRILLIC_RE = re.compile(r"[А-Яа-яЁё]")
 # Observed on the reference build machine: ~5334 frames took ~5 minutes of Remotion render.
 RENDER_SEC_PER_FRAME = 0.055
-# Fallback speech pacing when a slide has no explicit duration_sec.
-WORDS_PER_SEC = 2.4
-SLIDE_PAD_SEC = 1.5
+# Speech length per slide = a + b * words(voice). Least-squares fit on 31 slides from our build logs
+# (en: 19 slides, ru: 12 slides; mean abs error ~1.5 s). Refit with scripts/calibrate_speech.py when voices change.
+VOICE_FIT = {"en": (-1.50, 0.514), "ru": (-1.73, 0.558)}
 LONG_VIDEO_WARN_SEC = 240.0
+TAG_RE = re.compile(r"<[^>]+>")
 
 
 class DeckDoctorError(Exception):
@@ -52,13 +53,27 @@ def _slide_text(slide: dict) -> str:
     return " ".join(parts)
 
 
-def _estimate_slide_sec(slide: dict, probe_media: Callable[[Path], float]) -> float:
-    """Slide length guess. A `ui_recording` slide is never shorter than its clip + 1 s (same rule as build_deck)."""
+def _voice_words(slide: dict) -> int:
+    """Words the TTS will speak. Only narration decides speech length; on-screen text is not spoken."""
+    text = slide.get("voice_text") or TAG_RE.sub(" ", str(slide.get("voice_ssml") or ""))
+    if not text.strip():
+        # Dialogue or unknown shape: fall back to all slide text so the estimate never silently drops to zero.
+        text = _slide_text(slide)
+    return len(text.split())
+
+
+def estimate_speech_sec(words: int, lang: str) -> float:
+    """Modelled TTS length of a slide's narration, from the fitted line for the deck language."""
+    a, b = VOICE_FIT.get(lang, VOICE_FIT["en"])
+    return max(1.0, a + b * words)
+
+
+def _estimate_slide_sec(slide: dict, probe_media: Callable[[Path], float], lang: str = "en") -> float:
+    """Slide length guess. Same rule as build_deck: slide = ceil(speech) + 1 s; a `ui_recording` slide is at least its clip + 1 s."""
     if isinstance(slide.get("duration_sec"), (int, float)) and slide["duration_sec"] > 0:
         base = float(slide["duration_sec"])
     else:
-        words = len(_slide_text(slide).split())
-        base = round(words / WORDS_PER_SEC + SLIDE_PAD_SEC, 2)
+        base = float(math.ceil(estimate_speech_sec(_voice_words(slide), lang)) + 1)
     if slide.get("type") == "ui_recording":
         src = str((slide.get("recording") or {}).get("src", ""))
         if src:
@@ -131,7 +146,7 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = T
     probe_media = _media_duration_sec if check_assets else (lambda _p: 0.0)
     for s in slides:
         try:
-            slide_secs.append(_estimate_slide_sec(s, probe_media))
+            slide_secs.append(_estimate_slide_sec(s, probe_media, lang))
         except DeckValidationError as exc:
             errors.append(f"slide {s.get('id')}: {exc}")
     total_sec = round(sum(slide_secs), 2)
@@ -160,7 +175,7 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = T
             "estimated_length_sec": total_sec,
             "frames": frames,
             "estimated_render_sec": est_render_sec,
-            "estimate_basis": "deck duration_sec when set, else word count; ui_recording slides at least clip+1 s (ffprobe); render ~0.055 s/frame (our builds)",
+            "estimate_basis": "deck duration_sec when set, else fitted speech length from narration words (ceil+1 s, as build_deck); ui_recording at least clip+1 s; render ~0.055 s/frame (our builds)",
         },
     }
 
@@ -173,3 +188,4 @@ def load_and_diagnose(path: "Path | str", *, overwrite: bool = False) -> dict:
     except (OSError, json.JSONDecodeError) as exc:
         return {"ok": False, "errors": [f"cannot read deck {deck_path}: {exc}"], "warnings": [], "estimates": {}}
     return diagnose_deck(deck, overwrite=overwrite)
+
