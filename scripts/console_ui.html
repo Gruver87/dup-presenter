@@ -278,8 +278,10 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
               </select>
               <button class="btn sm" id="applyPresetBtn">Применить пресет</button>
               <button class="btn sm primary" id="critiqueDeckBtn">Советчик (что добавить/убрать)</button>
+              <button class="btn sm" id="autoFixDeckBtn">Авто-исправить дек</button>
               <button class="btn sm" id="makeThumbBtn">Обложка 1280×720</button>
               <button class="btn sm" id="planPackBtn">План Video Pack</button>
+              <button class="btn sm primary" id="buildPackBtn">Собрать Video Pack</button>
             </div>
             <pre id="studioToolOut" style="margin:0;padding:10px;border-radius:10px;background:rgba(0,0,0,0.28);font-size:0.78rem;white-space:pre-wrap;display:none;"></pre>
           </div>
@@ -820,6 +822,20 @@ $("critiqueDeckBtn").onclick = async () => {
   if (!d.add.length && !d.remove.length && !d.upgrade.length) lines.push("\nОтличный баланс — критических замечаний нет!");
   showStudioOut(lines.join("\n"));
 };
+$("autoFixDeckBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Применяю безопасные авто-исправления...");
+  const r = await fetch("/api/critique/autofix", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG }),
+  });
+  const d = await r.json();
+  if (!d.ok) { showStudioOut(`Ошибка: ${d.error}`); return; }
+  const msg = d.changes.length ? `Исправлено:\n- ${d.changes.join("\n- ")}\nНовая оценка: ${d.critique.score}/100` : `Дек уже в порядке (оценка: ${d.critique.score}/100)`;
+  showStudioOut(msg);
+  loadDeck(CURRENT_SLUG);
+};
 $("makeThumbBtn").onclick = async () => {
   if (!CURRENT_SLUG) return;
   showStudioOut("Рендерю обложку 1280×720 (Thumbnail Studio)...");
@@ -841,6 +857,18 @@ $("planPackBtn").onclick = async () => {
   });
   const d = await r.json();
   showStudioOut(d.ok ? JSON.stringify(d, null, 2) : `Ошибка: ${d.error}`);
+};
+$("buildPackBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Запускаю фоновую сборку Video Pack (16:9 + 9:16 Short + обложка)...");
+  const r = await fetch("/api/video-pack/build", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG, include_short: true, include_thumbnail: true }),
+  });
+  const d = await r.json();
+  showStudioOut(d.ok ? `Сборка Video Pack запущена для ${d.slug} — следите в «Логах».` : `Ошибка: ${d.error}`);
+  if (d.ok) document.querySelector('[data-tab="logs"]').click();
 };
 
 window.createDeckFromIdea = async (idx) => {

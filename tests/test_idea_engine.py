@@ -16,6 +16,7 @@ from idea_engine import (  # noqa: E402
     IdeaDeckExistsError,
     IdeaEngineError,
     assess_topic_complexity,
+    auto_fix_deck,
     critique_deck,
     generate_ideas,
     idea_to_deck,
@@ -90,7 +91,7 @@ class IdeaEngineTests(unittest.TestCase):
         self.assertIn("protocol_cosmos", deep["recommended_tools"])
 
         vs = assess_topic_complexity("Python vs Rust", genre="versus_battle", lang="en")
-        self.assertEqual(vs["recommended_voice_mode"], "duo")
+        self.assertEqual(vs["recommended_voice_mode"], "podcast")
         self.assertIn("versus_split", vs["recommended_tools"])
 
         short = assess_topic_complexity("Crypto tip", genre="short_60s", lang="en")
@@ -116,6 +117,31 @@ class IdeaEngineTests(unittest.TestCase):
         self.assertGreaterEqual(len(report["add"]), 2)      # no hook, no visual, no outro
         self.assertGreaterEqual(len(report["remove"]), 2)   # duplicate kpi + >95 words
         self.assertGreaterEqual(len(report["upgrade"]), 2)  # short voice + 9:16 box captions
+
+    def test_auto_fix_deck_repairs_short_captions_preset_and_outro(self) -> None:
+        deck = {
+            "slug": "autofix-test",
+            "lang": "en",
+            "theme": "neon_cyber",
+            "aspect": "9:16",
+            "caption_style": "box",
+            "voice": {"engine": "kokoro_v1", "lang": "en", "speaker": "am_michael"},
+            "slides": [
+                {
+                    "id": "s1",
+                    "tag": "HOOK",
+                    "type": "stat_burst",
+                    "title": "Fast Hook",
+                    "voice_text": "One clear insight delivered in sixty seconds without fluff.",
+                    "stat_burst": {"headline": "60 SEC", "caption": "Fast vertical breakdown"},
+                }
+            ],
+        }
+        fixed, changes = auto_fix_deck(deck)
+        self.assertEqual(fixed["caption_style"], "bold")
+        self.assertEqual(fixed["director_preset"], "fast_shorts")
+        self.assertEqual(fixed["slides"][-1]["type"], "outro_3d")
+        self.assertEqual(len(changes), 3)
 
 
 if __name__ == "__main__":

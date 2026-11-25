@@ -55,7 +55,7 @@ from build_deck import (  # noqa: E402
 )
 from director_presets import DIRECTOR_PRESETS, DirectorPresetError, PRESET_CATALOG, apply_director_preset  # noqa: E402
 from fetch_repo import RepoFetchError, looks_like_remote, normalize_git_url  # noqa: E402
-from idea_engine import GENRE_CATALOG, IdeaDeckExistsError, IdeaEngineError, critique_deck, generate_ideas, write_idea_deck  # noqa: E402
+from idea_engine import GENRE_CATALOG, IdeaDeckExistsError, IdeaEngineError, auto_fix_deck, critique_deck, generate_ideas, write_idea_deck  # noqa: E402
 from md_deck import MarkdownDeckError, MarkdownDeckExists, MarkdownImportError, write_deck_from_markdown  # noqa: E402
 from plan_deck import voice_ssml  # noqa: E402
 from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumbnail  # noqa: E402
@@ -724,6 +724,26 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             self._json(200, report)
             return
 
+        if path == "/api/critique/autofix":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            deck_path = DECKS_DIR / f"{slug}.json"
+            if not deck_path.is_file():
+                self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                return
+            try:
+                deck = json.loads(deck_path.read_text(encoding="utf-8"))
+                fixed, changes = auto_fix_deck(deck)
+                deck_path.write_text(json.dumps(fixed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            except (IdeaEngineError, DeckValidationError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "slug": slug, "changes": changes, "critique": critique_deck(fixed)})
+            return
+
         if path == "/api/apply-preset":
             try:
                 slug = _valid_slug(str(body.get("slug") or ""))
@@ -792,6 +812,30 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 self._json(400, {"ok": False, "error": str(exc)})
                 return
             self._json(200, plan)
+            return
+
+        if path == "/api/video-pack/build":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            deck_path = DECKS_DIR / f"{slug}.json"
+            if not deck_path.is_file():
+                self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                return
+            cmd = [sys.executable, str(SCRIPTS / "video_pack.py"), str(deck_path), "--overwrite"]
+            if not body.get("include_short", True):
+                cmd.append("--no-short")
+            if not body.get("include_thumbnail", True):
+                cmd.append("--no-thumbnail")
+            tr_to = str(body.get("translate_to") or "").strip()
+            if tr_to in {"ru", "en"}:
+                cmd.extend(["--translate-to", tr_to])
+            if not JOBS.start(f"video_pack:{slug}", [cmd]):
+                self._json(409, {"ok": False, "error": "Уже идёт сборка. Дождись окончания в «Логах»."})
+                return
+            self._json(202, {"ok": True, "slug": slug, "step": "video_pack"})
             return
 
         if path == "/api/save-deck":

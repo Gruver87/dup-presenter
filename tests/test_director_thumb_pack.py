@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from build_deck import validate_deck  # noqa: E402
+from build_deck import resolve_director_preset, validate_deck  # noqa: E402
 from director_presets import DIRECTOR_PRESETS, DirectorPresetError, apply_director_preset  # noqa: E402
 from idea_engine import generate_ideas, idea_to_deck  # noqa: E402
 from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumbnail  # noqa: E402
@@ -36,6 +36,21 @@ class DirectorThumbPackTests(unittest.TestCase):
     def test_unknown_director_preset_fails_closed(self) -> None:
         with self.assertRaises(DirectorPresetError):
             apply_director_preset(self._sample_deck(), "nonexistent_preset")
+
+    def test_build_deck_resolve_director_preset_fills_defaults_without_overwriting(self) -> None:
+        raw = {
+            "slug": "preset-cli",
+            "lang": "en",
+            "director_preset": "fast_shorts",
+            "theme": "quantum_ledger",  # explicit override must be preserved
+            "voice": {"engine": "kokoro_v1", "lang": "en", "speaker": "am_michael"},
+            "slides": self._sample_deck()["slides"],
+        }
+        resolved = resolve_director_preset(raw)
+        validate_deck(resolved)
+        self.assertEqual(resolved["theme"], "quantum_ledger")
+        self.assertEqual(resolved["aspect"], "9:16")
+        self.assertEqual(resolved["caption_style"], "bold")
 
     def test_thumbnail_props_and_dry_run_command(self) -> None:
         deck = self._sample_deck()

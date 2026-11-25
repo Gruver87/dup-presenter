@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from build_deck import validate_deck  # noqa: E402
 from claim_audit import audit_deck  # noqa: E402
 from deck_doctor import load_and_diagnose  # noqa: E402
-from idea_engine import critique_deck, generate_ideas, write_idea_deck  # noqa: E402
+from idea_engine import auto_fix_deck, critique_deck, generate_ideas, write_idea_deck  # noqa: E402
 from make_cutdown import build_short_cutdown  # noqa: E402
 from media_qa import run_media_qa  # noqa: E402
 from publish_pack import build_publish_pack  # noqa: E402
@@ -81,6 +81,19 @@ TOOLS = [
             "properties": {
                 "deck": {"type": "string", "description": "Deck path (e.g. decks/dup-protocol-cosmos.json)"},
                 "lang": {"type": "string", "default": ""},
+            },
+            "required": ["deck"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "auto_fix_deck",
+        "description": "Apply safe deterministic Director Advisor fixes (9:16 bold captions, director_preset, missing outro_3d) to a deck.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "deck": {"type": "string", "description": "Deck path"},
+                "write": {"type": "boolean", "default": False, "description": "Save fixed deck back to disk when true"},
             },
             "required": ["deck"],
             "additionalProperties": False,
@@ -339,6 +352,14 @@ def handle_tool_call(name: str, arguments: dict) -> dict:
     if name == "critique_deck":
         deck = json.loads(_resolve_path(arguments["deck"]).read_text(encoding="utf-8"))
         return critique_deck(deck, lang=str(arguments.get("lang") or ""))
+
+    if name == "auto_fix_deck":
+        dp = _resolve_path(arguments["deck"])
+        deck = json.loads(dp.read_text(encoding="utf-8"))
+        fixed, changes = auto_fix_deck(deck)
+        if bool(arguments.get("write", False)):
+            dp.write_text(json.dumps(fixed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return {"ok": True, "changes": changes, "critique": critique_deck(fixed), "written": bool(arguments.get("write", False))}
 
     if name == "plan_video_pack":
         return plan_video_pack(

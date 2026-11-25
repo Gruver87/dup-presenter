@@ -146,6 +146,8 @@ def execute_video_pack(plan: dict[str, Any]) -> dict[str, Any]:
 
         if role == "short_9x16":
             short_deck = build_short_cutdown(src_deck, max_slides=4)
+            short_preset = str(tgt.get("preset") or "fast_shorts")
+            short_deck = apply_director_preset(short_deck, short_preset, override_existing=True)
             deck_file.write_text(json.dumps(short_deck, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         elif role.startswith("translated_"):
             target_lang = tgt["lang"]

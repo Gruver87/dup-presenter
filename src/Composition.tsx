@@ -2283,6 +2283,41 @@ const CaptionKaraokeLayer: React.FC<{ cue: CaptionCue; sec: number }> = ({ cue, 
   );
 };
 
+const DuoSpeakerChip: React.FC<{ speaker: string; large?: boolean }> = ({ speaker, large = false }) => {
+  const col = speaker === "B" ? PINK : CYAN;
+  const label = speaker === "A" ? "HOST" : speaker === "B" ? "EXPERT" : speaker;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: large ? "4px 14px" : "2px 10px",
+        borderRadius: 999,
+        marginRight: large ? 14 : 10,
+        background: `${col}26`,
+        border: `1.5px solid ${col}`,
+        color: col,
+        fontFamily: "Consolas, monospace",
+        fontSize: large ? (IS_PORTRAIT ? 26 : 22) : IS_PORTRAIT ? 20 : 17,
+        fontWeight: 900,
+        verticalAlign: "middle",
+      }}
+    >
+      <span
+        style={{
+          width: large ? 10 : 8,
+          height: large ? 10 : 8,
+          borderRadius: "50%",
+          background: col,
+          boxShadow: `0 0 10px ${col}`,
+        }}
+      />
+      {label}
+    </span>
+  );
+};
+
 const CaptionBoldLayer: React.FC<{ cue: CaptionCue }> = ({ cue }) => (
   <div style={captionWrapStyle()}>
     <div
@@ -2297,9 +2332,7 @@ const CaptionBoldLayer: React.FC<{ cue: CaptionCue }> = ({ cue }) => (
         textShadow: "0 0 4px #000, 0 0 10px #000, 0 4px 18px rgba(0,0,0,0.9)",
       }}
     >
-      {cue.speaker && (
-        <span style={{ color: cue.speaker === "B" ? PINK : CYAN, marginRight: 14 }}>[{cue.speaker}]</span>
-      )}
+      {cue.speaker && <DuoSpeakerChip speaker={cue.speaker} large />}
       {cue.text}
     </div>
   </div>
@@ -2355,11 +2388,7 @@ const CaptionOverlayBox: React.FC<{ captions?: CaptionCue[] }> = ({ captions }) 
           boxShadow: "0 12px 30px rgba(0,0,0,0.45)",
         }}
       >
-        {active.speaker && (
-          <span style={{ color: active.speaker === "B" ? PINK : CYAN, marginRight: 10, fontFamily: "Consolas, monospace" }}>
-            [{active.speaker}]
-          </span>
-        )}
+        {active.speaker && <DuoSpeakerChip speaker={active.speaker} />}
         {active.text}
       </div>
     </div>

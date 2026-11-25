@@ -896,7 +896,7 @@ def assess_topic_complexity(
 
     # Deduplicate while preserving order
     unique_tools = list(dict.fromkeys(tools))
-    voice_mode = "duo" if (has_versus or genre == "versus_battle") else "single"
+    voice_mode = "podcast" if (has_versus or genre == "versus_battle") else "single"
 
     if is_en:
         reason = (
@@ -1041,6 +1041,63 @@ def critique_deck(deck: dict[str, Any], lang: str = "") -> dict[str, Any]:
     }
 
 
+def auto_fix_deck(deck: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """Apply safe, deterministic director fixes to a deck without fabricating facts."""
+    import copy
+    from director_presets import apply_director_preset
+
+    if not isinstance(deck, dict):
+        raise IdeaEngineError("deck must be a JSON object")
+    out = copy.deepcopy(deck)
+    slides = list(out.get("slides") or [])
+    if not slides:
+        raise IdeaEngineError("deck.slides must be a non-empty list")
+
+    lang = str(out.get("lang") or "ru").lower()
+    is_en = lang == "en"
+    changes: list[str] = []
+
+    # 1. Upgrade 9:16 box captions -> bold
+    if str(out.get("aspect") or "16:9") == "9:16" and str(out.get("caption_style") or "box") == "box":
+        out["caption_style"] = "bold"
+        changes.append("caption_style: box -> bold (9:16 vertical readability)")
+
+    # 2. Attach default director_preset without overwriting explicit user fields
+    if not out.get("director_preset"):
+        preset_id = "fast_shorts" if str(out.get("aspect") or "16:9") == "9:16" else "cinema_cosmos"
+        out = apply_director_preset(out, preset_id, override_existing=False)
+        changes.append(f"director_preset: attached '{preset_id}' (preserving explicit deck settings)")
+
+    # 3. Ensure closing outro_3d exists
+    if str(slides[-1].get("type") or "") != "outro_3d":
+        next_num = len(slides) + 1
+        outro = {
+            "id": f"s{next_num}",
+            "tag": "FINALE" if is_en else "ФИНАЛ",
+            "type": "outro_3d",
+            "title": str(slides[0].get("title") or out.get("slug") or "Summary"),
+            "subtitle": "Built with DUP Presenter" if is_en else "Собрано в DUP Presenter",
+            "voice_text": (
+                "Thank you for watching. Inspect the repository and verification artifacts directly."
+                if is_en
+                else "Спасибо за просмотр. Код и проверяемые артефакты открыты в репозитории."
+            ),
+            "url": "github.com/Gruver87/dup-presenter",
+            "tagline": "DUP Labs · reproducible 3D presentations",
+            "badges": [
+                {"name": "DUP Labs", "color": "#00f0ff"},
+                {"name": "Media QA Gate", "color": "#10ff88"},
+            ],
+            "cube_faces": ["DUP", "LABS", "3D", "TTS", "QA", "1080P"],
+        }
+        slides.append(outro)
+        out["slides"] = slides
+        changes.append(f"added closing outro_3d slide (s{next_num})")
+
+    validate_deck(out)
+    return out, changes
+
+
 def generate_ideas(
     topic: str,
     *,
@@ -1140,6 +1197,7 @@ def idea_to_deck(
         raise IdeaEngineError("idea.slides must be a non-empty list")
 
     width, height = ASPECT_DIMS[aspect]
+    voice_mode = "podcast" if idea.get("recommended_voice_mode") == "podcast" else "single"
     voice = (
         {
             "engine": "kokoro_v1",
@@ -1147,7 +1205,7 @@ def idea_to_deck(
             "speaker": "am_michael",
             "rate": "96%",
             "ambient_volume": 0.08,
-            "mode": "single",
+            "mode": voice_mode,
         }
         if lang == "en"
         else {
@@ -1156,7 +1214,7 @@ def idea_to_deck(
             "speaker": "dmitry",
             "rate": "98%",
             "ambient_volume": 0.08,
-            "mode": "single",
+            "mode": voice_mode,
             "fallback_speaker": "eugene",
         }
     )

@@ -904,6 +904,19 @@ def run_cmd(args: list[str]) -> None:
         raise RuntimeError(f"Command failed (exit={res.returncode}): {' '.join(args)}")
 
 
+def resolve_director_preset(deck: dict) -> dict:
+    """If deck declares `director_preset`, apply its defaults without overwriting explicit keys."""
+    dp_id = deck.get("director_preset")
+    if dp_id is None or not str(dp_id).strip():
+        return deck
+    from director_presets import DirectorPresetError, apply_director_preset
+
+    try:
+        return apply_director_preset(deck, str(dp_id).strip(), override_existing=False)
+    except DirectorPresetError as exc:
+        raise DeckValidationError(str(exc)) from exc
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="DUP Presenter deck builder")
     parser.add_argument("deck", help="Path to deck JSON (e.g. decks/dup_labs.json)")
@@ -927,6 +940,7 @@ def main() -> int:
         return 2
 
     deck = json.loads(deck_path.read_text(encoding="utf-8"))
+    deck = resolve_director_preset(deck)
     validate_deck(deck)
 
     if args.render:

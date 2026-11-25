@@ -113,6 +113,44 @@
           "Zero manual video editing"
         ]
       }
+    },
+    {
+      "id": "s5",
+      "tag": "TREND",
+      "type": "chart_story",
+      "title": "Test Coverage Trajectory",
+      "subtitle": "Automated presenter verification gates over milestones",
+      "voice_text": "The automated test suite scaled steadily from core schema gates to full universal studio coverage.",
+      "chart": {
+        "kind": "line",
+        "unit": "tests",
+        "source_note": "unittest counts across milestones",
+        "series": [
+          { "label": "v1.0", "value": 92, "color": "#00f0ff" },
+          { "label": "v1.1", "value": 122, "color": "#a855f7" },
+          { "label": "v1.2", "value": 137, "color": "#ffb800" },
+          { "label": "v1.3", "value": 157, "color": "#10ff88" }
+        ]
+      }
+    },
+    {
+      "id": "s6",
+      "tag": "MIX",
+      "type": "chart_story",
+      "title": "18 Slide Templates by Category",
+      "subtitle": "Balanced toolkit for explainers, comparisons, metrics, and live UI",
+      "voice_text": "Eighteen slide templates span core layouts, visual storytelling, universal charts, and live UI demos.",
+      "chart": {
+        "kind": "donut",
+        "unit": "TYPES",
+        "source_note": "Gruver87/dup-presenter ALLOWED_TYPES",
+        "series": [
+          { "label": "Core Layouts", "value": 8, "color": "#00f0ff" },
+          { "label": "Story / L1", "value": 4, "color": "#a855f7" },
+          { "label": "Universal", "value": 4, "color": "#10ff88" },
+          { "label": "Live UI / Quote", "value": 2, "color": "#ffb800" }
+        ]
+      }
     }
   ]
 }
