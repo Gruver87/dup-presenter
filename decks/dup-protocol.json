@@ -234,38 +234,38 @@
       "id": "s5",
       "tag": "ИНТЕРФЕЙС",
       "type": "screen_split",
-      "title": "Explorer и консоль",
-      "subtitle": "Скриншоты локального узла",
-      "voice_ssml": "<speak><prosody rate=\"95%\">На скриншотах показан локальный explorer и веб-консоль узла.<break time=\"250ms\"/> Интерфейс доступен на localhost:8080, меш работает с идентификатором цепи 778888.</prosody></speak>",
+      "title": "Консоль узла",
+      "subtitle": "Живой 3-узловой меш, снимки из Ops Console",
+      "voice_ssml": "<speak><prosody rate=\"95%\">На экране веб-консоль узла: обзор, синхронизация и страница доказательств.<break time=\"250ms\"/> Меш работает в prod-профиле с идентификатором цепи 778888, мост выключен.</prosody></speak>",
       "bullets": [
         {
-          "title": "Локальный explorer",
-          "desc": "Доступен на localhost:8080",
+          "title": "Обзор",
+          "desc": "Статус, высота блока, два пира, режим PROD",
           "accent": "#00f5d4"
         },
         {
-          "title": "Консоль",
-          "desc": "Веб-интерфейс с обновлением по Refresh",
+          "title": "Сеть",
+          "desc": "P2P выровнен, зонд связи проходит",
           "accent": "#38bdf8"
         },
         {
-          "title": "Меш",
-          "desc": "Prod-профиль с идентификатором цепи 778888",
+          "title": "Доказательства",
+          "desc": "STRICT-пакеты, не замена live PASS",
           "accent": "#c084fc"
         }
       ],
       "screens": [
         {
-          "src": "screens/dup-protocol/Снимок экрана_24-5-2026_211644_localhost.jpeg",
-          "caption": "Explorer и консоль · Снимок экрана_24-5-2026_211644_localhost.jpeg"
+          "src": "screens/dup-protocol/console-overview.png",
+          "caption": "Ops Console · Обзор · 127.0.0.1:18180"
         },
         {
-          "src": "screens/dup-protocol/Снимок экрана_24-5-2026_211740_localhost.jpeg",
-          "caption": "Explorer и консоль · Снимок экрана_24-5-2026_211740_localhost.jpeg"
+          "src": "screens/dup-protocol/console-mesh-sync.png",
+          "caption": "Ops Console · Сетка и синхронизация"
         },
         {
-          "src": "screens/dup-protocol/Снимок экрана_24-5-2026_211830_localhost.jpeg",
-          "caption": "Explorer и консоль · Снимок экрана_24-5-2026_211830_localhost.jpeg"
+          "src": "screens/dup-protocol/console-evidence.png",
+          "caption": "Ops Console · Доказательства (STRICT)"
         }
       ]
     },
@@ -275,7 +275,7 @@
       "type": "outro_3d",
       "title": "Что доказано, что нет",
       "subtitle": "Воспроизводимые артефакты вместо роадмапа",
-      "voice_ssml": "<speak><prosody rate=\"95%\">Проект продаёт воспроизводимые доказательства, а не роадмап.<break time=\"250ms\"/> Доказаны меш, синхронизация и 48-часовой soak.<break time=\"250ms\"/> Публичного mainnet и фирменного аудита пока нет.</prosody></speak>",
+      "voice_ssml": "<speak><prosody rate=\"95%\">Проект продаёт воспроизводимые доказательства, а не роадмап.<break time=\"250ms\"/> Доказаны меш, синхронизация и 48-часовые soak-прогоны на приватном меше, пакеты лежат в репозитории.<break time=\"250ms\"/> Публичного mainnet и фирменного аудита пока нет.</prosody></speak>",
       "url": "github.com/Gruver87/dup-protocol",
       "tagline": "Воспроизводимые артефакты вместо роадмапа",
       "badges": [
