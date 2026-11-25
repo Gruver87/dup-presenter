@@ -36,7 +36,26 @@ VOICE_DIR = PUBLIC_DIR / "voice"
 RESOLVED_JSON = ROOT / "src" / "generated" / "deck_resolved.json"
 SR = 48000
 
-ALLOWED_TYPES = {"hero_3d", "code_split", "screen_split", "arch_flow", "outro_3d", "timeline", "terminal", "kpi"}
+ALLOWED_TYPES = {"hero_3d", "code_split", "screen_split", "ui_recording", "arch_flow", "outro_3d", "timeline", "terminal", "kpi"}
+# ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
+UI_RECORDING_SRC_RE = re.compile(r"ui_recordings/[a-z0-9][a-z0-9_-]{0,60}\.mp4")
+
+
+def _media_duration_sec(path: Path) -> float:
+    """Duration of a media file via ffprobe. Fail-closed: a missing file or unreadable duration raises."""
+    from audio_fx import find_ffprobe
+
+    if not path.is_file():
+        raise DeckValidationError(f"media file not found: {path}")
+    cmd = [str(find_ffprobe()), "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(path)]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        duration = float(proc.stdout.strip())
+    except ValueError as exc:
+        raise DeckValidationError(f"ffprobe could not read duration of {path}: {proc.stderr[-300:]}") from exc
+    if proc.returncode != 0 or duration <= 0:
+        raise DeckValidationError(f"ffprobe failed on {path} (exit {proc.returncode})")
+    return duration
 from theme_catalog import THEME_IDS  # noqa: E402
 from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_available, synth_edge_with_timings  # noqa: E402
 from audio_fx import (  # noqa: E402
@@ -183,6 +202,20 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
                 full = PUBLIC_DIR / rel
                 if check_assets and not full.is_file():
                     raise DeckValidationError(f"Slide {sid}: missing screen file {full}")
+        if stype == "ui_recording":
+            rec = slide.get("recording")
+            if not isinstance(rec, dict):
+                raise DeckValidationError(f"Slide {sid}: ui_recording requires a recording object")
+            src = rec.get("src")
+            # Strict shape: only ui_recordings/<slug>.mp4 under public/ (no traversal, no absolute paths).
+            if not isinstance(src, str) or not UI_RECORDING_SRC_RE.fullmatch(src):
+                raise DeckValidationError(
+                    f"Slide {sid}: recording.src must match ui_recordings/<slug>.mp4, got {src!r}"
+                )
+            if "caption" in rec and not isinstance(rec["caption"], str):
+                raise DeckValidationError(f"Slide {sid}: recording.caption must be a string")
+            if check_assets and not (PUBLIC_DIR / src).is_file():
+                raise DeckValidationError(f"Slide {sid}: missing recording file public/{src}")
         if stype == "arch_flow":
             arch = slide.get("arch") or {}
             nodes = arch.get("nodes") or []
@@ -566,6 +599,15 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
             wf.setsampwidth(2)
             wf.setframerate(SR)
             wf.writeframes(pcm)
+
+        if slide.get("type") == "ui_recording":
+            # The clip must fit in the slide: never cut the recording, extend the slide to its length (+1 s).
+            rec_sec = _media_duration_sec(PUBLIC_DIR / slide["recording"]["src"])
+            if math.ceil(rec_sec) + 1 > scene_s:
+                print(f"[ui] {sid}: recording {rec_sec:.2f}s is longer than narration -> slide {math.ceil(rec_sec) + 1}s")
+            scene_s = max(scene_s, math.ceil(rec_sec) + 1)
+            # Renderer needs the clip length to freeze its last frame after the clip ends.
+            slide = {**slide, "recording": {**slide["recording"], "duration_sec": round(rec_sec, 3)}}
 
         start_sec = round(cursor_frames / float(fps), 3)
         slide_frames = max(tr_frames * 2 + 1, int(round(scene_s * fps)))

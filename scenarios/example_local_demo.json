@@ -11,6 +11,8 @@
     { "action": "wait", "ms": 1200 },
     { "action": "zoom", "ms": 800 },
     { "action": "scroll", "dy": 700 },
+    { "action": "wait", "ms": 900 },
+    { "action": "scroll", "dy": -700 },
     { "action": "wait", "ms": 1000 }
   ]
 }

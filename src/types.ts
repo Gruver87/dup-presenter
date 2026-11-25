@@ -72,7 +72,9 @@ export interface ResolvedSlide {
   id: string;
   num: string;
   tag: string;
-  type: "hero_3d" | "code_split" | "screen_split" | "arch_flow" | "outro_3d" | "timeline" | "terminal" | "kpi";
+  type: "hero_3d" | "code_split" | "screen_split" | "ui_recording" | "arch_flow" | "outro_3d" | "timeline" | "terminal" | "kpi";
+  // ui_recording: MP4 from scripts/record_ui.py under public/ui_recordings/ (played muted inside the 3D frame)
+  recording?: { src: string; caption?: string; focus?: ScreenFocus; duration_sec?: number };
   duration_sec: number;
   start_sec?: number;
   voice_delay_sec?: number;

@@ -1,0 +1,112 @@
+{
+  "lang": "en",
+  "theme": "cosmic_radar",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "brand": "DUP LABS",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "voice": {
+    "engine": "kokoro_v1",
+    "lang": "en",
+    "speaker": "am_michael",
+    "rate": "95%",
+    "ambient_volume": 0.12,
+    "mode": "single"
+  },
+  "slug": "ui-recording-demo",
+  "music": {
+    "enabled": false
+  },
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "tag": "OVERVIEW",
+      "type": "hero_3d",
+      "title": "DUP Market Radar",
+      "subtitle": "Hybrid Python + Rust real-time crypto market watchlist",
+      "pills": [
+        {
+          "name": "4,488 instruments",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Integer-only money",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "KuCoin spot",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "RADAR",
+        "RUST",
+        "INT64",
+        "SPOT",
+        "MTF",
+        "DUP"
+      ],
+      "voice_text": "DUP Market Radar is a hybrid Python and Rust watchlist built for the crypto market. It tracks spot, watch-only futures, memes, stablecoins, and new listings. Manual orders and optional auto-execution run strictly on KuCoin spot."
+    },
+    {
+      "id": "s2",
+      "tag": "UI RECORDING",
+      "type": "ui_recording",
+      "title": "Scenario-driven UI capture",
+      "subtitle": "Recorded from a JSON scenario, not by hand",
+      "bullets": [
+        {
+          "title": "Scripted steps",
+          "desc": "Type, click, zoom and scroll from a versioned JSON file"
+        },
+        {
+          "title": "Repeatable",
+          "desc": "Re-record the same flow after every UI change"
+        }
+      ],
+      "recording": {
+        "src": "ui_recordings/example-local-demo.mp4",
+        "caption": "Live UI · scenario recording"
+      },
+      "voice_text": "This clip is recorded from a scenario file. It types a symbol, clicks search, zooms in on the result, and scrolls the page. Every step is written to a timeline."
+    },
+    {
+      "id": "s3",
+      "tag": "SUMMARY",
+      "type": "outro_3d",
+      "title": "Not Financial Advice",
+      "subtitle": "Heuristic rankings do not guarantee profit",
+      "url": "github.com/Gruver87/dup-market-radar",
+      "tagline": "Heuristic rankings do not guarantee profit",
+      "badges": [
+        {
+          "name": "Your Own Risk",
+          "color": "#00f5d4"
+        },
+        {
+          "name": "Fail-Closed Design",
+          "color": "#38bdf8"
+        },
+        {
+          "name": "Open Source",
+          "color": "#c084fc"
+        }
+      ],
+      "cube_faces": [
+        "DUP",
+        "RADAR",
+        "RUST",
+        "INT64",
+        "SPOT",
+        "LABS"
+      ],
+      "voice_text": "This project is not financial advice, and heuristic scores never guarantee profit. Neither the author nor DUP Labs assumes liability for trading losses. The full source code is available on GitHub."
+    }
+  ]
+}

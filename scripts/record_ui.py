@@ -39,7 +39,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_OUT_DIR = ROOT / "out" / "ui_recordings"
+# Recordings go under public/ so Remotion can load them with staticFile(); the folder is gitignored.
+DEFAULT_OUT_DIR = ROOT / "public" / "ui_recordings"
 
 ALLOWED_ACTIONS = frozenset({"goto", "click", "type", "scroll", "wait", "zoom"})
 ZOOM_SCALE_MIN = 1.0

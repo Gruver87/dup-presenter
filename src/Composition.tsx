@@ -2,6 +2,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Audio,
+  Freeze,
   Img,
   OffthreadVideo,
   Sequence,
@@ -1307,15 +1308,20 @@ const ScreenWindow3D: React.FC<{
   focus?: ScreenFocus;
   maxHeight?: number;
   delay?: number;
+  isVideo?: boolean;
+  videoDurationSec?: number;
 }> = ({
   src,
   caption,
   focus,
   maxHeight = IS_PORTRAIT ? 640 : 610,
   delay = 10,
+  isVideo = false,
+  videoDurationSec = 0,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const videoFrames = videoDurationSec > 0 ? Math.max(1, Math.round(videoDurationSec * fps)) : 0;
   const s = spring({ frame: frame - delay, fps, config: { damping: 165 } });
   const rotY = IS_PORTRAIT ? 0 : interpolate(s, [0, 1], [-22, -7]) + Math.sin(frame / 46) * 2.4;
   const rotX = IS_PORTRAIT ? 0 : 3.5 + Math.cos(frame / 54) * 1.6;
@@ -1403,7 +1409,19 @@ const ScreenWindow3D: React.FC<{
             </div>
           </div>
           <div style={{ overflow: "hidden", maxHeight, position: "relative" }}>
-            <Img src={staticFile(src)} style={{ width: "100%", height: "auto", display: "block", transform: `scale(${scale})`, transformOrigin: origin }} />
+            {isVideo ? (
+              // Recording is a silent clip, frame-synced to the slide. When the slide outlasts the clip,
+              // Freeze holds its last frame instead of rendering a blank frame.
+              <Freeze frame={Math.max(0, videoFrames - 1)} active={videoFrames > 0 && frame >= videoFrames}>
+                <OffthreadVideo
+                  src={staticFile(src)}
+                  muted
+                  style={{ width: "100%", height: "auto", display: "block", transform: `scale(${scale})`, transformOrigin: origin }}
+                />
+              </Freeze>
+            ) : (
+              <Img src={staticFile(src)} style={{ width: "100%", height: "auto", display: "block", transform: `scale(${scale})`, transformOrigin: origin }} />
+            )}
             {focus && zoomIn > 0.15 && (
               <div
                 style={{
@@ -1731,6 +1749,32 @@ const ScreenSplitSlide: React.FC<{ slide: ResolvedSlide; dur: number }> = ({ sli
       </div>
       <div style={{ flex: 1.32, width: "100%" }}>
         {active && <ScreenWindow3D key={active.src} src={active.src} caption={active.caption} focus={active.focus} delay={activeIdx === 0 ? 8 : 0} />}
+      </div>
+    </div>
+  );
+};
+
+const UiRecordingSlide: React.FC<{ slide: ResolvedSlide }> = ({ slide }) => {
+  const rec = slide.recording;
+  if (!rec) return null;
+  return (
+    <div style={{ width: "100%", display: "flex", flexDirection: IS_PORTRAIT ? "column" : "row", gap: IS_PORTRAIT ? 32 : 48, alignItems: "center" }}>
+      <div style={{ flex: 0.88, display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
+        <EmbossedTitle fontSize={IS_PORTRAIT ? 48 : 54} lineHeight={1.08}>{slide.title}</EmbossedTitle>
+        {slide.subtitle && <div style={{ fontSize: 23, color: MUTED, marginBottom: 4 }}>{slide.subtitle}</div>}
+        {(slide.bullets ?? []).map((b, idx) => (
+          <BulletItem key={b.title} title={b.title} desc={b.desc} delay={10 + idx * 10} accent={b.accent ?? [CYAN, BLUE, VIOLET][idx % 3]} />
+        ))}
+      </div>
+      <div style={{ flex: 1.32, width: "100%" }}>
+        <ScreenWindow3D
+          src={rec.src}
+          caption={rec.caption ?? "UI recording"}
+          focus={rec.focus}
+          delay={8}
+          isVideo
+          videoDurationSec={rec.duration_sec ?? 0}
+        />
       </div>
     </div>
   );
@@ -2220,6 +2264,7 @@ export const DupPresenter: React.FC<Props> = () => {
     if (slide.type === "hero_3d") return <Hero3DSlide slide={slide} />;
     if (slide.type === "code_split") return <CodeSplitSlide slide={slide} />;
     if (slide.type === "screen_split") return <ScreenSplitSlide slide={slide} dur={durationInFrames} />;
+    if (slide.type === "ui_recording") return <UiRecordingSlide slide={slide} />;
     if (slide.type === "arch_flow") return <ArchFlowSlide slide={slide} />;
     if (slide.type === "outro_3d") return <Outro3DSlide slide={slide} />;
     if (slide.type === "timeline") return <TimelineSlide slide={slide} />;
