@@ -650,6 +650,7 @@ def main() -> int:
     parser.add_argument("--offline-only", action="store_true", help="Privacy Lock: block all network TTS/stock calls")
     parser.add_argument("--audit-repo", default="", help="Run Claim Audit against this source repo before build")
     parser.add_argument("--strict-audit", action="store_true", help="Fail build on any unverified number in Claim Audit")
+    parser.add_argument("--overwrite", action="store_true", help="Allow --render to replace an existing out/<slug>.mp4")
     args = parser.parse_args()
 
     deck_path = Path(args.deck)
@@ -661,6 +662,20 @@ def main() -> int:
 
     deck = json.loads(deck_path.read_text(encoding="utf-8"))
     validate_deck(deck)
+
+    if args.render:
+        from deck_doctor import diagnose_deck  # noqa: E402  (lazy import: deck_doctor imports this module)
+
+        report = diagnose_deck(deck, overwrite=args.overwrite)
+        for w in report["warnings"]:
+            print(f"[doctor:warn] {w}")
+        if not report["ok"]:
+            for e in report["errors"]:
+                print(f"[doctor:error] {e}", file=sys.stderr)
+            print("[ERROR] deck doctor refused to render; fix the errors above", file=sys.stderr)
+            return 2
+        print(f"[doctor] ok | ~{report['estimates']['estimated_length_sec']:.0f}s video, "
+              f"~{report['estimates']['estimated_render_sec']/60:.1f} min render estimate")
 
     if args.audit_repo:
         from claim_audit import audit_deck  # noqa: E402

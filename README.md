@@ -87,4 +87,5 @@ python -m unittest discover -s tests -v
 
 - **Remotion**: бесплатная лицензия для физлиц и команд до 3 человек ([remotion.dev/docs/license/pricing](https://www.remotion.dev/docs/license/pricing)).
 - **Silero TTS v5** (MIT), **Kokoro-82M ONNX** (Apache-2.0), **Edge TTS** (онлайн-сервис Microsoft).
-- **Статус лицензии самого `dup-presenter`**: репозиторий приватный; выбор лицензии (MIT vs PolyForm Noncommercial) отложен до момента публикации.
+- **Лицензия `dup-presenter`**: MIT (см. файл `LICENSE`). Это лицензия на код и шаблоны проекта, она не даёт прав на Remotion и другие сторонние компоненты.
+- **Важно про Remotion**: его коммерческое использование регулируется отдельной лицензией Remotion. Перед коммерческим использованием проверьте [условия Remotion](https://www.remotion.dev/docs/license/pricing).

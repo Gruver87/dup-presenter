@@ -11,7 +11,11 @@ Run over stdio:
 from __future__ import annotations
 
 import json
+import os
+import re
+import subprocess
 import sys
+import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -19,10 +23,13 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from build_deck import validate_deck  # noqa: E402
 from claim_audit import audit_deck  # noqa: E402
+from deck_doctor import load_and_diagnose  # noqa: E402
 from make_cutdown import build_short_cutdown  # noqa: E402
 from media_qa import run_media_qa  # noqa: E402
 from publish_pack import build_publish_pack  # noqa: E402
 from ru_speech import get_latin_ru, load_pronunciation_overrides, save_pronunciation_overrides  # noqa: E402
+
+PREVIEW_TIMEOUT_SEC = 900
 
 SERVER_INFO = {"name": "dup-presenter-mcp", "version": "1.0.0"}
 PROTOCOL_VERSION = "2024-11-05"
@@ -99,6 +106,57 @@ TOOLS = [
             "additionalProperties": False,
         },
     },
+    {
+        "name": "deck_doctor",
+        "description": "Pre-render diagnostics (no rendering): schema, Cyrillic in EN decks, missing screenshots/music, overwrite risk, length and render-time estimates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "deck": {"type": "string", "description": "Deck path (e.g. decks/radar-cosmic-v4-en.json)"},
+                "overwrite": {"type": "boolean", "default": False},
+            },
+            "required": ["deck"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "render_deck",
+        "description": "Start a full MP4 render in the background. Refuses if deck_doctor finds errors or if out/<slug>.mp4 exists and overwrite is false. Returns a log path; poll with render_status.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "deck": {"type": "string"},
+                "skip_tts": {"type": "boolean", "default": False, "description": "Reuse existing WAV files"},
+                "overwrite": {"type": "boolean", "default": False},
+            },
+            "required": ["deck"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "render_status",
+        "description": "Report progress of a background render for a slug: running/finished, exit code, MP4 presence, and the last log lines.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"slug": {"type": "string"}},
+            "required": ["slug"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "preview_stills",
+        "description": "Render one PNG frame per slide to out/<slug>_stills/ (synchronous, up to 15 minutes). Use only_slide to isolate one slide.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "deck": {"type": "string"},
+                "only_slide": {"type": "string", "default": ""},
+                "skip_tts": {"type": "boolean", "default": False},
+            },
+            "required": ["deck"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -160,7 +218,113 @@ def handle_tool_call(name: str, arguments: dict) -> dict:
         pack = build_publish_pack(resolved, mp4_path=mp4 if mp4.is_file() else None)
         return {k: str(v) for k, v in pack.items()}
 
+    if name == "deck_doctor":
+        dp = _resolve_path(arguments["deck"])
+        return load_and_diagnose(dp, overwrite=bool(arguments.get("overwrite", False)))
+
+    if name == "render_deck":
+        return _start_render(
+            _resolve_path(arguments["deck"]),
+            skip_tts=bool(arguments.get("skip_tts", False)),
+            overwrite=bool(arguments.get("overwrite", False)),
+        )
+
+    if name == "render_status":
+        return _render_status(str(arguments["slug"]))
+
+    if name == "preview_stills":
+        return _preview_stills(
+            _resolve_path(arguments["deck"]),
+            only_slide=str(arguments.get("only_slide") or "").strip(),
+            skip_tts=bool(arguments.get("skip_tts", False)),
+        )
+
     raise ValueError(f"Unknown tool: {name}")
+
+
+def _safe_slug(slug: str) -> str:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,80}", slug):
+        raise ValueError(f"invalid slug {slug!r}")
+    return slug
+
+
+def _start_render(deck_path: Path, *, skip_tts: bool, overwrite: bool) -> dict:
+    report = load_and_diagnose(deck_path, overwrite=overwrite)
+    if not report["ok"]:
+        raise ValueError("deck doctor refused to render: " + "; ".join(report["errors"]))
+    slug = _safe_slug(str(json.loads(deck_path.read_text(encoding="utf-8"))["slug"]))
+    out_dir = ROOT / "out"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    log_path = out_dir / f"{slug}_build.log"
+    mp4_path = out_dir / f"{slug}.mp4"
+    # Fail closed on concurrent renders: a second build would truncate the log and write the same MP4.
+    if log_path.is_file() and "BUILD_EXIT=" not in log_path.read_text(encoding="utf-8", errors="replace"):
+        raise ValueError(f"render already running for slug {slug!r}; poll render_status first")
+
+    cmd = [sys.executable, str(ROOT / "scripts" / "build_deck.py"), str(deck_path), "--render"]
+    if skip_tts:
+        cmd.append("--skip-tts")
+    if overwrite:
+        cmd.append("--overwrite")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    logf = open(log_path, "w", encoding="utf-8")
+    proc = subprocess.Popen(cmd, cwd=str(ROOT), stdout=logf, stderr=subprocess.STDOUT, env=env)
+
+    def _finish() -> None:
+        rc = proc.wait()
+        logf.write(f"\nBUILD_EXIT={rc}\n")
+        logf.close()
+
+    threading.Thread(target=_finish, daemon=True).start()
+    return {
+        "started": True,
+        "pid": proc.pid,
+        "log": str(log_path),
+        "mp4": str(mp4_path),
+        "warnings": report["warnings"],
+        "estimates": report["estimates"],
+        "note": "Background render. Poll render_status with the slug; the render can take several minutes.",
+    }
+
+
+def _render_status(slug: str) -> dict:
+    slug = _safe_slug(slug)
+    log_path = ROOT / "out" / f"{slug}_build.log"
+    mp4_path = ROOT / "out" / f"{slug}.mp4"
+    if not log_path.is_file():
+        return {"slug": slug, "status": "not_started"}
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"BUILD_EXIT=(\d+)", text)
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    return {
+        "slug": slug,
+        "status": "finished" if m else "running",
+        "exit_code": int(m.group(1)) if m else None,
+        "mp4_exists": mp4_path.is_file(),
+        "mp4_bytes": mp4_path.stat().st_size if mp4_path.is_file() else 0,
+        "tail": lines[-12:],
+    }
+
+
+def _preview_stills(deck_path: Path, *, only_slide: str, skip_tts: bool) -> dict:
+    validate_deck(json.loads(deck_path.read_text(encoding="utf-8")))
+    if only_slide and not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", only_slide):
+        raise ValueError(f"invalid only_slide {only_slide!r}")
+    cmd = [sys.executable, str(ROOT / "scripts" / "build_deck.py"), str(deck_path), "--preview-stills"]
+    if only_slide:
+        cmd += ["--only-slide", only_slide]
+    if skip_tts:
+        cmd.append("--skip-tts")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", timeout=PREVIEW_TIMEOUT_SEC, env=env)
+    if proc.returncode != 0:
+        raise ValueError(f"preview failed (exit {proc.returncode}): {proc.stderr[-800:]}")
+    slug = json.loads(deck_path.read_text(encoding="utf-8"))["slug"]
+    if only_slide:
+        slug = f"{slug}_{only_slide}"
+    stills = ROOT / "out" / f"{slug}_stills"
+    return {"stills_dir": str(stills), "pngs": sorted(p.name for p in stills.glob("*.png"))}
 
 
 def handle_rpc(req: dict) -> dict | None:
