@@ -82,6 +82,11 @@ python scripts/mcp_server.py
 
 Редактируется в `config/pronunciation.json` или через API консоли `GET/POST /api/pronunciation`.
 
+## Что не публикуется
+
+- `decks/dup-protocol.json` ссылается на скриншоты `public/screens/dup-protocol/`. Они в `.gitignore`: это снимки локальной консоли узла, и на них видны персональные данные владельца. На чистом клоне `deck_doctor` вернёт `missing screen file`, а рендер не начнётся (fail-closed). Деку можно собрать только на машине, где лежат эти файлы.
+- `out/` (рендеры; например, `out/dup-protocol.mp4` собран из деки с этими скриншотами) и `public/ui_recordings/` (локальные записи UI) не коммитятся и не загружаются в Release.
+
 ## Тесты и проверки
 
 ```powershell
