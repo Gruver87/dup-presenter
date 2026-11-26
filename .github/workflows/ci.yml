@@ -45,7 +45,7 @@ jobs:
       - name: Python syntax check
         run: python -m py_compile scripts/*.py
 
-      - name: Python lint (pyflakes rules: undefined names, unused imports)
+      - name: "Python lint (pyflakes rules: undefined names, unused imports)"
         run: python -m ruff check scripts tests --select F
 
       - name: Run presenter gate tests
