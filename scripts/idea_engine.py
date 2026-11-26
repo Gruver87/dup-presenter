@@ -716,8 +716,12 @@ def _call_llm_ideas(
         "aspect ('16:9' or '9:16'), theme (one of: "
         + ", ".join(THEME_IDS)
         + "), caption_style ('box'|'karaoke'|'bold'), duration_hint_sec (int 45..300), "
-        "slides (array of 3..6 slide objects with type in ['hero_3d','kpi','timeline','quote','terminal','outro_3d'], "
-        "tag, title, subtitle, voice_text, and type-specific fields: kpis for kpi, steps for timeline, lines for terminal). "
+        "slides (array of 3..6 slide objects; slide.type MUST be strictly one of: "
+        + ", ".join(sorted(SUPPORTED_IDEA_SLIDE_TYPES))
+        + " — NEVER use genre names like 'versus_battle' as slide.type; "
+        "EVERY slide MUST include non-empty strings 'tag', 'title', and 'voice_text' — never omit or leave empty even on quote/outro_3d; "
+        "optional 'subtitle', and type-specific fields: kpis as [{'value':'<=12 chars','label':'...'}] for kpi, "
+        "steps as [{'title':'...','desc':'...'}] for timeline, lines as [{'text':'...'}] for terminal). "
         "Do not fabricate fake benchmark numbers; mark placeholders clearly."
     )
     user_prompt = f"Topic / brief: {topic.strip()}\nGenerate {count} distinct, creative video concepts."
@@ -749,12 +753,17 @@ def _call_llm_ideas(
 
     if mode == "deepseek":
         api_key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("DUP_LLM_API_KEY") or ""
-        base_url = (os.environ.get("DEEPSEEK_BASE_URL") or "https://api.deepseek.com/v1").rstrip("/")
-        ds_model = model or os.environ.get("DEEPSEEK_MODEL") or "deepseek-chat"
+        base_url = (
+            os.environ.get("DEEPSEEK_BASE_URL")
+            or os.environ.get("DUP_LLM_BASE_URL")
+            or "https://api.deepseek.com/v1"
+        ).rstrip("/")
+        ds_model = model or os.environ.get("DEEPSEEK_MODEL") or os.environ.get("DUP_LLM_MODEL") or "deepseek-chat"
         if not api_key:
             raise IdeaEngineError("DeepSeek mode requires DEEPSEEK_API_KEY (or DUP_LLM_API_KEY)")
         payload = {
             "model": ds_model,
+            "max_tokens": 8192,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -795,6 +804,7 @@ def _call_llm_ideas(
             raise IdeaEngineError("Cloud LLM mode requires DUP_LLM_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY")
         payload = {
             "model": cloud_model,
+            "max_tokens": 8192,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -1279,8 +1289,21 @@ def idea_to_deck(
             ]
             slide["cube_faces"] = src.get("cube_faces") or ["DUP", "IDEA", "STORY", "3D", "QA", "LIVE"]
         elif stype == "kpi":
-            kpis = src.get("kpis") or [{"value": "100%", "label": "reproducible build"}]
-            slide["kpis"] = kpis[:4]
+            raw_kpis = src.get("kpis") or [{"value": "100%", "label": "reproducible build"}]
+            norm_kpis: list[dict[str, str]] = []
+            for item in raw_kpis[:4]:
+                if isinstance(item, dict):
+                    val = str(item.get("value") or item.get("metric") or "").strip()[:12].strip()
+                    lbl = str(item.get("label") or item.get("title") or item.get("name") or "").strip()
+                    if val and lbl:
+                        norm_kpis.append({"value": val, "label": lbl})
+                elif isinstance(item, str) and item.strip():
+                    parts = re.split(r"\s*[—–:-]\s*", item.strip(), maxsplit=1)
+                    if len(parts) == 2 and parts[0] and parts[1]:
+                        norm_kpis.append({"value": parts[0][:12].strip(), "label": parts[1]})
+                    else:
+                        norm_kpis.append({"value": item.strip()[:12].strip(), "label": item.strip()})
+            slide["kpis"] = norm_kpis or [{"value": "100%", "label": "reproducible build"}]
         elif stype == "timeline":
             steps = src.get("bullets") or src.get("steps") or [
                 {"title": "Step 1", "desc": "Start cleanly."},

@@ -6,7 +6,7 @@ All notable changes to **DUP Presenter** are documented in this file. Dates and 
 
 ### Added
 - **`cinema_clip` slide type** (`scripts/build_deck.py`, `src/UniversalSlides.tsx`, `src/Composition.tsx`, `src/types.ts`): full-screen MP4 clip with no slide chrome, length probed via `ffprobe`, looped under narration. Fail-closed: absolute or `..` paths rejected, missing file raises. Covered by `tests/test_cinema_clip.py` (8 tests).
-- **`deepseek` LLM mode in the Idea Engine** (`scripts/idea_engine.py`): `--mode deepseek` (key `DEEPSEEK_API_KEY`, model `DEEPSEEK_MODEL`, default `deepseek-chat`, base `https://api.deepseek.com/v1`). `--mode cloud` picks DeepSeek when only `DEEPSEEK_API_KEY` is set. Covered by `tests/test_deepseek_mode.py` (8 tests, network mocked; no live API call was made).
+- **`deepseek` LLM mode in the Idea Engine** (`scripts/idea_engine.py`): `--mode deepseek` (key `DEEPSEEK_API_KEY` or `DUP_LLM_API_KEY`, model `DEEPSEEK_MODEL`/`DUP_LLM_MODEL`, default `deepseek-chat`, base `https://api.deepseek.com/v1`, `max_tokens: 8192`). `--mode cloud` picks DeepSeek when only `DEEPSEEK_API_KEY` is set. Covered by `tests/test_deepseek_mode.py` (8 mocked tests) and live-verified against `api.deepseek.com/v1` (`count=3` → 3/3 validated decks).
 
 ### Changed
 - `public/cinema/` is git-ignored: the AI clips are large binaries and must be regenerated per machine; decks that reference them fail closed when they are missing.
