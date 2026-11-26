@@ -4,7 +4,12 @@ All notable changes to **DUP Presenter** are documented in this file. Dates and 
 
 ## [Unreleased]
 
+### Added
+- **`cinema_clip` slide type** (`scripts/build_deck.py`, `src/UniversalSlides.tsx`, `src/Composition.tsx`, `src/types.ts`): full-screen MP4 clip with no slide chrome, length probed via `ffprobe`, looped under narration. Fail-closed: absolute or `..` paths rejected, missing file raises. Covered by `tests/test_cinema_clip.py` (8 tests).
+- **`deepseek` LLM mode in the Idea Engine** (`scripts/idea_engine.py`): `--mode deepseek` (key `DEEPSEEK_API_KEY`, model `DEEPSEEK_MODEL`, default `deepseek-chat`, base `https://api.deepseek.com/v1`). `--mode cloud` picks DeepSeek when only `DEEPSEEK_API_KEY` is set. Covered by `tests/test_deepseek_mode.py` (8 tests, network mocked; no live API call was made).
+
 ### Changed
+- `public/cinema/` is git-ignored: the AI clips are large binaries and must be regenerated per machine; decks that reference them fail closed when they are missing.
 - **Canonical studio demo is `decks/studio-universal-demo-v2.json`** (slug `studio-universal-demo-v2`): 7 slides with `outro_3d` CTA, chart slides separated, portrait chart/versus layout fixed.
 - **`decks/studio-universal-demo.json` is restored to the v1.3.0 snapshot** (6 slides, no outro) so that the existing `studio-universal-demo*` MP4s still match their source deck. It is superseded and kept only for reproducibility.
 

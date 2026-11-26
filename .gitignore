@@ -20,3 +20,7 @@ public/music/
 public/ui_recordings/
 assets/music/*
 !assets/music/README-empty.txt
+
+# AI-generated cinema clips (Grok Imagine) are large binaries; regenerate per machine, do not commit.
+# decks/big-bang-cinema-real.json expects them; build_deck.py fails closed if they are missing.
+public/cinema/

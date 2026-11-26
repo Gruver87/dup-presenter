@@ -67,6 +67,7 @@ decks/<slug>.json  (или examples/*.md -> scripts/md_deck.py)
 | `chart_story` | Анимированные графики (`bar`, `line`, `donut`) с пружинным ростом значений и подписями |
 | `stat_burst` | Динамический слайд-хук для первых 3–5 секунд (гигантская парящая цифра/тезис + энергетическое кольцо) |
 | `broll_cinematic` | Полноэкранный кинематографичный слайд с Ken Burns, виньетированием и карточками-тезисами |
+| `cinema_clip` | Полноэкранное видео без рамок и схем: `cinema.src` (MP4 под `public/`, длина считается через `ffprobe`, зацикливание под озвучку) или стоковый фон по `background_query`. Файл отсутствует — сборка падает (fail-closed) |
 | `code_split` | Split-screen: слева тезисы, справа 3D-окно реального кода с построчной анимацией |
 | `screen_split` | Split-screen с реальными скриншотами и виртуальной камерой авто-зума (`focus: {x, y, zoom}`) |
 | `ui_recording` | Живая запись сценария UI через Playwright (`scripts/record_ui.py`) с авто-подгонкой длительности через `ffprobe` |
@@ -80,8 +81,12 @@ decks/<slug>.json  (или examples/*.md -> scripts/md_deck.py)
 ## Новые инструменты студии (Idea Engine, Presets, Thumbnail Studio, Video Pack)
 
 ```powershell
-# A) Встроенный Генератор Идей (7 жанров, офлайн-шаблоны / Ollama / Cloud, 1 шаг -> черновик де́ка)
+# A) Встроенный Генератор Идей (7 жанров, офлайн-шаблоны / Ollama / Cloud / DeepSeek, 1 шаг -> черновик де́ка)
 python scripts/idea_engine.py --topic "Python vs Rust в 2026" --genre versus_battle --lang ru --write-first
+# LLM-режимы fail-closed: --mode ollama (локально), --mode cloud (OPENAI_API_KEY или DEEPSEEK_API_KEY),
+# --mode deepseek (нужен DEEPSEEK_API_KEY; модель DEEPSEEK_MODEL, по умолчанию deepseek-chat).
+# Ключи только из переменных окружения; при ошибке провайдера шаблоны НЕ подставляются.
+python scripts/idea_engine.py --topic "Большой взрыв" --lang ru --mode deepseek --write-first
 
 # C) Генератор кликабельных обложек 1280x720 (Thumbnail Studio)
 python scripts/thumbnail_studio.py --deck decks/dup-protocol-cosmos.json --badge "0 FLOAT · 48H PASS" --out out/cover.png

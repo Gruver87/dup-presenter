@@ -747,12 +747,52 @@ def _call_llm_ideas(
         content = ((data.get("message") or {}).get("content")) or ""
         return _extract_json_object(content)
 
-    if mode == "cloud":
-        api_key = os.environ.get("DUP_LLM_API_KEY") or os.environ.get("OPENAI_API_KEY") or ""
-        base_url = (os.environ.get("DUP_LLM_BASE_URL") or "https://api.openai.com/v1").rstrip("/")
-        cloud_model = model or os.environ.get("DUP_LLM_MODEL") or "gpt-4o-mini"
+    if mode == "deepseek":
+        api_key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("DUP_LLM_API_KEY") or ""
+        base_url = (os.environ.get("DEEPSEEK_BASE_URL") or "https://api.deepseek.com/v1").rstrip("/")
+        ds_model = model or os.environ.get("DEEPSEEK_MODEL") or "deepseek-chat"
         if not api_key:
-            raise IdeaEngineError("Cloud LLM mode requires DUP_LLM_API_KEY or OPENAI_API_KEY")
+            raise IdeaEngineError("DeepSeek mode requires DEEPSEEK_API_KEY (or DUP_LLM_API_KEY)")
+        payload = {
+            "model": ds_model,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        }
+        req = urllib.request.Request(
+            f"{base_url}/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=90) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+        except Exception as exc:
+            raise IdeaEngineError(f"DeepSeek request failed: {exc}") from exc
+        choices = data.get("choices") or []
+        content = ((choices[0].get("message") or {}).get("content")) if choices else ""
+        return _extract_json_object(content)
+
+    if mode == "cloud":
+        api_key = (
+            os.environ.get("DUP_LLM_API_KEY")
+            or os.environ.get("DEEPSEEK_API_KEY")
+            or os.environ.get("OPENAI_API_KEY")
+            or ""
+        )
+        is_deepseek = bool(os.environ.get("DEEPSEEK_API_KEY") and not os.environ.get("DUP_LLM_API_KEY"))
+        default_base = "https://api.deepseek.com/v1" if is_deepseek else "https://api.openai.com/v1"
+        default_model = "deepseek-chat" if is_deepseek else "gpt-4o-mini"
+        base_url = (os.environ.get("DUP_LLM_BASE_URL") or default_base).rstrip("/")
+        cloud_model = model or os.environ.get("DUP_LLM_MODEL") or default_model
+        if not api_key:
+            raise IdeaEngineError("Cloud LLM mode requires DUP_LLM_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY")
         payload = {
             "model": cloud_model,
             "response_format": {"type": "json_object"},
@@ -1118,8 +1158,8 @@ def generate_ideas(
     if not isinstance(count, int) or not (1 <= count <= 7):
         raise IdeaEngineError("count must be an integer between 1 and 7")
     clean_mode = str(mode or "template").strip().lower()
-    if clean_mode not in {"template", "ollama", "cloud"}:
-        raise IdeaEngineError(f"Unsupported mode {mode!r}; expected 'template', 'ollama', or 'cloud'")
+    if clean_mode not in {"template", "ollama", "cloud", "deepseek"}:
+        raise IdeaEngineError(f"Unsupported mode {mode!r}; expected 'template', 'ollama', 'cloud', or 'deepseek'")
 
     assessment = assess_topic_complexity(clean_topic, genre=genre, lang=clean_lang)
 
@@ -1343,7 +1383,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lang", choices=["ru", "en"], default="ru")
     parser.add_argument("--genre", default="all", help=f"Genre filter: all | {', '.join(sorted(GENRE_MAP))}")
     parser.add_argument("--count", type=int, default=5, help="Number of ideas (1..7)")
-    parser.add_argument("--mode", choices=["template", "ollama", "cloud"], default="template")
+    parser.add_argument("--mode", choices=["template", "ollama", "cloud", "deepseek"], default="template")
     parser.add_argument("--model", default="", help="Optional LLM model override")
     parser.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="Ollama base URL")
     parser.add_argument("--write-first", action="store_true", help="Convert idea #1 into decks/<slug>.json")

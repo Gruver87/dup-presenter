@@ -167,6 +167,15 @@ export interface CaptionCue {
   words?: CaptionWord[];
 }
 
+export interface CinemaClipData {
+  src?: string;
+  badge?: string;
+  caption?: string;
+  loop?: boolean;
+  zoom?: number;
+  clip_duration_sec?: number;
+}
+
 export interface StockMedia {
   video_file: string;
   credit: string;
@@ -197,7 +206,8 @@ export interface ResolvedSlide {
     | "versus_split"
     | "chart_story"
     | "stat_burst"
-    | "broll_cinematic";
+    | "broll_cinematic"
+    | "cinema_clip";
   // quote: title = the quote text (<= 220 chars), subtitle = attribution (optional)
   // ui_recording: MP4 from scripts/record_ui.py under public/ui_recordings/ (played muted inside the 3D frame)
   recording?: { src: string; caption?: string; focus?: ScreenFocus; duration_sec?: number };
@@ -234,6 +244,7 @@ export interface ResolvedSlide {
   chart?: ChartStoryData;
   stat_burst?: StatBurstData;
   broll?: BRollCinematicData;
+  cinema?: CinemaClipData;
   captions?: CaptionCue[];
 }
 

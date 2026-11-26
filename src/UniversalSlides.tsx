@@ -1,5 +1,5 @@
 import React from "react";
-import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Img, Loop, OffthreadVideo, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import type { ResolvedSlide } from "./types";
 import type { ThemePalette } from "./themes";
 
@@ -811,5 +811,80 @@ export const BRollCinematicSlide: React.FC<UniversalSlideProps> = ({ slide, dur,
         )}
       </div>
     </div>
+  );
+};
+
+export const CinemaClipSlide: React.FC<UniversalSlideProps> = ({ slide, dur, theme, isPortrait }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const cc = slide.cinema || {};
+  const videoSrc = cc.src || slide.media?.video_file;
+  const maxZoom = typeof cc.zoom === "number" && cc.zoom >= 1.0 ? cc.zoom : 1.06;
+  const scale = interpolate(frame, [0, Math.max(1, dur)], [1.0, maxZoom], { extrapolateRight: "clamp" });
+  const badgeOpacity = interpolate(frame, [0, 18, Math.max(24, dur - 20), Math.max(25, dur)], [0, 0.92, 0.92, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const clipFrames = cc.clip_duration_sec && cc.clip_duration_sec > 0.5 ? Math.max(30, Math.floor(cc.clip_duration_sec * fps)) : 0;
+  const shouldLoop = cc.loop !== false && clipFrames > 0 && clipFrames < dur;
+
+  const videoEl = videoSrc ? (
+    <OffthreadVideo
+      src={staticFile(videoSrc)}
+      muted
+      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+    />
+  ) : null;
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#000000", overflow: "hidden" }}>
+      {videoEl && (
+        <AbsoluteFill style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+          {shouldLoop ? <Loop durationInFrames={clipFrames}>{videoEl}</Loop> : videoEl}
+        </AbsoluteFill>
+      )}
+      <AbsoluteFill
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.0) 24%, rgba(0,0,0,0.0) 68%, rgba(0,0,0,0.68) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+      {cc.badge && (
+        <div
+          style={{
+            position: "absolute",
+            top: isPortrait ? 44 : 26,
+            left: isPortrait ? 28 : 34,
+            opacity: badgeOpacity,
+            padding: "6px 14px",
+            borderRadius: 999,
+            background: "rgba(3,8,20,0.62)",
+            border: `1px solid ${theme.accent1}88`,
+            color: "#e2e8f0",
+            fontFamily: "Consolas, monospace",
+            fontSize: isPortrait ? 15 : 14,
+            fontWeight: 700,
+            letterSpacing: 1.4,
+          }}
+        >
+          {cc.badge}
+        </div>
+      )}
+      {slide.media?.credit && !cc.src && (
+        <div
+          style={{
+            position: "absolute",
+            right: 26,
+            bottom: 18,
+            fontSize: 13,
+            color: "rgba(226,232,240,0.65)",
+            fontFamily: "Consolas, monospace",
+          }}
+        >
+          {slide.media.credit}
+        </div>
+      )}
+    </AbsoluteFill>
   );
 };

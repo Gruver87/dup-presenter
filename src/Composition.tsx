@@ -21,7 +21,7 @@ import rawDeck from "./generated/deck_resolved.json";
 import { resolveTheme } from "./themes";
 import { QuantumWarpBackdrop } from "./CosmosBackdrop";
 import { LedgerLayersSlide, MeshNetworkSlide, ProtocolCosmosSlide, TxJourneySlide } from "./StorySlides";
-import { BRollCinematicSlide, ChartStorySlide, StatBurstSlide, VersusSplitSlide } from "./UniversalSlides";
+import { BRollCinematicSlide, ChartStorySlide, CinemaClipSlide, StatBurstSlide, VersusSplitSlide } from "./UniversalSlides";
 import type { CaptionCue, ResolvedDeck, ResolvedSlide, ScreenFocus } from "./types";
 
 const DECK = rawDeck as unknown as ResolvedDeck;
@@ -2505,6 +2505,9 @@ export const DupPresenter: React.FC<Props> = () => {
     if (slide.type === "broll_cinematic") {
       return <BRollCinematicSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
     }
+    if (slide.type === "cinema_clip") {
+      return <CinemaClipSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
     return null;
   };
 
@@ -2516,16 +2519,22 @@ export const DupPresenter: React.FC<Props> = () => {
       (slide.type === "kpi" || slide.type === "terminal" || slide.type === "hero_3d");
     return (
       <>
-        <StockBackdrop slide={slide} dur={durationInFrames} />
-        <SlideChrome
-          brand={DECK.brand}
-          num={slide.num}
-          tag={slide.tag}
-          dur={durationInFrames}
-          hasTransition={hasTransition}
-        >
-          {renderSlideBody(slide, durationInFrames)}
-        </SlideChrome>
+        {slide.type === "cinema_clip" ? (
+          renderSlideBody(slide, durationInFrames)
+        ) : (
+          <>
+            <StockBackdrop slide={slide} dur={durationInFrames} />
+            <SlideChrome
+              brand={DECK.brand}
+              num={slide.num}
+              tag={slide.tag}
+              dur={durationInFrames}
+              hasTransition={hasTransition}
+            >
+              {renderSlideBody(slide, durationInFrames)}
+            </SlideChrome>
+          </>
+        )}
         {showCaptions && <CaptionOverlay captions={slide.captions} style={DECK.caption_style ?? "box"} />}
         <Sequence from={voiceDelayFrames}>
           <Audio src={staticFile(slide.voice_file)} startFrom={0} />

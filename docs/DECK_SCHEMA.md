@@ -51,6 +51,7 @@ Every slide requires `id`, `type`, `title`, and `voice_text` (or explicit timing
 | `chart_story` | Animated `bar` / `line` / `donut` chart with spring-grown values | `chart: { kind: "bar" \| "line" \| "donut", series[2..8] of { label, value >= 0, display?, color? }, unit?, source_note? }` |
 | `stat_burst` | High-impact hook slide (giant floating headline + energy ring), for the first 3–5 seconds | `stat_burst: { headline (1..24 chars), kicker?, caption, chips? (<= 3) }` |
 | `broll_cinematic` | Full-bleed cinematic Ken Burns slide with vignette and thesis callouts | `broll: { image? (safe relative path, no ".."), badge?, caption?, callouts? (0..3) }` |
+| `cinema_clip` | Full-screen video clip with no chrome, no diagrams; loops to match narration length | `cinema: { src? (relative to public/, no "..", no leading slash, file must exist; duration probed via ffprobe), badge?, loop? (default true), zoom? (>= 1.0) }`; without `src` a `background_query` is required (stock fallback) |
 
 ## Markdown Authoring (`scripts/md_deck.py`)
 

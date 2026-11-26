@@ -55,6 +55,7 @@ ALLOWED_TYPES = {
     "chart_story",
     "stat_burst",
     "broll_cinematic",
+    "cinema_clip",
 }
 QUOTE_MAX_CHARS = 220
 # ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
@@ -438,6 +439,20 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
                     isinstance(c, str) and c.strip() for c in callouts
                 ):
                     raise DeckValidationError(f"Slide {sid}: broll.callouts must be 0..3 non-empty strings")
+        if stype == "cinema_clip":
+            cc = slide.get("cinema")
+            if not isinstance(cc, dict):
+                raise DeckValidationError(f"Slide {sid}: cinema_clip requires a cinema object")
+            src = cc.get("src")
+            if src is not None:
+                if not isinstance(src, str) or not src.strip() or ".." in src or src.startswith(("/", "\\")):
+                    raise DeckValidationError(f"Slide {sid}: cinema.src must be a safe relative path under public/")
+                clip_path = PUBLIC_DIR / src
+                if not clip_path.is_file():
+                    raise DeckValidationError(f"Slide {sid}: cinema.src file not found: {clip_path}")
+                cc["clip_duration_sec"] = round(_media_duration_sec(clip_path), 2)
+            elif not slide.get("background_query"):
+                raise DeckValidationError(f"Slide {sid}: cinema_clip requires cinema.src or background_query")
         if stype == "kpi":
             kpis = slide.get("kpis") or []
             if not (1 <= len(kpis) <= 4):
