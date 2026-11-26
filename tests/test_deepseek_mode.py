@@ -68,7 +68,7 @@ class DeepSeekModeTests(unittest.TestCase):
             captured["body"] = json.loads(req.data.decode("utf-8"))
             return _chat_response(_ideas_json(2))
 
-        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="sk-test-deepseek"), clear=True), mock.patch(
+        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="TEST_PLACEHOLDER_NOT_A_KEY"), clear=True), mock.patch(
             "idea_engine.urllib.request.urlopen", side_effect=fake_urlopen
         ):
             res = generate_ideas("Большой взрыв", lang="ru", count=2, mode="deepseek")
@@ -78,7 +78,7 @@ class DeepSeekModeTests(unittest.TestCase):
         self.assertEqual(len(res["ideas"]), 2)
         self.assertEqual(captured["url"], "https://api.deepseek.com/v1/chat/completions")
         self.assertEqual(captured["method"], "POST")
-        self.assertEqual(captured["auth"], "Bearer sk-test-deepseek")
+        self.assertEqual(captured["auth"], "Bearer TEST_PLACEHOLDER_NOT_A_KEY")
         self.assertEqual(captured["body"]["model"], "deepseek-chat")
         self.assertEqual(captured["body"]["response_format"], {"type": "json_object"})
 
@@ -91,7 +91,7 @@ class DeepSeekModeTests(unittest.TestCase):
             return _chat_response(_ideas_json(1))
 
         env = _clean_env(
-            DEEPSEEK_API_KEY="sk-x",
+            DEEPSEEK_API_KEY="TEST_PLACEHOLDER_NOT_A_KEY",
             DEEPSEEK_BASE_URL="https://proxy.example.test/v1/",
             DEEPSEEK_MODEL="deepseek-reasoner",
         )
@@ -112,14 +112,14 @@ class DeepSeekModeTests(unittest.TestCase):
         def boom(req: Any, timeout: float = 0) -> None:
             raise OSError("network unreachable")
 
-        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="sk-x"), clear=True), mock.patch(
+        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="TEST_PLACEHOLDER_NOT_A_KEY"), clear=True), mock.patch(
             "idea_engine.urllib.request.urlopen", side_effect=boom
         ):
             with self.assertRaisesRegex(IdeaEngineError, "DeepSeek request failed"):
                 generate_ideas("Тема", lang="ru", count=1, mode="deepseek")
 
     def test_deepseek_non_json_content_fails_closed(self) -> None:
-        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="sk-x"), clear=True), mock.patch(
+        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="TEST_PLACEHOLDER_NOT_A_KEY"), clear=True), mock.patch(
             "idea_engine.urllib.request.urlopen",
             side_effect=lambda req, timeout=0: _chat_response("this is not json at all"),
         ):
@@ -133,7 +133,7 @@ class DeepSeekModeTests(unittest.TestCase):
             captured["url"] = req.full_url
             return _chat_response(_ideas_json(1))
 
-        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="sk-x"), clear=True), mock.patch(
+        with mock.patch.dict(os.environ, _clean_env(DEEPSEEK_API_KEY="TEST_PLACEHOLDER_NOT_A_KEY"), clear=True), mock.patch(
             "idea_engine.urllib.request.urlopen", side_effect=fake_urlopen
         ):
             generate_ideas("Тема", lang="ru", count=1, mode="cloud")
@@ -148,7 +148,7 @@ class DeepSeekModeTests(unittest.TestCase):
             captured["model"] = json.loads(req.data.decode("utf-8"))["model"]
             return _chat_response(_ideas_json(1))
 
-        with mock.patch.dict(os.environ, _clean_env(OPENAI_API_KEY="sk-openai"), clear=True), mock.patch(
+        with mock.patch.dict(os.environ, _clean_env(OPENAI_API_KEY="TEST_PLACEHOLDER_NOT_A_KEY"), clear=True), mock.patch(
             "idea_engine.urllib.request.urlopen", side_effect=fake_urlopen
         ):
             generate_ideas("Тема", lang="ru", count=1, mode="cloud")
