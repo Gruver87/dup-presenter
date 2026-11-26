@@ -13,7 +13,7 @@ npx tsc --noEmit
 # 2. Python syntax check
 python -m py_compile scripts/*.py
 
-# 3. Full Python unit & gate test suite (137 tests)
+# 3. Full Python unit & gate test suite (324 tests); install deps first: python -m pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
 ```
 

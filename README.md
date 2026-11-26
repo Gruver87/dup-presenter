@@ -212,9 +212,19 @@ python -m unittest discover -s tests -v
 # Живая проверка веб-консоли в Chromium (нужна запущенная консоль на нужном порту)
 python scripts/console_server.py --port 8790 --no-auto-ollama
 python scripts/console_ui_check.py --url http://127.0.0.1:8790/
+
+# Живая проверка 3D-вьюпорта: загрузка реального .glb (нужен доступ к esm.sh для Three.js)
+python scripts/glb_viewer_check.py --url http://127.0.0.1:8790/
+
+# Аудит кнопок консоли: каждая видимая кнопка/чекбокс каждой вкладки нажимается один раз.
+# POST/PUT/DELETE перехватываются и получают мок-ответ (ничего не публикуется и не пишется); отчёт: out/preview/click_audit.json
+python scripts/console_click_audit.py --url http://127.0.0.1:8790/
+
+# Резервная копия пользовательских данных вне git (decks, work/ с лицензиями, загрузки, 3D-модели; ключи не копируются)
+powershell -ExecutionPolicy Bypass -File scripts\backup_user_data.ps1 -Destination "D:\DUP_backup"
 ```
 
-Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **323 Python unit/gate теста** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **324 Python unit/gate теста** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Python-зависимости для тестов закреплены в [`requirements-dev.txt`](requirements-dev.txt).
 
 ## Документация и экосистема DUP Labs
 

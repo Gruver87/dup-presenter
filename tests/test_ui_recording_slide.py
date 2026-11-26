@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,7 +13,6 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import build_deck  # noqa: E402
-from audio_fx import find_ffmpeg  # noqa: E402
 from build_deck import DeckValidationError, validate_deck  # noqa: E402
 
 DEMO_DECK = ROOT / "decks" / "ui-recording-demo.json"

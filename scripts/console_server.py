@@ -53,7 +53,7 @@ from build_deck import (  # noqa: E402
     DeckValidationError,
     validate_deck,
 )
-from director_presets import DIRECTOR_PRESETS, DirectorPresetError, PRESET_CATALOG, apply_director_preset  # noqa: E402
+from director_presets import DirectorPresetError, PRESET_CATALOG, apply_director_preset  # noqa: E402
 from fetch_repo import RepoFetchError, looks_like_remote, normalize_git_url  # noqa: E402
 from idea_engine import GENRE_CATALOG, IdeaDeckExistsError, IdeaEngineError, auto_fix_deck, critique_deck, generate_ideas, write_idea_deck  # noqa: E402
 from md_deck import MarkdownDeckError, MarkdownDeckExists, MarkdownImportError, write_deck_from_markdown  # noqa: E402

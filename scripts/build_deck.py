@@ -187,7 +187,6 @@ def _validate_cinema_media_params(
 from theme_catalog import THEME_IDS  # noqa: E402
 from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_available, synth_edge_with_timings  # noqa: E402
 from audio_fx import (  # noqa: E402
-    AudioFXError,
     WordTimingUnavailable,
     build_word_captions,
     transcribe_word_events,
@@ -204,7 +203,6 @@ from tts_engines import (  # noqa: E402
     KOKORO_VOICE_IDS,
     SILERO_EN_VOICE_IDS,
     KokoroEngine,
-    TTSEngineError,
     speaker_engine,
     speaker_lang,
 )

@@ -70,6 +70,23 @@ def run_checks(url: str) -> bool:
             print(f"[check] duplicate import: {dup_msg!r}")
             ok &= "already exists" in (dup_msg or "")
 
+            # 4) web-search checkbox: disabled with a visible reason in template mode, clickable with an LLM source
+            page.click('[data-tab="new"]')
+            page.select_option("#ideaModeSelect", "template")
+            tpl = page.evaluate(
+                "() => ({disabled: document.getElementById('ideaWebSearchCheck').disabled, "
+                "hint: document.getElementById('webSearchHint').textContent})"
+            )
+            print(f"[check] web search in template mode: {tpl}")
+            ok &= tpl["disabled"] is True and "Недоступно" in tpl["hint"]
+            page.select_option("#ideaModeSelect", "cloud")
+            page.click("#ideaWebSearchCheck")
+            cloud = page.evaluate("() => document.getElementById('ideaWebSearchCheck').checked")
+            print(f"[check] web search with cloud source, after click: checked={cloud}")
+            ok &= cloud is True
+            page.uncheck("#ideaWebSearchCheck")
+            page.click('[data-tab="edit"]')
+
             SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
             page.locator("#tab-edit").screenshot(path=str(SCREENSHOT))
             print(f"[check] screenshot -> {SCREENSHOT}")

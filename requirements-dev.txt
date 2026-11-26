@@ -1,0 +1,9 @@
+# Python test/CI dependencies for DUP Presenter (pinned to versions verified locally).
+# Install: python -m pip install -r requirements-dev.txt
+# Runtime-only tooling (TTS, Whisper, etc.) is optional and documented in README.md.
+numpy==2.2.6
+scipy==1.17.1
+httpx==0.28.1
+playwright==1.58.0
+pillow==11.3.0
+ruff==0.17.6

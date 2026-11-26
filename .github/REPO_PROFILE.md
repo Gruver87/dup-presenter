@@ -21,7 +21,7 @@ gh repo edit Gruver87/dup-presenter --homepage "https://github.com/Gruver87/dup-
 | **Default branch** | `main` |
 | **Latest software tag** | `v1.2.0` |
 | **Showcase media releases** | `media-dup-protocol-cosmos` (RU + EN) · `media-radar-showcase-v2` |
-| **CI** | `.github/workflows/ci.yml` (`tsc --noEmit`, `py_compile`, 137 Python unit/gate tests including live Playwright UI recorder test) |
+| **CI** | `.github/workflows/ci.yml` (`tsc --noEmit`, `py_compile`, 324 Python unit/gate tests including live Playwright UI recorder test; deps in `requirements-dev.txt`) |
 | **Cite** | `CITATION.cff` |
 
 ## Honest Positioning

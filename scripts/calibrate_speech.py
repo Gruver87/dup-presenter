@@ -6,7 +6,6 @@ then prints a least-squares line per language. Run after changing voices:
 """
 import json
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

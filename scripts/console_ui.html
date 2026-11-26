@@ -867,7 +867,7 @@ $("genBtn").onclick = async () => {
 };
 
 $("feedbackBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug($("fbMsg"))) return;
   $("fbMsg").textContent = "...";
   const r = await fetch("/api/feedback", {
     method: "POST",
@@ -918,7 +918,7 @@ function collectSlideEdits() {
 }
 
 async function saveDeck(shouldRender) {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug($("saveMsg"))) return;
   $("saveMsg").textContent = "...";
   const r = await fetch("/api/save-deck", {
     method: "POST",
@@ -1044,8 +1044,15 @@ function syncWebSearchToggle() {
   const isTemplate = $("ideaModeSelect").value === "template";
   cb.disabled = isTemplate;
   if (isTemplate) cb.checked = false;
-  label.style.opacity = isTemplate ? "0.5" : "";
+  label.style.opacity = isTemplate ? "0.6" : "";
   label.title = isTemplate ? "Веб-поиск доступен только с LLM-источником: Local Ollama или Cloud LLM" : "";
+  // Visible explanation (a tooltip alone is not discoverable): show why the box is off and what to pick.
+  const hint = $("webSearchHint");
+  if (hint) {
+    hint.textContent = isTemplate
+      ? "Недоступно: в «Источник идей» выберите Local Ollama или Cloud LLM"
+      : (window.WS_HINT_BASE || "");
+  }
 }
 $("ideaModeSelect").addEventListener("change", syncWebSearchToggle);
 syncWebSearchToggle();
@@ -1100,8 +1107,17 @@ function showStudioOut(text) {
   el.style.display = "block";
   el.textContent = text;
 }
+
+// Guard for every action that needs a loaded deck. Without a deck the click must say why, not do nothing.
+function requireSlug(msgEl) {
+  if (CURRENT_SLUG) return true;
+  const text = "Сначала выберите деку в списке «Колода» (или создайте её на вкладке «Новое»).";
+  if (msgEl) msgEl.textContent = text;
+  else showStudioOut(text);
+  return false;
+}
 $("applyPresetBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Применяю пресет...");
   const r = await fetch("/api/apply-preset", {
     method: "POST",
@@ -1113,7 +1129,7 @@ $("applyPresetBtn").onclick = async () => {
   if (d.ok) loadDeck(CURRENT_SLUG);
 };
 $("critiqueDeckBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Анализирую дек...");
   const r = await fetch("/api/critique", {
     method: "POST",
@@ -1130,7 +1146,7 @@ $("critiqueDeckBtn").onclick = async () => {
   showStudioOut(lines.join("\n"));
 };
 $("autoFixDeckBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Применяю безопасные авто-исправления...");
   const r = await fetch("/api/critique/autofix", {
     method: "POST",
@@ -1144,7 +1160,7 @@ $("autoFixDeckBtn").onclick = async () => {
   loadDeck(CURRENT_SLUG);
 };
 $("makeThumbBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Рендерю обложку 1280×720 (Thumbnail Studio)...");
   const r = await fetch("/api/thumbnail", {
     method: "POST",
@@ -1156,7 +1172,7 @@ $("makeThumbBtn").onclick = async () => {
   if (d.ok) loadDeck(CURRENT_SLUG);
 };
 $("makeShortBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Создаю вертикальную деку 9:16 (Short Cutdown)...");
   const r = await fetch("/api/cutdown", {
     method: "POST",
@@ -1173,7 +1189,7 @@ $("makeShortBtn").onclick = async () => {
   }
 };
 $("runQaBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Запускаю Media QA Gate (LUFS, True Peak, тишина)...");
   const r = await fetch("/api/qa", {
     method: "POST",
@@ -1189,7 +1205,7 @@ $("runQaBtn").onclick = async () => {
   loadDeck(CURRENT_SLUG);
 };
 $("planPackBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Строю план мультиформатного Video Pack...");
   const r = await fetch("/api/video-pack/plan", {
     method: "POST",
@@ -1200,7 +1216,7 @@ $("planPackBtn").onclick = async () => {
   showStudioOut(d.ok ? JSON.stringify(d, null, 2) : `Ошибка: ${d.error}`);
 };
 $("buildPackBtn").onclick = async () => {
-  if (!CURRENT_SLUG) return;
+  if (!requireSlug()) return;
   showStudioOut("Запускаю фоновую сборку Video Pack (16:9 + 9:16 Short + обложка)...");
   const r = await fetch("/api/video-pack/build", {
     method: "POST",
@@ -1510,8 +1526,8 @@ function wireDropZone(dz, slideId, currentFile) {
   dz.addEventListener("drop", async (e) => {
     e.preventDefault();
     dz.classList.remove("dragover");
-    if (!CURRENT_SLUG) return;
     const statusEl = dz.querySelector(".drop-status");
+    if (!requireSlug(statusEl)) return;
     const setSt = (msg) => { if (statusEl) statusEl.textContent = msg; };
 
     // 1) Dragged from built-in Archive Search
@@ -1748,9 +1764,10 @@ async function poll() {
     ),
   ].join("");
   if ($("webSearchHint")) {
-    $("webSearchHint").textContent = sys.web_search_provider
+    window.WS_HINT_BASE = sys.web_search_provider
       ? `Ключ поиска настроен: ${sys.web_search_provider}`
       : "Ключ SERPER_API_KEY / BRAVE_API_KEY не задан (при включении будет fail-closed)";
+    syncWebSearchToggle();
   }
   if ($("ttStatusPill")) {
     $("ttStatusPill").innerHTML = tt.can_auto_refresh
