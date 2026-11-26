@@ -38,6 +38,10 @@ python scripts/console_ui_check.py --url http://127.0.0.1:8790/
    - Never commit `out/`, `public/voice/`, `public/music/`, `public/ui_recordings/`, `public/screens/dup-protocol/`, `models/`, or `secrets/`.
    - Showcase MP4s belong in **GitHub Releases** (see `scripts/github_release_uploader.py`), with only lightweight JPEG thumbnails (`~50–170 KB`) in `docs/media/`.
 
+## Licensing of Contributions
+
+By submitting a pull request you confirm that you have the right to submit it and agree to license your changes under the MIT License (see `LICENSE`). Do not add third-party code, models, datasets or media without a licence compatible with MIT. Forks must keep `LICENSE` and the copyright notice. See `DISCLAIMER.md` for responsibility limits.
+
 ## Pull Request Checklist
 
 - [ ] `npx tsc --noEmit` passes with 0 errors

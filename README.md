@@ -95,6 +95,33 @@ python scripts/thumbnail_studio.py --deck decks/dup-protocol-cosmos.json --badge
 python scripts/video_pack.py decks/radar-pro.json --translate-to en --preset cinema_cosmos --plan-only
 ```
 
+## Студия в веб-консоли (`python scripts/console_server.py --open`)
+
+Все функции опциональны; CLI (`build_deck.py`, `idea_engine.py`, `publish_pack.py`) работает как раньше.
+
+| Вкладка | Что умеет |
+|---|---|
+| 01 · Новый ролик | Сборка из папки / GitHub; Idea Engine с опциональным веб-поиском свежих фактов (только LLM-режимы Ollama / Cloud) |
+| 02 · Редактор | Drag-and-Drop картинок и видео (до 100 МБ) из Windows, по https-ссылке или из поиска по Wikimedia / NASA / Openverse прямо на слайд; Инспектор ассетов с лицензией (CC BY / CC BY-SA автоматически попадают в `_post_copy.md`); Таймлайн с перестановкой слайдов и прослушиванием озвучки; раскадровка и согласование мастера |
+| 03 · Склейка | Несколько MP4 в один с выравниванием формата и звука |
+| 05 · 3D Studio | Image-to-3D (Tripo3D / Fal.ai) и просмотр `.glb` в Three.js-вьюпорте (вращение, зум, сетка) |
+
+Ключи — **только переменные окружения пользователя Windows**, не файлы в репозитории. Без ключа функция отказывает явно (fail-closed), подмены нет:
+
+| Переменная | Для чего |
+|---|---|
+| `SERPER_API_KEY` или `BRAVE_API_KEY` | Веб-поиск для Idea Engine (Serper приоритетнее) |
+| `TRIPO_API_KEY` или `FAL_KEY` | Генерация 3D-модели из картинки |
+| `DUP_LLM_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY` | Cloud LLM для плана и идей |
+
+```powershell
+[Environment]::SetEnvironmentVariable("SERPER_API_KEY", "<ключ>", "User")
+# консоль подхватывает новый ключ из реестра без перезапуска (обновите страницу);
+# для CLI-скриптов откройте НОВОЕ окно PowerShell
+```
+
+Консоль слушает только `127.0.0.1` и отклоняет запросы с чужим `Host` (DNS rebinding) и cross-site POST из других вкладок браузера.
+
 ## 12 визуальных тем (`theme`)
 
 Единый источник правды: `src/themes.ts` ↔ `scripts/theme_catalog.py`.
@@ -173,7 +200,7 @@ python scripts/github_release_uploader.py --mp4 out/radar-pro.mp4 --repo Gruver8
 ## Что не публикуется в Git
 
 - `decks/dup-protocol.json`, `decks/dup-protocol-story.json`, `decks/dup-protocol-cosmos.json` и `decks/dup-protocol-cosmos-en.json` ссылаются на локальные скриншоты `public/screens/dup-protocol/` (в `.gitignore`). На чистом клоне `deck_doctor` вернёт `missing screen file`, а рендер не начнётся (fail-closed).
-- `out/` (рендеры MP4 и отчёты), `public/voice/`, `public/music/`, `public/ui_recordings/`, `models/` и `secrets/` не коммитятся в git.
+- `out/` (рендеры MP4 и отчёты), `work/`, `public/voice/`, `public/music/`, `public/ui_recordings/`, `public/uploads/` (загрузки из консоли), `public/models3d/` (3D-модели), `models/` и `secrets/` не коммитятся в git.
 
 ## Тесты и проверки
 
@@ -187,7 +214,7 @@ python scripts/console_server.py --port 8790 --no-auto-ollama
 python scripts/console_ui_check.py --url http://127.0.0.1:8790/
 ```
 
-Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **157 Python unit/gate тестов** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Текущий статус CI: `npx tsc --noEmit`, `py_compile` и **323 Python unit/gate теста** (включая живой Playwright-тест записи UI) запускаются на каждом push/PR в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Документация и экосистема DUP Labs
 
@@ -200,5 +227,6 @@ python scripts/console_ui_check.py --url http://127.0.0.1:8790/
 ## Лицензии сторонних компонентов
 
 - **Лицензия `dup-presenter`**: MIT (см. [`LICENSE`](LICENSE)). Это лицензия на код и шаблоны проекта, она не даёт прав на Remotion и другие сторонние компоненты.
+- **Отказ от ответственности**: программа предоставляется «как есть». Ответственность за контент, права на визуалы, ключи и соблюдение правил платформ несёт пользователь. См. [`DISCLAIMER.md`](DISCLAIMER.md).
 - **Remotion**: бесплатная лицензия для физлиц и команд до 3 человек ([remotion.dev/docs/license/pricing](https://www.remotion.dev/docs/license/pricing)). Перед коммерческим использованием проверьте условия Remotion.
 - **Silero TTS v5** (MIT), **Kokoro-82M ONNX** (Apache-2.0), **faster-whisper** (MIT), **Edge TTS** (онлайн-сервис Microsoft).

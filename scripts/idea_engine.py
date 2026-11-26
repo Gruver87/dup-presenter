@@ -704,6 +704,8 @@ def _call_llm_ideas(
     mode: str,
     model: str,
     host: str,
+    *,
+    web_context: str = "",
 ) -> dict[str, Any]:
     lang_label = "Russian" if lang == "ru" else "English"
     genre_note = f"Focus primarily on genre '{genre}'." if genre and genre != "all" else "Mix diverse genres."
@@ -725,6 +727,12 @@ def _call_llm_ideas(
         "Do not fabricate fake benchmark numbers; mark placeholders clearly."
     )
     user_prompt = f"Topic / brief: {topic.strip()}\nGenerate {count} distinct, creative video concepts."
+    if web_context:
+        user_prompt += (
+            "\n\nFresh web search snippets (use for factual grounding; do not invent dates or numbers "
+            "not supported by these snippets):\n"
+            + web_context
+        )
 
     if mode == "ollama":
         url = f"{host.rstrip('/')}/api/chat"
@@ -1157,6 +1165,7 @@ def generate_ideas(
     mode: str = "template",
     model: str = "",
     host: str = DEFAULT_OLLAMA_HOST,
+    web_search: bool = False,
 ) -> dict[str, Any]:
     """Generate structured video concepts with automatic complexity & tool selection."""
     clean_topic = str(topic or "").strip()
@@ -1174,6 +1183,10 @@ def generate_ideas(
     assessment = assess_topic_complexity(clean_topic, genre=genre, lang=clean_lang)
 
     if clean_mode == "template":
+        if web_search:
+            raise IdeaEngineError(
+                "Веб-поиск (--web-search) работает только с LLM-режимом (ollama, cloud или deepseek), не с офлайн-шаблонами."
+            )
         blueprints = _angle_blueprints(clean_topic, clean_lang, genre)[:count]
         ideas = []
         for i, bp in enumerate(blueprints):
@@ -1193,7 +1206,20 @@ def generate_ideas(
             "ideas": ideas,
         }
 
-    raw_payload = _call_llm_ideas(clean_topic, clean_lang, genre, count, clean_mode, model, host)
+    ws_payload: dict[str, Any] | None = None
+    web_context = ""
+    if web_search:
+        import web_search as ws_mod
+
+        try:
+            ws_payload = ws_mod.search_snippets(clean_topic, lang=clean_lang)
+        except ws_mod.WebSearchError as exc:
+            raise IdeaEngineError(str(exc)) from exc
+        web_context = ws_mod.format_snippets_for_prompt(ws_payload["results"])
+
+    raw_payload = _call_llm_ideas(
+        clean_topic, clean_lang, genre, count, clean_mode, model, host, web_context=web_context
+    )
     raw_ideas = raw_payload.get("ideas")
     if not isinstance(raw_ideas, list) or not raw_ideas:
         raise IdeaEngineError("LLM response JSON must contain a non-empty 'ideas' list")
@@ -1205,7 +1231,7 @@ def generate_ideas(
         norm["recommended_preset"] = per_idea_assess["recommended_preset"]
         norm["recommended_tools"] = per_idea_assess["recommended_tools"]
         ideas.append(norm)
-    return {
+    out: dict[str, Any] = {
         "ok": True,
         "source": clean_mode,
         "topic": clean_topic,
@@ -1214,6 +1240,9 @@ def generate_ideas(
         "assessment": assessment,
         "ideas": ideas,
     }
+    if ws_payload is not None:
+        out["web_search"] = ws_payload
+    return out
 
 
 def idea_to_deck(
@@ -1412,6 +1441,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-first", action="store_true", help="Convert idea #1 into decks/<slug>.json")
     parser.add_argument("--slug", default="", help="Optional slug when --write-first is set")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing deck file")
+    parser.add_argument(
+        "--web-search",
+        action="store_true",
+        help="Fetch fresh web snippets (SERPER_API_KEY or BRAVE_API_KEY) before calling LLM (fail-closed)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -1423,6 +1457,7 @@ def main(argv: list[str] | None = None) -> int:
             mode=args.mode,
             model=args.model,
             host=args.host,
+            web_search=args.web_search,
         )
         if args.write_first:
             deck, path = write_idea_deck(

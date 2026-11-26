@@ -24,28 +24,51 @@ ROOT = Path(__file__).resolve().parent.parent
 CREDIT_LICENCES = frozenset({"by", "by-sa"})
 
 
-def visual_credit_lines(slug: str, plan_path: Path | None = None) -> list[str]:
-    """Attribution lines for CC BY / CC BY-SA visuals assigned in the sourcing plan.
+def visual_credit_lines(
+    slug: str,
+    plan_path: Path | None = None,
+    assets_meta_path: Path | None = None,
+) -> list[str]:
+    """Attribution lines for CC BY / CC BY-SA visuals from the sourcing plan and DnD asset metadata.
 
-    Source of truth is work/visual_sources/<slug>/plan.json (written by visual_sourcing.py plan).
-    No plan -> no lines (the deck then has no archive-sourced visuals).
+    Reads:
+      1. work/visual_sources/<slug>/plan.json (CLI visual sourcing)
+      2. work/<slug>/assets_meta.json (console drag-and-drop / archive search uploads)
+    Deduplicated by (title, page_url). CC0 / PDM / own assets are not listed.
     """
     from visual_sourcing import LICENCE_LABEL, plan_path_for
 
-    path = plan_path or plan_path_for(slug)
-    if not path.is_file():
-        return []
-    plan = json.loads(path.read_text(encoding="utf-8"))
     lines: list[str] = []
-    for scene in plan.get("scenes", []):
-        asset = scene.get("asset")
+    seen: set[tuple[str, str]] = set()
+
+    def _add(asset: dict) -> None:
         if not asset or asset.get("license") not in CREDIT_LICENCES:
-            continue
+            return
+        title = str(asset.get("title") or asset.get("file") or "Untitled").strip()
+        creator = str(asset.get("creator") or "Unknown").strip()
+        page_url = str(asset.get("page_url") or "").strip()
+        key = (title, page_url)
+        if key in seen:
+            return
+        seen.add(key)
         label = LICENCE_LABEL.get(asset["license"], asset["license"])
         licence_url = asset.get("license_url") or "no licence URL"
-        lines.append(
-            f"- \"{asset['title']}\" by {asset['creator']} — {label} — {licence_url} — source: {asset['page_url']}"
-        )
+        src_part = f" — source: {page_url}" if page_url else ""
+        lines.append(f'- "{title}" by {creator} — {label} — {licence_url}{src_part}')
+
+    path = plan_path or plan_path_for(slug)
+    if path.is_file():
+        plan = json.loads(path.read_text(encoding="utf-8"))
+        for scene in plan.get("scenes", []):
+            _add(scene.get("asset") or {})
+
+    meta_p = assets_meta_path if assets_meta_path is not None else (ROOT / "work" / slug / "assets_meta.json")
+    if meta_p.is_file():
+        meta_map = json.loads(meta_p.read_text(encoding="utf-8"))
+        if isinstance(meta_map, dict):
+            for rec in meta_map.values():
+                if isinstance(rec, dict):
+                    _add(rec)
     return lines
 
 

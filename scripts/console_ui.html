@@ -9,14 +9,14 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root, [data-theme="dark"] {
-  --bg0: #070b12; --bg1: #0f1622; --ink: #e8eef7; --muted: #93a4b8;
+  --bg0: #070b12; --bg1: #0f1622; --bg2: rgba(12,18,30,0.72); --ink: #e8eef7; --muted: #93a4b8;
   --line: #243247; --panel: rgba(18,26,40,0.88); --panel-solid: #121a28;
   --side: rgba(10,15,24,0.94); --accent: #00d4b8; --accent2: #38bdf8;
   --ok: #3dd68c; --bad: #ff7b72; --warn: #e3b341;
   --log-bg: #05080f; --log-fg: #c9d7ea;
 }
 [data-theme="light"] {
-  --bg0: #e7eef6; --bg1: #f5f8fc; --ink: #0d1b2a; --muted: #5a6b7d;
+  --bg0: #e7eef6; --bg1: #f5f8fc; --bg2: rgba(240,245,251,0.92); --ink: #0d1b2a; --muted: #5a6b7d;
   --line: #c5d0dc; --panel: rgba(255,255,255,0.88); --panel-solid: #ffffff;
   --side: rgba(255,255,255,0.72); --accent: #0f766e; --accent2: #1f6feb;
   --ok: #1a7f4b; --bad: #b42318; --warn: #9a6700;
@@ -73,7 +73,7 @@ textarea { min-height: 76px; resize: vertical; }
 }
 .btn.sm { padding: 5px 10px; font-size: 0.76rem; border-radius: 8px; }
 .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #051018; border-color: transparent; }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled { opacity: 0.3; filter: grayscale(0.65); cursor: not-allowed; }
 .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem; font-family: "IBM Plex Mono", monospace; border: 1px solid var(--line); }
 .pill.ok { color: var(--ok); border-color: var(--ok); }
 .pill.run { color: var(--warn); border-color: var(--warn); }
@@ -97,6 +97,42 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
   .sb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
   .sb-card { border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); padding: 8px; font-size: 0.78rem; }
   .sb-card img { width: 100%; border-radius: 6px; display: block; }
+  .drop-zone {
+    margin-top: 8px; padding: 10px; border: 1.5px dashed var(--line); border-radius: 10px;
+    background: var(--bg2); font-size: 0.78rem; color: var(--muted); transition: border-color 0.15s, background 0.15s;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+  }
+  .drop-zone.dragover { border-color: var(--accent); background: rgba(0,212,184,0.12); color: var(--ink); }
+  .drop-thumb { width: 84px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); background: #000; flex-shrink: 0; }
+  .arc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; max-height: 420px; overflow: auto; }
+  .arc-card {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--panel-solid); padding: 6px;
+    font-size: 0.74rem; cursor: grab; user-select: none;
+  }
+  .arc-card:active { cursor: grabbing; opacity: 0.7; }
+  .arc-card img { width: 100%; height: 78px; object-fit: cover; border-radius: 6px; display: block; background: #000; }
+  .tl-strip { display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px 10px; align-items: stretch; }
+  .tl-block {
+    flex: 0 0 auto; min-width: 150px; max-width: 280px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel-solid); padding: 8px; cursor: grab; user-select: none; display: flex; flex-direction: column; gap: 6px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .tl-block:active { cursor: grabbing; opacity: 0.7; }
+  .tl-block.dragover { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,212,184,0.28); }
+  .tl-wave {
+    height: 30px; display: flex; align-items: flex-end; gap: 2px; padding: 4px 5px;
+    border-radius: 6px; background: var(--bg2); border: 1px solid var(--line);
+  }
+  .tl-bar { flex: 1; background: linear-gradient(180deg, var(--accent), var(--accent2)); border-radius: 2px; min-height: 3px; }
+  .tl-wave.est { border-style: dashed; align-items: center; justify-content: center; font-size: 0.68rem; color: var(--muted); }
+  .vp-box {
+    width: 100%; height: 460px; border-radius: 12px; border: 1px solid var(--line);
+    background: radial-gradient(circle at 50% 40%, #162236, #060a12); position: relative; overflow: hidden;
+  }
+  .vp-overlay {
+    position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+    color: var(--muted); font-size: 0.86rem; text-align: center; padding: 20px;
+  }
 </style>
 </head>
 <body>
@@ -111,6 +147,7 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
       <button data-tab="edit" data-i18n="nav_edit">02 · Редактор и правки</button>
       <button data-tab="merge" data-i18n="nav_merge">03 · Склейка видео</button>
       <button data-tab="logs" data-i18n="nav_logs">04 · Лог и версии</button>
+      <button data-tab="3d" data-i18n="nav_3d">05 · 3D Studio</button>
     </nav>
     <div class="side-foot">
       <div id="providerBadge">...</div>
@@ -246,7 +283,15 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
             <button class="btn primary" id="ideaGenBtn" style="width:100%;">Придумать 5 идей</button>
           </div>
         </div>
+        <div class="row" style="margin-top:8px;justify-content:space-between;">
+          <label class="check" style="margin:0;">
+            <input type="checkbox" id="ideaWebSearchCheck"/>
+            <span>Веб-поиск свежих фактов перед генерацией (Serper / Brave, fail-closed)</span>
+          </label>
+          <span id="webSearchHint" style="font-size:0.76rem;color:var(--muted);"></span>
+        </div>
         <div id="ideaMsg" style="font-size:0.84rem;color:var(--muted);margin-top:8px;"></div>
+        <div id="ideaWebSources" style="font-size:0.78rem;color:var(--muted);margin-top:6px;"></div>
         <div id="ideaCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px;"></div>
       </div>
     </section>
@@ -255,7 +300,17 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
       <div class="panel">
         <div class="row" style="justify-content:space-between;margin-bottom:10px;">
           <h2 style="margin:0;" data-i18n="edit_h2">Редактор колоды, видео и правки</h2>
-          <select id="deckSelect" style="width:240px;"></select>
+          <div class="row" style="gap:8px;">
+            <select id="presetSelect" style="width:230px;" title="Режиссёрский пресет: одной настройкой меняет тему, формат, переходы, SFX и субтитры">
+              <option value="cinema_cosmos">Пресет: cinema_cosmos (16:9)</option>
+              <option value="fast_shorts">Пресет: fast_shorts (9:16)</option>
+              <option value="documentary">Пресет: documentary (16:9)</option>
+              <option value="news_flash">Пресет: news_flash (16:9)</option>
+              <option value="tech_pitch">Пресет: tech_pitch (16:9)</option>
+            </select>
+            <button class="btn sm" id="applyPresetBtn">Применить пресет</button>
+            <select id="deckSelect" style="width:230px;"></select>
+          </div>
         </div>
         <details style="margin-bottom:14px;">
           <summary style="cursor:pointer;font-size:0.9rem;" data-i18n="md_import_h">Импорт деки из Markdown</summary>
@@ -269,20 +324,14 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
           </div>
         </details>
         <details style="margin-bottom:14px;">
-          <summary style="cursor:pointer;font-size:0.9rem;">Студийные инструменты (пресеты, советчик, обложка 1280×720, Video Pack)</summary>
+          <summary style="cursor:pointer;font-size:0.9rem;">Студийные инструменты (советчик, обложка 1280×720, Short 9:16, Media QA, Video Pack)</summary>
           <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
             <div class="row" style="flex-wrap:wrap;gap:8px;">
-              <select id="presetSelect" style="width:260px;">
-                <option value="cinema_cosmos">cinema_cosmos (16:9 космос)</option>
-                <option value="fast_shorts">fast_shorts (9:16 Short)</option>
-                <option value="documentary">documentary (16:9 спокойный)</option>
-                <option value="news_flash">news_flash (16:9 дайджест)</option>
-                <option value="tech_pitch">tech_pitch (16:9 светлый питч)</option>
-              </select>
-              <button class="btn sm" id="applyPresetBtn">Применить пресет</button>
               <button class="btn sm primary" id="critiqueDeckBtn">Советчик (что добавить/убрать)</button>
               <button class="btn sm" id="autoFixDeckBtn">Авто-исправить дек</button>
               <button class="btn sm" id="makeThumbBtn">Обложка 1280×720</button>
+              <button class="btn sm" id="makeShortBtn">Создать Short 9:16</button>
+              <button class="btn sm" id="runQaBtn">Проверить Media QA</button>
               <button class="btn sm" id="planPackBtn">План Video Pack</button>
               <button class="btn sm primary" id="buildPackBtn">Собрать Video Pack</button>
             </div>
@@ -335,6 +384,7 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
             </label>
           </div>
           <div class="row">
+            <button class="btn" id="saveOnlyBtn" data-i18n="btn_save_only">Только сохранить</button>
             <button class="btn primary" id="saveRenderBtn" data-i18n="btn_save_render">Сохранить правки и собрать черновик</button>
             <span id="saveMsg" style="font-size:0.82rem;color:var(--muted);"></span>
           </div>
@@ -347,7 +397,7 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
           <span id="sbStatus" class="pill">—</span>
         </div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">
-          Порядок: черновик (draft) → раскадровка по кадрам → одобрение → мастер MP4. Любая правка колоды или новый черновик сбрасывают одобрение. Атрибуции CC BY / BY-SA в кадре не выводятся: см. <code>out/&lt;slug&gt;_visual_credits.txt</code>.
+          Порядок: черновик (draft) → раскадровка по кадрам → одобрение → мастер MP4 → отправка в TikTok. Любая правка колоды или новый черновик сбрасывают одобрение. Атрибуции CC BY / BY-SA автоматически добавляются в <code>out/&lt;slug&gt;_post_copy.md</code> (и в <code>out/&lt;slug&gt;_visual_credits.txt</code>).
         </div>
         <div class="row" style="flex-wrap:wrap;gap:8px;">
           <button class="btn sm" id="sbBuildBtn" disabled>Собрать раскадровку из черновика</button>
@@ -357,6 +407,15 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
           <span id="sbMsg" style="font-size:0.82rem;color:var(--muted);"></span>
         </div>
         <div id="sbGrid" class="sb-grid" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px;">
+          <h3 style="margin:0;">Таймлайн (перетаскивай слайды для смены порядка + аудиодорожка озвучки)</h3>
+          <span id="tlMeta" class="pill" style="font-size:0.72rem;">—</span>
+        </div>
+        <div id="tlMsg" style="font-size:0.78rem;color:var(--muted);margin-bottom:4px;">Перетащи любой блок на соседний, чтобы переставить слайды в деке. Клик по ▶ — прослушать озвучку слайда.</div>
+        <div id="timelineStrip" class="tl-strip"></div>
       </div>
 
       <div class="grid2">
@@ -382,6 +441,59 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
               <button class="btn primary" id="ttUploadBtn" data-i18n="btn_tt_upload">Отправить видео в TikTok</button>
               <button class="btn sm" id="ttRefreshBtn" data-i18n="btn_tt_refresh">Обновить токен</button>
               <span id="ttMsg" style="font-size:0.82rem;color:var(--muted);"></span>
+            </div>
+          </div>
+
+          <div id="assetInspectorPanel" style="margin-top:16px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);">
+            <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+              <strong style="font-size:0.86rem;">Инспектор ассетов и лицензий</strong>
+              <span id="inspLicPill" class="pill" style="font-size:0.7rem;">кликни на медиа слайда</span>
+            </div>
+            <div id="inspPreview" style="margin-bottom:8px;"></div>
+            <div id="inspSpecs" style="font-size:0.76rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;">Перетащи картинку/видео из Windows или из поиска ниже на любой слайд справа.</div>
+            <div id="inspForm" class="hidden">
+              <div class="grid2" style="gap:8px;">
+                <div><label style="margin-top:4px;">Название</label><input type="text" id="inspTitle"/></div>
+                <div><label style="margin-top:4px;">Автор / Creator</label><input type="text" id="inspCreator"/></div>
+              </div>
+              <div class="grid2" style="gap:8px;">
+                <div>
+                  <label style="margin-top:6px;">Лицензия (CC BY попадёт в _post_copy.md)</label>
+                  <select id="inspLicense">
+                    <option value="own">Свой файл (own)</option>
+                    <option value="cc0">CC0 (Public Domain)</option>
+                    <option value="pdm">PDM (Public Domain Mark)</option>
+                    <option value="nasa-media">NASA Media (credit NASA)</option>
+                    <option value="by">CC BY (нужна атрибуция)</option>
+                    <option value="by-sa">CC BY-SA (атрибуция + share-alike)</option>
+                    <option value="unknown">Не указана</option>
+                  </select>
+                </div>
+                <div><label style="margin-top:6px;">Источник</label><input type="text" id="inspSource"/></div>
+              </div>
+              <div class="grid2" style="gap:8px;">
+                <div><label style="margin-top:6px;">URL источника</label><input type="text" id="inspPageUrl"/></div>
+                <div><label style="margin-top:6px;">URL лицензии</label><input type="text" id="inspLicUrl"/></div>
+              </div>
+              <div class="row" style="margin-top:8px;">
+                <button class="btn sm primary" id="inspSaveBtn">Сохранить метаданные</button>
+                <span id="inspMsg" style="font-size:0.78rem;color:var(--muted);"></span>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);">
+              <strong style="font-size:0.84rem;display:block;margin-bottom:6px;">Поиск по бесплатным архивам (Wikimedia / NASA / Openverse)</strong>
+              <div class="row" style="gap:6px;">
+                <input type="text" id="arcQuery" placeholder="Например: nebula, galaxy, volcano, server..." style="flex:1;"/>
+                <select id="arcKind" style="width:95px;">
+                  <option value="any">Все</option>
+                  <option value="image">Фото</option>
+                  <option value="video">Видео</option>
+                </select>
+                <button class="btn sm primary" id="arcSearchBtn">Найти</button>
+              </div>
+              <div id="arcMsg" style="font-size:0.76rem;color:var(--muted);margin-top:6px;">Перетащи найденную карточку мышкой на drop-зону слайда справа.</div>
+              <div id="arcResults" class="arc-grid"></div>
             </div>
           </div>
 
@@ -440,6 +552,63 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
         <div id="historyList" style="font-size:0.85rem;color:var(--muted);">...</div>
       </div>
     </section>
+
+    <section id="tab-3d" class="tab hidden">
+      <div class="grid2" style="grid-template-columns: 0.9fr 1.3fr;">
+        <div class="panel">
+          <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+            <h2 style="margin:0;">3D Studio (Image-to-3D)</h2>
+            <span id="s3dProviderPill" class="pill">—</span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">
+            Перетащи картинку («вид спереди») и нажми «Сгенерировать 3D» (Tripo3D / Fal.ai, fail-closed при отсутствии ключа), либо брось готовый <code>.glb</code> ниже для интерактивного осмотра.
+          </div>
+
+          <label>1. Картинка для генерации 3D (JPG / PNG / WebP)</label>
+          <div id="s3dImgDrop" class="drop-zone" style="min-height:84px;">
+            <div style="flex:1;">
+              <div id="s3dImgName" style="color:var(--ink);font-weight:600;">Перетащи картинку сюда (вид спереди)</div>
+              <div style="font-size:0.74rem;margin-top:2px;">До 20 МБ · без системного окна</div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" id="s3dNameInput" placeholder="Имя модели (латиница, напр. rocket)" style="flex:1;"/>
+            <button class="btn primary" id="s3dGenBtn" disabled>Сгенерировать 3D (.glb)</button>
+          </div>
+          <div id="s3dMsg" style="font-size:0.8rem;color:var(--muted);margin-top:8px;"></div>
+
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);">
+            <label style="margin-top:0;">2. Или перетащи готовый файл <code>.glb</code> (офлайн, без API)</label>
+            <div id="s3dGlbDrop" class="drop-zone" style="min-height:58px;">
+              <div style="flex:1;">
+                <div style="color:var(--ink);font-weight:600;">Брось .glb файл сюда (до 50 МБ)</div>
+                <div id="s3dGlbMsg" style="font-size:0.74rem;margin-top:2px;">Сохранится в public/models3d/ и сразу откроется во вьюпорте</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);">
+            <h3 style="margin:0 0 8px;">Сохранённые 3D-модели (public/models3d/)</h3>
+            <div id="s3dModelsList" style="font-size:0.82rem;color:var(--muted);">—</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="row" style="justify-content:space-between;margin-bottom:10px;">
+            <h2 style="margin:0;">Интерактивный 3D-вьюпорт (Three.js + OrbitControls)</h2>
+            <div class="row" style="gap:6px;">
+              <button class="btn sm" id="s3dResetCamBtn">Сброс камеры</button>
+              <button class="btn sm" id="s3dAutoRotBtn">Авто-вращение: ВКЛ</button>
+              <button class="btn sm" id="s3dGridBtn">Сетка: ВКЛ</button>
+            </div>
+          </div>
+          <div id="viewport3d" class="vp-box">
+            <div id="vpOverlay" class="vp-overlay">Загрузи или сгенерируй .glb модель слева — вращение ЛКМ, зум колесом, панорама ПКМ.</div>
+          </div>
+          <div id="vpStatus" style="font-size:0.78rem;color:var(--muted);margin-top:8px;">Готов к загрузке .glb</div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -451,6 +620,7 @@ const I18N = {
     nav_edit: "02 · Редактор и правки",
     nav_merge: "03 · Склейка видео",
     nav_logs: "04 · Лог и версии",
+    nav_3d: "05 · 3D Studio",
     opt_cap_box: "Субтитры: рамка",
     opt_cap_karaoke: "Караоке (подсветка слов)",
     opt_cap_bold: "Крупные (bold)",
@@ -476,6 +646,7 @@ const I18N = {
     btn_gen: "Анализ → План → Озвучка → MP4 + SRT + Обложка",
     edit_h2: "Редактор колоды, видео и правки",
     chk_burn: "Вшитые субтитры",
+    btn_save_only: "Только сохранить",
     btn_save_render: "Сохранить правки и собрать черновик",
     h3_video: "Готовое видео и файлы",
     lbl_fb: "Правка через ИИ (напиши, что поменять — сохранит новую версию)",
@@ -516,6 +687,7 @@ const I18N = {
     nav_edit: "02 · Editor & Edits",
     nav_merge: "03 · Merge Videos",
     nav_logs: "04 · Logs & Versions",
+    nav_3d: "05 · 3D Studio",
     opt_cap_box: "Subtitles: box",
     opt_cap_karaoke: "Karaoke (word highlight)",
     opt_cap_bold: "Large (bold)",
@@ -541,6 +713,7 @@ const I18N = {
     btn_gen: "Analyze → Plan → Voice → MP4 + SRT + Thumbnail",
     edit_h2: "Deck Editor, Preview & Revisions",
     chk_burn: "Burned-in captions",
+    btn_save_only: "Save Only",
     btn_save_render: "Save Edits & Build Draft",
     h3_video: "Rendered Video & Exports",
     lbl_fb: "AI Revision (describe what to change — saves a new version)",
@@ -744,7 +917,7 @@ function collectSlideEdits() {
   return edits;
 }
 
-$("saveRenderBtn").onclick = async () => {
+async function saveDeck(shouldRender) {
   if (!CURRENT_SLUG) return;
   $("saveMsg").textContent = "...";
   const r = await fetch("/api/save-deck", {
@@ -762,14 +935,20 @@ $("saveRenderBtn").onclick = async () => {
       background_provider: $("editBgProvider").value,
       music_enabled: $("editMusicCheck").checked,
       slides: collectSlideEdits(),
-      render: true,
+      render: shouldRender,
     }),
   });
   const d = await r.json();
-  $("saveMsg").textContent = d.ok ? "OK" : `Error: ${d.error}`;
-  if (d.ok) document.querySelector('[data-tab="logs"]').click();
+  $("saveMsg").textContent = d.ok ? (shouldRender ? "OK · черновик запущен" : "Сохранено") : `Error: ${d.error}`;
+  if (d.ok) {
+    if (shouldRender) document.querySelector('[data-tab="logs"]').click();
+    else loadStoryboard(CURRENT_SLUG);
+  }
   poll();
-};
+}
+
+$("saveOnlyBtn").onclick = () => saveDeck(false);
+$("saveRenderBtn").onclick = () => saveDeck(true);
 
 /* ---------- STORYBOARD APPROVAL GATE (Stage 4) ---------- */
 const jobBusy = () => !!(STATE && STATE.job && STATE.job.status === "running");
@@ -858,10 +1037,23 @@ $("sbMasterBtn").onclick = async () => {
 
 /* ---------- IDEA ENGINE ---------- */
 let LAST_IDEAS = [];
+/* Веб-поиск работает только с LLM-источником (ollama/cloud). В режиме шаблонов чекбокс отключён, чтобы не получить ошибку сервера. */
+function syncWebSearchToggle() {
+  const cb = $("ideaWebSearchCheck");
+  const label = cb.closest("label");
+  const isTemplate = $("ideaModeSelect").value === "template";
+  cb.disabled = isTemplate;
+  if (isTemplate) cb.checked = false;
+  label.style.opacity = isTemplate ? "0.5" : "";
+  label.title = isTemplate ? "Веб-поиск доступен только с LLM-источником: Local Ollama или Cloud LLM" : "";
+}
+$("ideaModeSelect").addEventListener("change", syncWebSearchToggle);
+syncWebSearchToggle();
 $("ideaGenBtn").onclick = async () => {
   const topic = ($("ideaTopicInput").value || "").trim();
   if (topic.length < 2) { $("ideaMsg").textContent = "Введите тему (минимум 2 символа)."; return; }
   $("ideaMsg").textContent = "Генерирую идеи...";
+  $("ideaWebSources").innerHTML = "";
   $("ideaCards").innerHTML = "";
   const r = await fetch("/api/ideas", {
     method: "POST",
@@ -871,6 +1063,7 @@ $("ideaGenBtn").onclick = async () => {
       lang: $("ideaLangSelect").value,
       genre: $("ideaGenreSelect").value,
       mode: $("ideaModeSelect").value,
+      web_search: $("ideaWebSearchCheck").checked,
       count: 5,
     }),
   });
@@ -878,7 +1071,13 @@ $("ideaGenBtn").onclick = async () => {
   if (!d.ok) { $("ideaMsg").textContent = `Ошибка: ${d.error}`; return; }
   LAST_IDEAS = d.ideas || [];
   const assess = d.assessment ? ` | ${d.assessment.reasoning}` : "";
-  $("ideaMsg").textContent = `Готово: ${LAST_IDEAS.length} идей (источник: ${d.source})${assess}`;
+  const wsInfo = d.web_search ? ` · веб-поиск: ${d.web_search.provider} (${(d.web_search.results || []).length} ист.)` : "";
+  $("ideaMsg").textContent = `Готово: ${LAST_IDEAS.length} идей (источник: ${d.source}${wsInfo})${assess}`;
+  if (d.web_search && (d.web_search.results || []).length) {
+    $("ideaWebSources").innerHTML =
+      "<b>Источники веб-поиска:</b> " +
+      d.web_search.results.map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>`).join(" · ");
+  }
   $("ideaCards").innerHTML = LAST_IDEAS.map((idea, idx) => `
     <div class="slide-card">
       <div class="head">
@@ -896,6 +1095,8 @@ $("ideaGenBtn").onclick = async () => {
 
 function showStudioOut(text) {
   const el = $("studioToolOut");
+  const det = el.closest("details");
+  if (det) det.open = true;
   el.style.display = "block";
   el.textContent = text;
 }
@@ -952,6 +1153,40 @@ $("makeThumbBtn").onclick = async () => {
   });
   const d = await r.json();
   showStudioOut(d.ok ? `OK: обложка сохранена -> ${d.out} (${Math.round((d.bytes || 0) / 1024)} KB)` : `Ошибка: ${d.error}`);
+  if (d.ok) loadDeck(CURRENT_SLUG);
+};
+$("makeShortBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Создаю вертикальную деку 9:16 (Short Cutdown)...");
+  const r = await fetch("/api/cutdown", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG, max_slides: 4 }),
+  });
+  const d = await r.json();
+  showStudioOut(d.ok ? `OK: создана дека ${d.slug}.json (${d.slides} слайдов, ${d.aspect})` : `Ошибка: ${d.error}`);
+  if (d.ok) {
+    CURRENT_SLUG = d.slug;
+    await poll();
+    $("deckSelect").value = d.slug;
+    loadDeck(d.slug);
+  }
+};
+$("runQaBtn").onclick = async () => {
+  if (!CURRENT_SLUG) return;
+  showStudioOut("Запускаю Media QA Gate (LUFS, True Peak, тишина)...");
+  const r = await fetch("/api/qa", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: CURRENT_SLUG, expect_loudnorm: true }),
+  });
+  const d = await r.json();
+  if (d.error) { showStudioOut(`Ошибка: ${d.error}`); return; }
+  const status = d.ok ? "PASS" : "FAIL";
+  const fails = (d.hard_fails || []).length ? `\nHard fails:\n- ${d.hard_fails.join("\n- ")}` : "";
+  const au = d.audio || {};
+  showStudioOut(`Media QA: ${status} | LUFS=${au.integrated_lufs ?? "?"} | TP=${au.true_peak_dbtp ?? "?"} dBTP | max_silence=${au.max_interior_silence_sec ?? "?"}s${fails}`);
+  loadDeck(CURRENT_SLUG);
 };
 $("planPackBtn").onclick = async () => {
   if (!CURRENT_SLUG) return;
@@ -1156,15 +1391,30 @@ async function loadDeck(slug) {
   }
 
   const links = [];
-  if (d.has_mp4) links.push(`<a class="btn" href="/video/${encodeURIComponent(slug)}.mp4" download="${slug}.mp4">${esc(T("dl_mp4"))}</a>`);
-  if (d.has_srt) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}.srt" download="${slug}.srt">SRT</a>`);
-  if (d.has_vtt) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}.vtt" download="${slug}.vtt">VTT</a>`);
-  if (d.has_thumb) links.push(`<a class="btn" href="/out/${encodeURIComponent(slug)}_thumb.png" download="${slug}_thumb.png">${esc(T("dl_thumb"))}</a>`);
+  if (d.has_mp4) links.push(`<a class="btn sm" href="/video/${encodeURIComponent(slug)}.mp4" download="${slug}.mp4">${esc(T("dl_mp4"))}</a>`);
+  if (d.has_draft) links.push(`<a class="btn sm" href="/video/${encodeURIComponent(slug)}_draft.mp4" download="${slug}_draft.mp4">Черновик MP4</a>`);
+  if (d.has_srt) links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}.srt" download="${slug}.srt">SRT</a>`);
+  if (d.has_vtt) links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}.vtt" download="${slug}.vtt">VTT</a>`);
+  if (d.has_thumb) links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}_thumb.png" download="${slug}_thumb.png">${esc(T("dl_thumb"))}</a>`);
+  if (d.has_cover) links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}_cover.png" download="${slug}_cover.png">Cover 1280×720</a>`);
+  if (d.has_post_copy) {
+    links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}_post_copy.md" download="${slug}_post_copy.md">Пост + атрибуция</a>`);
+    links.push(`<button class="btn sm" onclick="copyPostCopy('${esc(slug)}')">Копировать пост</button>`);
+  }
+  if (d.has_chapters) links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}_chapters.txt" download="${slug}_chapters.txt">Главы</a>`);
+  if (d.has_credits) links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}_visual_credits.txt" download="${slug}_visual_credits.txt">Атрибуция</a>`);
+  if (d.has_qa) {
+    const q = d.qa_summary || {};
+    const qLbl = q.ok ? `QA PASS (${q.lufs ?? "?"} LUFS)` : "QA FAIL";
+    links.push(`<a class="btn sm" href="/out/${encodeURIComponent(slug)}_qa.json" download="${slug}_qa.json">${esc(qLbl)}</a>`);
+  }
   $("assetLinks").innerHTML = links.join("");
 
   const thumb = $("thumbImg");
   if (d.has_thumb) { thumb.src = `/out/${encodeURIComponent(slug)}_thumb.png?t=${d.thumb_mtime}`; thumb.classList.remove("hidden"); }
   else { thumb.classList.add("hidden"); }
+
+  renderTimeline(d.timeline || []);
 
   const box = $("slidesList");
   box.innerHTML = "";
@@ -1186,16 +1436,38 @@ async function loadDeck(slug) {
        </div>`
     ).join("");
     const extraInfo = s.code ? `<code>${esc(s.code.filename)}</code>` : (s.arch ? `Arch: ${(s.arch.nodes || []).length} nodes` : "");
+    const mediaRel = slideMediaFile(s);
+    const acceptsMedia = ["cinema_clip", "broll_cinematic", "screenshot"].includes(s.type);
+    const mediaThumbHtml = mediaRel
+      ? (/\.(mp4|webm)$/i.test(mediaRel)
+          ? `<video class="drop-thumb" src="/public/${encodeURI(mediaRel)}?t=${Date.now()}" muted playsinline></video>`
+          : `<img class="drop-thumb" src="/public/${encodeURI(mediaRel)}?t=${Date.now()}" alt="${esc(s.id)}"/>`)
+      : "";
+    const dropHint = s.type === "cinema_clip"
+      ? "Перетащи сюда видео (MP4/WebM) или фото из Windows / архива"
+      : "Перетащи сюда картинку (JPG/PNG/WebP) из Windows / архива";
+    const dropZoneHtml = acceptsMedia
+      ? `<div class="drop-zone" data-drop-sid="${esc(s.id)}" data-media-file="${esc(mediaRel || "")}">
+           ${mediaThumbHtml}
+           <div style="flex:1;min-width:0;">
+             <div style="color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${mediaRel ? esc(mediaRel) : esc(dropHint)}</div>
+             <div class="drop-status" style="font-size:0.72rem;margin-top:2px;">${mediaRel ? "Клик — открыть в Инспекторе · Drop — заменить медиа" : "HTML5 Drag & Drop (до 100 МБ, без системного окна)"}</div>
+           </div>
+         </div>`
+      : "";
     div.innerHTML = `
       <div class="head"><span>#${i + 1} · ${esc(s.type)} · ${esc(s.tag)}</span><span>${extraInfo}</span></div>
       <input type="text" class="s-title" value="${esc(s.title)}"/>
       <input type="text" class="s-sub" value="${esc(s.subtitle || s.tagline || "")}" style="margin-top:6px;"/>
       <input type="text" class="s-bgq" value="${esc(s.background_query || "")}" placeholder="${esc(T("bgq_ph"))}" style="margin-top:6px;"/>
+      ${dropZoneHtml}
       ${bulletsHtml}
       ${kpisHtml}
       <label>${esc(T("voice_lbl"))}</label>
       <textarea class="s-voice">${esc(voicePlain)}</textarea>
     `;
+    const dz = div.querySelector(".drop-zone");
+    if (dz) wireDropZone(dz, s.id, mediaRel);
     box.appendChild(div);
   });
 
@@ -1209,6 +1481,226 @@ async function loadDeck(slug) {
   }
 }
 
+let INSPECTED_FILE = "";
+let LAST_ARCHIVE_RESULTS = [];
+
+function slideMediaFile(s) {
+  if (!s) return "";
+  if (s.type === "cinema_clip" && s.cinema) {
+    if (s.cinema.src) return String(s.cinema.src);
+    if (Array.isArray(s.cinema.shots) && s.cinema.shots.length && s.cinema.shots[0].src) {
+      return String(s.cinema.shots[0].src);
+    }
+  }
+  if (s.type === "broll_cinematic" && s.broll && s.broll.image) return String(s.broll.image);
+  if (s.type === "screenshot" && s.screenshot && s.screenshot.image) return String(s.screenshot.image);
+  return "";
+}
+
+function wireDropZone(dz, slideId, currentFile) {
+  dz.addEventListener("click", () => {
+    const f = dz.dataset.mediaFile || currentFile;
+    if (f) inspectSlideAsset(f);
+  });
+  dz.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dz.classList.add("dragover");
+  });
+  dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+  dz.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dz.classList.remove("dragover");
+    if (!CURRENT_SLUG) return;
+    const statusEl = dz.querySelector(".drop-status");
+    const setSt = (msg) => { if (statusEl) statusEl.textContent = msg; };
+
+    // 1) Dragged from built-in Archive Search
+    const arcRaw = e.dataTransfer.getData("application/x-dup-archive");
+    if (arcRaw) {
+      let cand;
+      try { cand = JSON.parse(arcRaw); } catch { setSt("Ошибка данных архива"); return; }
+      setSt(`Скачиваю из ${cand.source || "архива"}...`);
+      const r = await fetch("/api/assets/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: CURRENT_SLUG,
+          slide_id: slideId,
+          url: cand.asset_url,
+          meta: {
+            title: cand.title || "",
+            creator: cand.creator || "",
+            source: cand.source || "",
+            license: cand.license || "",
+            license_url: cand.license_url || "",
+            page_url: cand.page_url || "",
+          },
+        }),
+      });
+      const d = await r.json();
+      if (!d.ok) { setSt(`Ошибка: ${d.error}`); return; }
+      setSt(`Привязано: ${d.asset.file}`);
+      await loadDeck(CURRENT_SLUG);
+      inspectSlideAsset(d.asset.file);
+      return;
+    }
+
+    // 2) Local file dragged from Windows Explorer
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) {
+      if (file.size > 100 * 1024 * 1024) {
+        setSt("Ошибка: файл больше 100 МБ");
+        return;
+      }
+      setSt(`Загружаю ${file.name} (${(file.size / 1048576).toFixed(1)} МБ)...`);
+      const q = new URLSearchParams({ slug: CURRENT_SLUG, slide_id: slideId, filename: file.name });
+      const r = await fetch(`/api/assets/upload?${q.toString()}`, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      const d = await r.json();
+      if (!d.ok) { setSt(`Ошибка: ${d.error}`); return; }
+      setSt(`Привязано: ${d.asset.file}`);
+      await loadDeck(CURRENT_SLUG);
+      inspectSlideAsset(d.asset.file);
+      return;
+    }
+
+    // 3) https:// URL dragged from another browser tab
+    const uri = (e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain") || "").trim().split(/\r?\n/)[0];
+    if (uri && /^https:\/\//i.test(uri)) {
+      setSt("Скачиваю по https:// ссылке...");
+      const r = await fetch("/api/assets/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: CURRENT_SLUG, slide_id: slideId, url: uri }),
+      });
+      const d = await r.json();
+      if (!d.ok) { setSt(`Ошибка: ${d.error}`); return; }
+      setSt(`Привязано: ${d.asset.file}`);
+      await loadDeck(CURRENT_SLUG);
+      inspectSlideAsset(d.asset.file);
+      return;
+    }
+    setSt("Не удалось распознать файл или https:// ссылку");
+  });
+}
+
+async function inspectSlideAsset(relFile) {
+  if (!CURRENT_SLUG || !relFile) return;
+  INSPECTED_FILE = relFile;
+  $("inspMsg").textContent = "Загружаю...";
+  const q = new URLSearchParams({ slug: CURRENT_SLUG, file: relFile });
+  const r = await fetch(`/api/assets/inspect?${q.toString()}`);
+  const d = await r.json();
+  if (!d.ok) { $("inspMsg").textContent = `Ошибка: ${d.error}`; return; }
+  const a = d.asset;
+  const lic = (a.license || "unknown").toUpperCase();
+  const pill = $("inspLicPill");
+  pill.className = `pill ${a.needs_credit ? "run" : (["CC0", "PDM", "OWN", "NASA-MEDIA"].includes(lic) ? "ok" : "err")}`;
+  pill.textContent = a.needs_credit ? `${lic} · нужна атрибуция` : lic;
+
+  const sizeMb = a.bytes >= 1048576 ? `${(a.bytes / 1048576).toFixed(2)} MB` : `${Math.round((a.bytes || 0) / 1024)} KB`;
+  const dur = a.duration_sec ? ` · ${a.duration_sec}s` : "";
+  $("inspSpecs").textContent = `${a.file} | ${a.format || a.kind} · ${a.width || "?"}×${a.height || "?"}${dur} · ${sizeMb}`;
+  $("inspPreview").innerHTML = a.kind === "video"
+    ? `<video src="/public/${encodeURI(a.file)}?t=${Date.now()}" controls muted style="max-height:170px;width:100%;border-radius:8px;"></video>`
+    : `<img src="/public/${encodeURI(a.file)}?t=${Date.now()}" style="max-height:170px;width:100%;object-fit:contain;border-radius:8px;background:#000;border:1px solid var(--line);"/>`;
+
+  $("inspTitle").value = a.title || "";
+  $("inspCreator").value = a.creator || "";
+  $("inspLicense").value = ["own", "cc0", "pdm", "nasa-media", "by", "by-sa", "unknown"].includes(a.license) ? a.license : "unknown";
+  $("inspSource").value = a.source || "";
+  $("inspPageUrl").value = a.page_url || "";
+  $("inspLicUrl").value = a.license_url || "";
+  $("inspForm").classList.remove("hidden");
+  $("inspMsg").textContent = a.probe_error ? `Не удалось прочитать параметры файла: ${a.probe_error}` : "";
+}
+
+$("inspSaveBtn").onclick = async () => {
+  if (!CURRENT_SLUG || !INSPECTED_FILE) return;
+  $("inspMsg").textContent = "Сохраняю...";
+  const r = await fetch("/api/assets/meta", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      slug: CURRENT_SLUG,
+      file: INSPECTED_FILE,
+      meta: {
+        title: $("inspTitle").value.trim(),
+        creator: $("inspCreator").value.trim(),
+        license: $("inspLicense").value,
+        source: $("inspSource").value.trim(),
+        page_url: $("inspPageUrl").value.trim(),
+        license_url: $("inspLicUrl").value.trim(),
+      },
+    }),
+  });
+  const d = await r.json();
+  $("inspMsg").textContent = d.ok ? "Сохранено (учтётся в _post_copy.md)" : `Ошибка: ${d.error}`;
+  if (d.ok) inspectSlideAsset(INSPECTED_FILE);
+};
+
+async function runArchiveSearch() {
+  const q = ($("arcQuery").value || "").trim();
+  if (q.length < 2) { $("arcMsg").textContent = "Введите минимум 2 символа."; return; }
+  $("arcMsg").textContent = "Ищу в Wikimedia / NASA / Openverse...";
+  $("arcResults").innerHTML = "";
+  const qs = new URLSearchParams({ q, kind: $("arcKind").value, limit: "8" });
+  const r = await fetch(`/api/assets/search?${qs.toString()}`);
+  const d = await r.json();
+  if (!d.ok) { $("arcMsg").textContent = `Ошибка: ${d.error}`; return; }
+  LAST_ARCHIVE_RESULTS = d.results || [];
+  $("arcMsg").textContent = LAST_ARCHIVE_RESULTS.length
+    ? `Найдено: ${LAST_ARCHIVE_RESULTS.length}. Перетащи карточку на любой слайд справа.`
+    : "Ничего не найдено по этому запросу.";
+  $("arcResults").innerHTML = LAST_ARCHIVE_RESULTS.map((c, idx) => {
+    const lic = String(c.license || "?").toUpperCase();
+    const licCls = c.needs_credit ? "run" : "ok";
+    const dims = c.width && c.height ? `${c.width}×${c.height}` : c.kind;
+    return `
+      <div class="arc-card" draggable="true" data-arc-idx="${idx}" title="Перетащи на слайд справа">
+        <img src="${esc(c.thumb_url)}" alt="${esc(c.title)}" loading="lazy"/>
+        <div style="margin-top:4px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.title)}</div>
+        <div class="row" style="justify-content:space-between;margin-top:4px;gap:4px;">
+          <span class="pill ${licCls}" style="font-size:0.64rem;padding:1px 6px;">${esc(lic)}</span>
+          <span style="color:var(--muted);font-size:0.66rem;">${esc(c.source)} · ${esc(dims)}</span>
+        </div>
+      </div>`;
+  }).join("");
+  $("arcResults").querySelectorAll(".arc-card").forEach((el) => {
+    el.addEventListener("dragstart", (e) => {
+      const idx = Number(el.dataset.arcIdx);
+      const item = LAST_ARCHIVE_RESULTS[idx];
+      if (!item) return;
+      e.dataTransfer.setData("application/x-dup-archive", JSON.stringify(item));
+      e.dataTransfer.effectAllowed = "copy";
+    });
+  });
+}
+
+$("arcSearchBtn").onclick = runArchiveSearch;
+$("arcQuery").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); runArchiveSearch(); } });
+
+window.copyPostCopy = async (slug) => {
+  if (!slug) return;
+  try {
+    const r = await fetch(`/out/${encodeURIComponent(slug)}_post_copy.md`);
+    if (!r.ok) { $("ttMsg").textContent = "Файл поста не найден"; return; }
+    const text = await r.text();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      $("ttMsg").textContent = "Текст поста (с атрибуцией) скопирован в буфер";
+    } else {
+      showStudioOut(text);
+      $("ttMsg").textContent = "Текст поста открыт выше в блоке «Студийные инструменты»";
+    }
+  } catch (err) {
+    $("ttMsg").textContent = `Ошибка копирования: ${err}`;
+  }
+};
+
 let LAST_JOB_STATUS = "";
 async function poll() {
   try {
@@ -1220,17 +1712,46 @@ async function poll() {
   $("providerBadge").textContent = p.cloud_configured
     ? `${T("prov_lbl")}: cloud (${p.cloud_model || "API"})`
     : `${T("prov_lbl")}: ollama (${p.ollama_model})`;
-  const badge = (label, ok, warn) => `<span class="pill ${ok ? "ok" : warn ? "run" : "err"}" style="font-size:0.68rem;">${esc(label)}</span>`;
+  const badge = (label, ok, warn, tip) => `<span class="pill ${ok ? "ok" : warn ? "run" : "err"}" style="font-size:0.68rem;" title="${esc(tip || label)}">${esc(label)}</span>`;
   const tt = sys.tiktok || {};
   const ttLabel = tt.can_auto_refresh ? "TikTok:AUTO" : (tt.access_token_set ? "TikTok:OK" : "TikTok:OFF");
+  const ollamaModels = (sys.ollama_models || []).join(", ");
   $("sysStatus").innerHTML = [
-    badge(sys.ollama_online ? `Ollama:${(sys.ollama_models || []).length}` : "Ollama:OFF", !!sys.ollama_online, false),
-    badge(sys.cloud_configured ? "Cloud:OK" : "Cloud:off", !!sys.cloud_configured, true),
-    badge(ttLabel, !!tt.ready, !!tt.access_token_set && !tt.can_auto_refresh),
-    badge(sys.silero_ru_ready ? "RU:OK" : "RU:auto", !!sys.silero_ru_ready, true),
-    badge(sys.silero_en_ready ? "EN:OK" : "EN:auto", !!sys.silero_en_ready, true),
-    badge(sys.ffmpeg_ready && sys.remotion_ready ? "FFmpeg:OK" : "FFmpeg:ERR", !!(sys.ffmpeg_ready && sys.remotion_ready), false),
+    badge(
+      sys.ollama_online ? `Ollama:${(sys.ollama_models || []).length}` : "Ollama:OFF",
+      !!sys.ollama_online, false,
+      sys.ollama_online ? `Локальная Ollama онлайн. Модели: ${ollamaModels || "нет"}` : "Локальная Ollama не запущена (нажми «Авто-настройка / Ollama»)"
+    ),
+    badge(
+      sys.cloud_configured ? "Cloud:OK" : "Cloud:off",
+      !!sys.cloud_configured, true,
+      sys.cloud_configured ? `Облачный LLM настроен (${sys.cloud_model || "API"})` : "Облачный ключ LLM не задан в окружении"
+    ),
+    badge(
+      ttLabel, !!tt.ready, !!tt.access_token_set && !tt.can_auto_refresh,
+      tt.can_auto_refresh ? "TikTok API: токен и авто-обновление настроены" : (tt.access_token_set ? "TikTok API: токен есть, авто-обновление не настроено" : "TikTok API: не настроен")
+    ),
+    badge(
+      sys.silero_ru_ready ? "RU:OK" : "RU:auto",
+      !!sys.silero_ru_ready, true,
+      sys.silero_ru_ready ? "Офлайн-голос Silero RU готов на диске" : "Офлайн-голос Silero RU скачается автоматически при сборке"
+    ),
+    badge(
+      sys.silero_en_ready ? "EN:OK" : "EN:auto",
+      !!sys.silero_en_ready, true,
+      sys.silero_en_ready ? "Офлайн-голос EN готов на диске" : "Офлайн-голос EN скачается автоматически при сборке"
+    ),
+    badge(
+      sys.ffmpeg_ready && sys.remotion_ready ? "FFmpeg:OK" : "FFmpeg:ERR",
+      !!(sys.ffmpeg_ready && sys.remotion_ready), false,
+      sys.ffmpeg_ready && sys.remotion_ready ? "FFmpeg и Remotion готовы к рендеру" : "FFmpeg или Remotion не найдены"
+    ),
   ].join("");
+  if ($("webSearchHint")) {
+    $("webSearchHint").textContent = sys.web_search_provider
+      ? `Ключ поиска настроен: ${sys.web_search_provider}`
+      : "Ключ SERPER_API_KEY / BRAVE_API_KEY не задан (при включении будет fail-closed)";
+  }
   if ($("ttStatusPill")) {
     $("ttStatusPill").innerHTML = tt.can_auto_refresh
       ? `<span class="pill ok">token + auto-refresh OK</span>`
@@ -1256,6 +1777,7 @@ async function poll() {
   const busy = job.status === "running";
   $("genBtn").disabled = busy;
   $("feedbackBtn").disabled = busy;
+  $("saveOnlyBtn").disabled = busy;
   $("saveRenderBtn").disabled = busy;
   $("mergeBtn").disabled = busy;
   $("ttUploadBtn").disabled = busy;
@@ -1294,6 +1816,330 @@ $("bootstrapBtn").onclick = async () => {
     btn.textContent = T("btn_bootstrap");
   }
 };
+
+/* ---------- TIMELINE (Stage: Iteration 2, Priority 4) ---------- */
+let CURRENT_TIMELINE = [];
+let TL_AUDIO = null;
+let TL_PLAYING_ID = "";
+
+function stopTimelineAudio() {
+  if (TL_AUDIO) { TL_AUDIO.pause(); TL_AUDIO = null; }
+  TL_PLAYING_ID = "";
+  document.querySelectorAll(".tl-play-btn").forEach((b) => { b.textContent = "▶"; });
+}
+
+window.toggleSlideAudio = (sid, url, btn) => {
+  if (!url) return;
+  if (TL_PLAYING_ID === sid && TL_AUDIO) {
+    stopTimelineAudio();
+    return;
+  }
+  stopTimelineAudio();
+  TL_AUDIO = new Audio(url);
+  TL_PLAYING_ID = sid;
+  if (btn) btn.textContent = "■";
+  TL_AUDIO.onended = () => stopTimelineAudio();
+  TL_AUDIO.onerror = () => { $("tlMsg").textContent = "Не удалось воспроизвести WAV озвучки"; stopTimelineAudio(); };
+  TL_AUDIO.play().catch(() => stopTimelineAudio());
+};
+
+function renderTimeline(items) {
+  CURRENT_TIMELINE = items || [];
+  const strip = $("timelineStrip");
+  if (!strip) return;
+  if (!CURRENT_TIMELINE.length) {
+    strip.innerHTML = `<div style="color:var(--muted);font-size:0.8rem;">Нет слайдов</div>`;
+    $("tlMeta").textContent = "0 с";
+    return;
+  }
+  const totalSec = CURRENT_TIMELINE.reduce((acc, x) => acc + Number(x.duration_sec || 0), 0);
+  const voicedCount = CURRENT_TIMELINE.filter((x) => x.has_audio).length;
+  $("tlMeta").textContent = `${CURRENT_TIMELINE.length} сл. · ~${totalSec.toFixed(1)} с · WAV: ${voicedCount}/${CURRENT_TIMELINE.length}`;
+
+  strip.innerHTML = CURRENT_TIMELINE.map((item, idx) => {
+    const w = Math.max(150, Math.min(270, Math.round(120 + Number(item.duration_sec || 4) * 10)));
+    const waveHtml = item.has_audio && (item.peaks || []).length
+      ? `<div class="tl-wave" title="Реальная аудиодорожка озвучки (${item.duration_sec} с)">` +
+        item.peaks.map((p) => `<span class="tl-bar" style="height:${Math.max(12, Math.round(p * 100))}%;"></span>`).join("") +
+        `</div>`
+      : `<div class="tl-wave est" title="Озвучка ещё не собрана — показана оценка длительности">~${Number(item.duration_sec).toFixed(1)}с (нет WAV)</div>`;
+    const playBtn = item.has_audio
+      ? `<button class="btn sm tl-play-btn" style="padding:2px 6px;font-size:0.7rem;" onclick="event.stopPropagation();toggleSlideAudio('${esc(item.id)}','${esc(item.audio_url)}',this)">▶</button>`
+      : "";
+    return `
+      <div class="tl-block" draggable="true" data-tl-sid="${esc(item.id)}" style="width:${w}px;">
+        <div class="row" style="justify-content:space-between;gap:4px;">
+          <span style="font-size:0.7rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;">#${idx + 1} · ${esc(item.type)}</span>
+          <span style="font-size:0.7rem;color:var(--accent);font-family:'IBM Plex Mono',monospace;">${Number(item.duration_sec).toFixed(1)}s</span>
+        </div>
+        <div style="font-size:0.78rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(item.title)}">${esc(item.title)}</div>
+        <div class="row" style="gap:6px;align-items:center;">
+          <div style="flex:1;">${waveHtml}</div>
+          ${playBtn}
+        </div>
+      </div>`;
+  }).join("");
+
+  let dragSid = "";
+  strip.querySelectorAll(".tl-block").forEach((el) => {
+    el.addEventListener("click", () => {
+      const card = document.querySelector(`.slide-card[data-sid="${CSS.escape(el.dataset.tlSid)}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        card.style.borderColor = "var(--accent)";
+        setTimeout(() => { card.style.borderColor = ""; }, 1200);
+      }
+    });
+    el.addEventListener("dragstart", (e) => {
+      dragSid = el.dataset.tlSid;
+      e.dataTransfer.setData("text/plain", dragSid);
+      e.dataTransfer.effectAllowed = "move";
+    });
+    el.addEventListener("dragover", (e) => { e.preventDefault(); el.classList.add("dragover"); });
+    el.addEventListener("dragleave", () => el.classList.remove("dragover"));
+    el.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      el.classList.remove("dragover");
+      const targetSid = el.dataset.tlSid;
+      if (!dragSid || !targetSid || dragSid === targetSid || !CURRENT_SLUG) return;
+      const order = CURRENT_TIMELINE.map((x) => x.id);
+      const fromIdx = order.indexOf(dragSid);
+      const toIdx = order.indexOf(targetSid);
+      if (fromIdx < 0 || toIdx < 0) return;
+      order.splice(fromIdx, 1);
+      order.splice(toIdx, 0, dragSid);
+      $("tlMsg").textContent = "Сохраняю новый порядок слайдов...";
+      const r = await fetch("/api/slides/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: CURRENT_SLUG, order }),
+      });
+      const d = await r.json();
+      if (!d.ok) { $("tlMsg").textContent = `Ошибка: ${d.error}`; return; }
+      $("tlMsg").textContent = "Порядок слайдов обновлён (одобрение раскадровки сброшено — пересобери черновик).";
+      loadDeck(CURRENT_SLUG);
+    });
+  });
+}
+
+/* ---------- 3D STUDIO (Stage: Iteration 2, Priority 2) ---------- */
+let S3D_PENDING_IMG = null;
+let S3D_CTX = null;
+let S3D_AUTO_ROTATE = true;
+let S3D_SHOW_GRID = true;
+
+async function load3dModels() {
+  try {
+    const r = await fetch("/api/3d/models");
+    const d = await r.json();
+    if (!d.ok) return;
+    const pill = $("s3dProviderPill");
+    if (d.provider) {
+      pill.className = "pill ok";
+      pill.textContent = `3D API: ${d.provider}`;
+    } else {
+      pill.className = "pill run";
+      pill.textContent = "3D API: нет ключа (fail-closed)";
+    }
+    const list = $("s3dModelsList");
+    const items = d.models || [];
+    if (!items.length) {
+      list.textContent = "Пока нет .glb моделей. Сгенерируй из фото или перетащи .glb выше.";
+      return;
+    }
+    list.innerHTML = items.map((m) => `
+      <div class="clip-row" style="margin-bottom:6px;padding:7px 10px;">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>${esc(m.name)}</b> <span style="color:var(--muted);font-size:0.74rem;">(${(m.bytes / 1048576).toFixed(2)} MB)</span></div>
+        <button class="btn sm primary" onclick="loadGlbInViewport('/public/${encodeURI(m.file)}','${esc(m.name)}')">Открыть</button>
+      </div>`).join("");
+  } catch { /* ignore */ }
+}
+
+function wire3dDropZones() {
+  const imgDz = $("s3dImgDrop");
+  imgDz.addEventListener("dragover", (e) => { e.preventDefault(); imgDz.classList.add("dragover"); });
+  imgDz.addEventListener("dragleave", () => imgDz.classList.remove("dragover"));
+  imgDz.addEventListener("drop", (e) => {
+    e.preventDefault();
+    imgDz.classList.remove("dragover");
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!file) return;
+    S3D_PENDING_IMG = file;
+    $("s3dImgName").textContent = `${file.name} (${(file.size / 1048576).toFixed(2)} МБ)`;
+    if (!$("s3dNameInput").value.trim()) {
+      $("s3dNameInput").value = file.name.replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 40);
+    }
+    $("s3dGenBtn").disabled = false;
+    $("s3dMsg").textContent = "Картинка готова. Нажми «Сгенерировать 3D (.glb)».";
+  });
+
+  $("s3dGenBtn").onclick = async () => {
+    if (!S3D_PENDING_IMG) return;
+    $("s3dGenBtn").disabled = true;
+    $("s3dMsg").textContent = "Отправляю в 3D API (Tripo3D / Fal.ai)...";
+    try {
+      const q = new URLSearchParams({ name: $("s3dNameInput").value.trim() || "model" });
+      const r = await fetch(`/api/3d/generate?${q.toString()}`, {
+        method: "POST",
+        headers: { "Content-Type": S3D_PENDING_IMG.type || "application/octet-stream" },
+        body: S3D_PENDING_IMG,
+      });
+      const d = await r.json();
+      if (!d.ok) {
+        $("s3dMsg").textContent = `Ошибка (fail-closed): ${d.error}`;
+      } else {
+        $("s3dMsg").textContent = `Готово: ${d.model.name}`;
+        await load3dModels();
+        window.loadGlbInViewport(`/public/${encodeURI(d.model.file)}`, d.model.name);
+      }
+    } catch (err) {
+      $("s3dMsg").textContent = `Ошибка сети: ${err}`;
+    } finally {
+      $("s3dGenBtn").disabled = !S3D_PENDING_IMG;
+    }
+  };
+
+  const glbDz = $("s3dGlbDrop");
+  glbDz.addEventListener("dragover", (e) => { e.preventDefault(); glbDz.classList.add("dragover"); });
+  glbDz.addEventListener("dragleave", () => glbDz.classList.remove("dragover"));
+  glbDz.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    glbDz.classList.remove("dragover");
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!file) return;
+    $("s3dGlbMsg").textContent = `Загружаю ${file.name}...`;
+    const q = new URLSearchParams({ filename: file.name });
+    const r = await fetch(`/api/3d/upload-glb?${q.toString()}`, {
+      method: "POST",
+      headers: { "Content-Type": "model/gltf-binary" },
+      body: file,
+    });
+    const d = await r.json();
+    if (!d.ok) { $("s3dGlbMsg").textContent = `Ошибка: ${d.error}`; return; }
+    $("s3dGlbMsg").textContent = `Загружено: ${d.model.name}`;
+    await load3dModels();
+    window.loadGlbInViewport(`/public/${encodeURI(d.model.file)}`, d.model.name);
+  });
+
+  $("s3dResetCamBtn").onclick = () => {
+    if (!S3D_CTX) { $("vpStatus").textContent = "Сначала загрузи или сгенерируй .glb модель слева."; return; }
+    S3D_CTX.camera.position.set(2.4, 1.8, 3.2);
+    S3D_CTX.controls.target.set(0, 0, 0);
+    S3D_CTX.controls.update();
+    $("vpStatus").textContent = "Камера сброшена.";
+  };
+  $("s3dAutoRotBtn").onclick = () => {
+    S3D_AUTO_ROTATE = !S3D_AUTO_ROTATE;
+    if (S3D_CTX) S3D_CTX.controls.autoRotate = S3D_AUTO_ROTATE;
+    $("s3dAutoRotBtn").textContent = `Авто-вращение: ${S3D_AUTO_ROTATE ? "ВКЛ" : "ВЫКЛ"}`;
+  };
+  $("s3dGridBtn").onclick = () => {
+    S3D_SHOW_GRID = !S3D_SHOW_GRID;
+    if (S3D_CTX) S3D_CTX.grid.visible = S3D_SHOW_GRID;
+    $("s3dGridBtn").textContent = `Сетка: ${S3D_SHOW_GRID ? "ВКЛ" : "ВЫКЛ"}`;
+  };
+}
+
+async function ensureThreeViewport() {
+  if (S3D_CTX) return S3D_CTX;
+  const box = $("viewport3d");
+  $("vpStatus").textContent = "Загружаю Three.js + OrbitControls...";
+  let THREE, OrbitControls, GLTFLoader;
+  try {
+    THREE = await import("https://esm.sh/three@0.170.0");
+    ({ OrbitControls } = await import("https://esm.sh/three@0.170.0/examples/jsm/controls/OrbitControls.js"));
+    ({ GLTFLoader } = await import("https://esm.sh/three@0.170.0/examples/jsm/loaders/GLTFLoader.js"));
+  } catch (err) {
+    $("vpStatus").textContent = `Fail-closed: Three.js недоступен (нужен доступ к esm.sh): ${err}`;
+    return null;
+  }
+  const w = box.clientWidth || 640;
+  const h = box.clientHeight || 460;
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (err) {
+    $("vpStatus").textContent = `Fail-closed: WebGL недоступен в браузере: ${err}`;
+    return null;
+  }
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  box.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, w / h, 0.05, 200);
+  camera.position.set(2.4, 1.8, 3.2);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.autoRotate = S3D_AUTO_ROTATE;
+  controls.autoRotateSpeed = 1.6;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const key = new THREE.DirectionalLight(0xffffff, 1.3);
+  key.position.set(4, 6, 5);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0x38bdf8, 0.7);
+  rim.position.set(-4, 3, -5);
+  scene.add(rim);
+
+  const grid = new THREE.GridHelper(6, 12, 0x00d4b8, 0x243247);
+  grid.visible = S3D_SHOW_GRID;
+  scene.add(grid);
+
+  S3D_CTX = { THREE, GLTFLoader, scene, camera, renderer, controls, grid, currentModel: null };
+
+  const tick = () => {
+    requestAnimationFrame(tick);
+    controls.update();
+    renderer.render(scene, camera);
+  };
+  tick();
+
+  window.addEventListener("resize", () => {
+    if (!S3D_CTX) return;
+    const nw = box.clientWidth || 640;
+    const nh = box.clientHeight || 460;
+    camera.aspect = nw / nh;
+    camera.updateProjectionMatrix();
+    renderer.setSize(nw, nh);
+  });
+  return S3D_CTX;
+}
+
+window.loadGlbInViewport = async (url, label) => {
+  const ctx = await ensureThreeViewport();
+  if (!ctx) return;
+  $("vpOverlay").style.display = "none";
+  $("vpStatus").textContent = `Загружаю ${label || url}...`;
+  const loader = new ctx.GLTFLoader();
+  loader.load(
+    url,
+    (gltf) => {
+      if (ctx.currentModel) ctx.scene.remove(ctx.currentModel);
+      const root = gltf.scene;
+      const box = new ctx.THREE.Box3().setFromObject(root);
+      const size = box.getSize(new ctx.THREE.Vector3());
+      const center = box.getCenter(new ctx.THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      root.scale.setScalar(2.0 / maxDim);
+      root.position.sub(center.multiplyScalar(2.0 / maxDim));
+      ctx.scene.add(root);
+      ctx.currentModel = root;
+      ctx.camera.position.set(2.4, 1.8, 3.2);
+      ctx.controls.target.set(0, 0, 0);
+      ctx.controls.update();
+      $("vpStatus").textContent = `Модель загружена: ${label || url} (ЛКМ — вращать, колесо — зум, ПКМ — панорама)`;
+    },
+    undefined,
+    (err) => {
+      $("vpStatus").textContent = `Ошибка загрузки .glb: ${err}`;
+    }
+  );
+};
+
+wire3dDropZones();
+document.querySelector('[data-tab="3d"]').addEventListener("click", () => load3dModels());
 
 applyUiLang();
 poll();

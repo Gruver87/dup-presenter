@@ -62,6 +62,28 @@ from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumb
 from tiktok_uploader import refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
 from video_pack import VideoPackError, pack_cli_args, plan_video_pack  # noqa: E402
 from storyboard_gate import StoryboardGateError, approve as sb_approve, gate_status, revoke as sb_revoke, storyboard_view  # noqa: E402
+from asset_store import (  # noqa: E402
+    AssetStoreError,
+    MAX_UPLOAD_BYTES,
+    PUBLIC_DIR as ASSETS_PUBLIC_DIR,
+    bind_asset_to_slide,
+    inspect_asset,
+    save_from_url,
+    save_uploaded_bytes,
+    search_free_archives,
+    unlicensed_deck_assets,
+    update_asset_meta,
+)
+from web_search import configured_provider as web_search_provider  # noqa: E402
+from studio_3d import (  # noqa: E402
+    MAX_GLB_BYTES,
+    MAX_IMG_BYTES,
+    Studio3DError,
+    configured_provider as studio_3d_provider,
+    generate_glb as studio_3d_generate,
+    list_models as studio_3d_list,
+    save_glb_bytes as studio_3d_save_glb,
+)
 
 from theme_catalog import THEME_CATALOG  # noqa: E402
 from tts_engines import KOKORO_DEFAULT, KOKORO_VOICE_CATALOG  # noqa: E402
@@ -89,13 +111,16 @@ SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 
 def _load_user_env_into_os() -> None:
-    """On Windows, refresh DUP_LLM_* from User registry env so a newly set key works."""
+    """On Windows, refresh provider keys from User registry env so a newly set key works without relaunch."""
     if os.name != "nt":
         return
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
-            for name in ("DUP_LLM_BASE_URL", "DUP_LLM_MODEL", "DUP_LLM_API_KEY"):
+            for name in (
+                "DUP_LLM_BASE_URL", "DUP_LLM_MODEL", "DUP_LLM_API_KEY",
+                "SERPER_API_KEY", "BRAVE_API_KEY", "TRIPO_API_KEY", "FAL_KEY",
+            ):
                 if not os.environ.get(name):
                     try:
                         val, _ = winreg.QueryValueEx(key, name)
@@ -241,6 +266,68 @@ def list_decks() -> list[dict[str, Any]]:
     return items
 
 
+def _wav_waveform(wav_path: Path, bins: int = 24) -> tuple[float, list[float]]:
+    """Compute (duration_sec, normalized_peak_bars[bins]) from a local 16-bit PCM WAV."""
+    import wave
+    import numpy as np
+
+    try:
+        with wave.open(str(wav_path), "rb") as wf:
+            fr = wf.getframerate() or 24000
+            n_frames = wf.getnframes()
+            ch = wf.getnchannels() or 1
+            sw = wf.getsampwidth()
+            raw = wf.readframes(n_frames)
+        dur = round(n_frames / float(fr), 2) if n_frames > 0 else 0.0
+        if not raw or sw != 2:
+            return dur, [0.25] * bins
+        arr = np.frombuffer(raw, dtype=np.int16).astype(np.float32)
+        if ch > 1:
+            arr = arr.reshape(-1, ch).mean(axis=1)
+        arr = np.abs(arr)
+        peak = float(arr.max()) if arr.size else 0.0
+        if peak <= 0.0 or arr.size < bins:
+            return dur, [0.15] * bins
+        chunks = np.array_split(arr, bins)
+        bars = [round(max(0.08, float(c.max()) / peak), 2) for c in chunks]
+        return dur, bars
+    except Exception:
+        return 0.0, []
+
+
+def build_timeline(slug: str, deck: dict[str, Any]) -> list[dict[str, Any]]:
+    """Build per-slide timeline blocks with real voice WAV duration + waveform when available."""
+    voice_dir = ASSETS_PUBLIC_DIR / "voice"
+    items: list[dict[str, Any]] = []
+    running = 0.0
+    for idx, s in enumerate(deck.get("slides") or []):
+        sid = str(s.get("id") or f"s{idx + 1}")
+        wav = voice_dir / f"{slug}_{sid}.wav"
+        has_audio = wav.is_file()
+        peaks: list[float] = []
+        if has_audio:
+            dur, peaks = _wav_waveform(wav, bins=24)
+            if dur <= 0.0:
+                dur = 4.0
+        else:
+            text = str(s.get("voice_text") or "")
+            words = len(text.split())
+            dur = max(3.5, round(words / 2.3 + 1.2, 1))
+        items.append({
+            "index": idx,
+            "id": sid,
+            "type": str(s.get("type") or ""),
+            "title": str(s.get("title") or sid),
+            "start_sec": round(running, 2),
+            "duration_sec": dur,
+            "has_audio": has_audio,
+            "audio_url": f"/voice/{slug}/{sid}.wav?t={int(wav.stat().st_mtime)}" if has_audio else "",
+            "peaks": peaks,
+        })
+        running += dur
+    return items
+
+
 def read_deck_detail(slug: str) -> dict[str, Any]:
     slug = _valid_slug(slug)
     deck_path = DECKS_DIR / f"{slug}.json"
@@ -258,9 +345,29 @@ def read_deck_detail(slug: str) -> dict[str, Any]:
                 except json.JSONDecodeError:
                     pass
     mp4 = OUT_DIR / f"{slug}.mp4"
+    draft_mp4 = OUT_DIR / f"{slug}_draft.mp4"
     srt = OUT_DIR / f"{slug}.srt"
     vtt = OUT_DIR / f"{slug}.vtt"
     thumb = OUT_DIR / f"{slug}_thumb.png"
+    cover = OUT_DIR / f"{slug}_cover.png"
+    post_copy = OUT_DIR / f"{slug}_post_copy.md"
+    chapters = OUT_DIR / f"{slug}_chapters.txt"
+    metadata = OUT_DIR / f"{slug}_metadata.json"
+    qa_path = OUT_DIR / f"{slug}_qa.json"
+    credits = OUT_DIR / f"{slug}_visual_credits.txt"
+    qa_summary: dict[str, Any] | None = None
+    if qa_path.is_file():
+        try:
+            qr = json.loads(qa_path.read_text(encoding="utf-8"))
+            # media_qa writes loudness under "audio" (integrated_lufs / true_peak_dbtp).
+            audio_qa = qr.get("audio") or {}
+            qa_summary = {
+                "ok": bool(qr.get("ok")),
+                "lufs": audio_qa.get("integrated_lufs"),
+                "true_peak_db": audio_qa.get("true_peak_dbtp"),
+            }
+        except (OSError, json.JSONDecodeError):
+            qa_summary = None
     return {
         "ok": True,
         "slug": slug,
@@ -268,11 +375,21 @@ def read_deck_detail(slug: str) -> dict[str, Any]:
         "history": history,
         "has_mp4": mp4.is_file(),
         "mp4_mtime": int(mp4.stat().st_mtime) if mp4.is_file() else 0,
-        "has_draft": (OUT_DIR / f"{slug}_draft.mp4").is_file(),
+        "has_draft": draft_mp4.is_file(),
+        "draft_mtime": int(draft_mp4.stat().st_mtime) if draft_mp4.is_file() else 0,
         "has_srt": srt.is_file(),
         "has_vtt": vtt.is_file(),
         "has_thumb": thumb.is_file(),
         "thumb_mtime": int(thumb.stat().st_mtime) if thumb.is_file() else 0,
+        "has_cover": cover.is_file(),
+        "cover_mtime": int(cover.stat().st_mtime) if cover.is_file() else 0,
+        "has_post_copy": post_copy.is_file(),
+        "has_chapters": chapters.is_file(),
+        "has_metadata": metadata.is_file(),
+        "has_qa": qa_path.is_file(),
+        "qa_summary": qa_summary,
+        "has_credits": credits.is_file(),
+        "timeline": build_timeline(slug, deck),
     }
 
 
@@ -359,6 +476,8 @@ def system_status(ollama_online: bool | None = None, ollama_models: list[str] | 
         "remotion_ready": remotion_ok,
         "git_ready": bool(shutil.which("git")),
         "tiktok": tiktok_status(),
+        "web_search_provider": web_search_provider(),
+        "studio_3d_provider": studio_3d_provider(),
     }
 
 
@@ -418,6 +537,30 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
+    def _guard_local_request(self, *, state_changing: bool) -> bool:
+        """Refuse DNS-rebinding (foreign Host) and cross-site POSTs from other browser tabs.
+
+        Browsers attach Origin / Sec-Fetch-Site to cross-site requests; a "simple" text/plain POST
+        needs no CORS preflight, so without this check any web page could trigger renders,
+        deck overwrites or TikTok uploads on 127.0.0.1. Non-browser clients send no Origin.
+        """
+        port = self.server.server_address[1]
+        allowed = {f"127.0.0.1:{port}", f"localhost:{port}"}
+        host = (self.headers.get("Host") or "").strip().lower()
+        if host not in allowed:
+            self._json(403, {"ok": False, "error": "Forbidden: console accepts only 127.0.0.1 / localhost Host"})
+            return False
+        if state_changing:
+            origin = (self.headers.get("Origin") or "").strip().lower()
+            if origin and origin.removeprefix("http://") not in allowed:
+                self._json(403, {"ok": False, "error": "Forbidden: cross-origin request refused"})
+                return False
+            fetch_site = (self.headers.get("Sec-Fetch-Site") or "").strip().lower()
+            if fetch_site and fetch_site not in {"same-origin", "none"}:
+                self._json(403, {"ok": False, "error": "Forbidden: cross-site request refused"})
+                return False
+        return True
+
     def _read_json(self) -> dict[str, Any]:
         n = int(self.headers.get("Content-Length") or 0)
         if n <= 0 or n > 2_000_000:
@@ -470,6 +613,8 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 left -= len(chunk)
 
     def do_GET(self) -> None:  # noqa: N802
+        if not self._guard_local_request(state_changing=False):
+            return
         parsed = urlparse(self.path)
         path = parsed.path
         qs = parse_qs(parsed.query)
@@ -553,7 +698,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
 
         if path.startswith("/out/"):
             fname = path[len("/out/"):]
-            if not re.match(r"^[A-Za-z0-9_-]+(?:\.srt|\.vtt|_thumb\.png|_chapters\.txt|_post_copy\.md|_metadata\.json|_qa\.json)$", fname):
+            if not re.match(r"^[A-Za-z0-9_-]+(?:\.srt|\.vtt|_thumb\.png|_cover\.png|_chapters\.txt|_post_copy\.md|_metadata\.json|_qa\.json|_visual_credits\.txt)$", fname):
                 self._json(400, {"ok": False, "error": "Invalid asset name"})
                 return
             fpath = OUT_DIR / fname
@@ -570,15 +715,267 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
             return
 
+        if path == "/api/assets/inspect":
+            qs = parse_qs(parsed.query)
+            raw_slug = (qs.get("slug") or [""])[0]
+            rel_file = (qs.get("file") or [""])[0]
+            try:
+                slug = _valid_slug(raw_slug)
+                info = inspect_asset(slug, rel_file)
+            except (ValueError, AssetStoreError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "asset": info})
+            return
+
+        if path == "/api/assets/search":
+            qs = parse_qs(parsed.query)
+            q = (qs.get("q") or [""])[0]
+            kind = (qs.get("kind") or ["any"])[0]
+            try:
+                lim = int((qs.get("limit") or ["8"])[0])
+            except ValueError:
+                lim = 8
+            try:
+                res = search_free_archives(q, kind=kind, limit=lim)
+            except AssetStoreError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/3d/models":
+            self._json(200, {"ok": True, "provider": studio_3d_provider(), "models": studio_3d_list()})
+            return
+
+        if path.startswith("/voice/") and path.endswith(".wav"):
+            parts = path[len("/voice/"):-4].split("/")
+            if len(parts) != 2:
+                self._json(400, {"ok": False, "error": "Invalid voice path"})
+                return
+            try:
+                v_slug = _valid_slug(parts[0])
+            except ValueError:
+                self._json(400, {"ok": False, "error": "Invalid slug"})
+                return
+            sid = parts[1]
+            if not re.match(r"^[A-Za-z0-9_-]{1,64}$", sid):
+                self._json(400, {"ok": False, "error": "Invalid slide id"})
+                return
+            wpath = ASSETS_PUBLIC_DIR / "voice" / f"{v_slug}_{sid}.wav"
+            if not wpath.is_file():
+                self._json(404, {"ok": False, "error": "Voice WAV not found"})
+                return
+            data = wpath.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/wav")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
+        if path.startswith("/public/"):
+            rel = path[len("/public/"):]
+            if not re.match(r"^(?:uploads|visual|cinema|screens|models3d)/[A-Za-z0-9_./-]+\.(?:jpg|jpeg|png|webp|mp4|webm|glb)$", rel, re.IGNORECASE) or ".." in rel.split("/"):
+                self._json(400, {"ok": False, "error": "Invalid public media path"})
+                return
+            fpath = (ASSETS_PUBLIC_DIR / rel).resolve()
+            if ASSETS_PUBLIC_DIR.resolve() not in fpath.parents or not fpath.is_file():
+                self._json(404, {"ok": False, "error": "Media not found"})
+                return
+            ext = fpath.suffix.lower()
+            ct_map = {
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".webp": "image/webp",
+                ".mp4": "video/mp4",
+                ".webm": "video/webm",
+                ".glb": "model/gltf-binary",
+            }
+            data = fpath.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", ct_map.get(ext, "application/octet-stream"))
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         self._json(404, {"ok": False, "error": "Not found"})
 
     def do_POST(self) -> None:  # noqa: N802
+        if not self._guard_local_request(state_changing=True):
+            return
         parsed = urlparse(self.path)
         path = parsed.path
+
+        # Binary upload path for drag-and-drop files (up to MAX_UPLOAD_BYTES = 100 MB).
+        if path == "/api/assets/upload" and "application/json" not in (self.headers.get("Content-Type") or "").lower():
+            qs = parse_qs(parsed.query)
+            raw_slug = (qs.get("slug") or [""])[0]
+            slide_id = (qs.get("slide_id") or [""])[0].strip()
+            filename = (qs.get("filename") or [""])[0].strip()
+            try:
+                slug = _valid_slug(raw_slug)
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length <= 0:
+                self._json(400, {"ok": False, "error": "Пустой запрос загрузки"})
+                return
+            if length > MAX_UPLOAD_BYTES:
+                self._json(413, {"ok": False, "error": f"Файл превышает лимит {MAX_UPLOAD_BYTES // (1024 * 1024)} МБ"})
+                return
+            raw = self.rfile.read(length)
+            try:
+                asset = save_uploaded_bytes(slug, raw, filename=filename)
+                if slide_id:
+                    deck_path = DECKS_DIR / f"{slug}.json"
+                    if not deck_path.is_file():
+                        self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                        return
+                    deck = json.loads(deck_path.read_text(encoding="utf-8"))
+                    updated = bind_asset_to_slide(deck, slide_id, asset)
+                    deck_path.write_text(json.dumps(updated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            except AssetStoreError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "asset": asset, "bound_slide": slide_id or None})
+            return
+
+        # Binary upload of local .glb into 3D Studio (up to 50 MB).
+        if path == "/api/3d/upload-glb":
+            qs = parse_qs(parsed.query)
+            filename = (qs.get("filename") or ["model.glb"])[0].strip()
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length <= 0:
+                self._json(400, {"ok": False, "error": "Пустой файл .glb"})
+                return
+            if length > MAX_GLB_BYTES:
+                self._json(413, {"ok": False, "error": f".glb превышает лимит {MAX_GLB_BYTES // (1024 * 1024)} МБ"})
+                return
+            raw = self.rfile.read(length)
+            try:
+                model = studio_3d_save_glb(raw, name=Path(filename).stem or "model", source="local-upload")
+            except Studio3DError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "model": model})
+            return
+
+        # Binary image upload -> external Image-to-3D API (Tripo3D / Fal.ai, fail-closed).
+        if path == "/api/3d/generate":
+            _load_user_env_into_os()
+            qs = parse_qs(parsed.query)
+            name = (qs.get("name") or ["model"])[0].strip()
+            provider = (qs.get("provider") or ["auto"])[0].strip()
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length <= 0:
+                self._json(400, {"ok": False, "error": "Загрузи картинку (вид спереди) для генерации 3D"})
+                return
+            if length > MAX_IMG_BYTES:
+                self._json(413, {"ok": False, "error": f"Картинка превышает лимит {MAX_IMG_BYTES // (1024 * 1024)} МБ"})
+                return
+            raw = self.rfile.read(length)
+            try:
+                model = studio_3d_generate(raw, name=name, provider=provider)
+            except Studio3DError as exc:
+                self._json(503 if "не настроен" in str(exc) else 502, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "model": model})
+            return
+
         try:
             body = self._read_json()
         except json.JSONDecodeError as exc:
             self._json(400, {"ok": False, "error": f"Invalid JSON: {exc}"})
+            return
+
+        if path == "/api/slides/reorder":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            order = body.get("order")
+            if not isinstance(order, list) or not order:
+                self._json(400, {"ok": False, "error": "Передай непустой список id слайдов в поле 'order'"})
+                return
+            deck_path = DECKS_DIR / f"{slug}.json"
+            if not deck_path.is_file():
+                self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                return
+            deck = json.loads(deck_path.read_text(encoding="utf-8"))
+            slides = deck.get("slides") or []
+            by_id = {str(s.get("id")): s for s in slides}
+            req_ids = [str(x) for x in order]
+            if len(req_ids) != len(slides) or set(req_ids) != set(by_id.keys()):
+                self._json(400, {"ok": False, "error": "Список 'order' должен точно совпадать с текущими id слайдов"})
+                return
+            deck["slides"] = [by_id[sid] for sid in req_ids]
+            try:
+                validate_deck(deck)
+            except DeckValidationError as exc:
+                self._json(400, {"ok": False, "error": f"Валидация не прошла: {exc}"})
+                return
+            deck_path.write_text(json.dumps(deck, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            self._json(200, {"ok": True, "slug": slug, "order": req_ids, "timeline": build_timeline(slug, deck)})
+            return
+
+        if path == "/api/assets/upload":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            slide_id = str(body.get("slide_id") or "").strip()
+            url = str(body.get("url") or "").strip()
+            meta = body.get("meta") if isinstance(body.get("meta"), dict) else {}
+            if not url:
+                self._json(400, {"ok": False, "error": "Укажи https:// ссылку (url) или отправь файл бинарно"})
+                return
+            try:
+                asset = save_from_url(slug, url, meta=meta)
+                if slide_id:
+                    deck_path = DECKS_DIR / f"{slug}.json"
+                    if not deck_path.is_file():
+                        self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
+                        return
+                    deck = json.loads(deck_path.read_text(encoding="utf-8"))
+                    updated = bind_asset_to_slide(deck, slide_id, asset)
+                    deck_path.write_text(json.dumps(updated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            except AssetStoreError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "asset": asset, "bound_slide": slide_id or None})
+            return
+
+        if path == "/api/assets/meta":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            rel_file = str(body.get("file") or "").strip()
+            patch = body.get("meta") if isinstance(body.get("meta"), dict) else body
+            try:
+                updated = update_asset_meta(slug, rel_file, patch)
+            except AssetStoreError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "asset": updated})
             return
 
         if path == "/api/pick-folder":
@@ -700,6 +1097,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/ideas":
+            _load_user_env_into_os()
             topic = str(body.get("topic") or "").strip()
             lang = str(body.get("lang") or "ru").strip().lower()
             genre = str(body.get("genre") or "all").strip().lower()
@@ -710,10 +1108,13 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             except (TypeError, ValueError):
                 self._json(400, {"ok": False, "error": "count должен быть числом от 1 до 7"})
                 return
+            web_search = bool(body.get("web_search", False))
             try:
-                res = generate_ideas(topic, lang=lang, genre=genre, count=count, mode=mode, model=model)
+                res = generate_ideas(
+                    topic, lang=lang, genre=genre, count=count, mode=mode, model=model, web_search=web_search
+                )
             except IdeaEngineError as exc:
-                self._json(400 if mode == "template" else 502, {"ok": False, "error": str(exc)})
+                self._json(400 if (mode == "template" or web_search) else 502, {"ok": False, "error": str(exc)})
                 return
             self._json(200, res)
             return
@@ -852,6 +1253,15 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             if not deck_path.is_file():
                 self._json(404, {"ok": False, "error": f"Колода не найдена: {slug}"})
                 return
+            # Fail-closed: video_pack renders master with --require-storyboard, so check the gate up front.
+            try:
+                sb_status = gate_status(slug)
+            except StoryboardGateError as exc:
+                self._json(409, {"ok": False, "error": str(exc)})
+                return
+            if not sb_status["can_master"]:
+                self._json(409, {"ok": False, "error": f"Video Pack заблокирован: {sb_status['reason']}", "storyboard": sb_status})
+                return
             # Never replace existing MP4s implicitly: overwrite only on explicit opt-in.
             cmd = [
                 sys.executable,
@@ -864,7 +1274,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                     overwrite=body.get("overwrite") is True,
                 ),
             ]
-            if not JOBS.start(f"video_pack:{slug}", [cmd]):
+            if not JOBS.start("video_pack", slug, cmd):
                 self._json(409, {"ok": False, "error": "Уже идёт сборка. Дождись окончания в «Логах»."})
                 return
             self._json(202, {"ok": True, "slug": slug, "step": "video_pack"})
@@ -895,13 +1305,20 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                     return
                 deck["caption_style"] = style
             if "background_enabled" in body:
-                prov = str(body.get("background_provider") or "pixabay")
+                existing_bg = deck.get("background") if isinstance(deck.get("background"), dict) else {}
+                prov = str(body.get("background_provider") or existing_bg.get("provider") or "pixabay")
                 deck["background"] = {
+                    **existing_bg,
                     "enabled": bool(body["background_enabled"]),
                     "provider": prov if prov in {"pexels", "pixabay"} else "pixabay",
                 }
             if "music_enabled" in body:
-                deck["music"] = {"enabled": bool(body["music_enabled"]), "volume": 0.12}
+                existing_music = deck.get("music") if isinstance(deck.get("music"), dict) else {}
+                deck["music"] = {
+                    **existing_music,
+                    "enabled": bool(body["music_enabled"]),
+                    "volume": existing_music.get("volume", 0.12),
+                }
             voice = deck.setdefault("voice", {})
             if body.get("speaker"):
                 voice["speaker"] = str(body["speaker"])
@@ -1165,6 +1582,45 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             if not mp4.is_file():
                 self._json(404, {"ok": False, "error": f"MP4 не найден: out/{slug}.mp4"})
                 return
+            # Fail-closed: if this slug has a deck, refuse upload unless storyboard is approved for current deck.
+            # Merged videos from Tab 03 have no decks/<slug>.json and remain uploadable.
+            if (DECKS_DIR / f"{slug}.json").is_file():
+                # Fail-closed: any uploaded asset in the deck without a licence blocks publishing.
+                try:
+                    deck_obj = json.loads((DECKS_DIR / f"{slug}.json").read_text(encoding="utf-8"))
+                    unlicensed = unlicensed_deck_assets(slug, deck_obj)
+                except (OSError, json.JSONDecodeError, AssetStoreError) as exc:
+                    self._json(409, {"ok": False, "error": f"Проверка лицензий не пройдена: {exc}"})
+                    return
+                if unlicensed:
+                    self._json(
+                        409,
+                        {
+                            "ok": False,
+                            "error": (
+                                "Отправка в TikTok заблокирована: у ассетов не указана лицензия. "
+                                "Откройте инспектор ассета, выберите лицензию (CC0, own, PDM, CC BY…) и сохраните: "
+                                + ", ".join(unlicensed)
+                            ),
+                            "unlicensed": unlicensed,
+                        },
+                    )
+                    return
+                try:
+                    sb_status = gate_status(slug)
+                except StoryboardGateError as exc:
+                    self._json(409, {"ok": False, "error": str(exc)})
+                    return
+                if not sb_status["can_master"]:
+                    self._json(
+                        409,
+                        {
+                            "ok": False,
+                            "error": f"Отправка в TikTok заблокирована: {sb_status['reason']}",
+                            "storyboard": sb_status,
+                        },
+                    )
+                    return
             mode = str(body.get("mode") or "inbox").strip().lower()
             if mode not in {"inbox", "direct"}:
                 mode = "inbox"

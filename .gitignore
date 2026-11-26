@@ -27,3 +27,7 @@ assets/music/*
 public/cinema/
 # Visual sourcing downloads (third-party archive media; per-machine, credited in out/*_visual_credits.txt)
 public/visual/
+# User drag-and-drop uploads via the local console (per-machine, metadata in work/<slug>/assets_meta.json)
+public/uploads/
+# 3D Studio generated/uploaded .glb models (large binaries, per-machine)
+public/models3d/
