@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://github.com/Gruver87">
+    <img src="https://raw.githubusercontent.com/Gruver87/Gruver87/main/assets/card-dup-presenter.png" alt="dup-presenter — Interactive 3D & Cinema Production Studio" width="880" />
+  </a>
+</p>
+
 # DUP Presenter
 
 [![CI](https://github.com/Gruver87/dup-presenter/actions/workflows/ci.yml/badge.svg)](https://github.com/Gruver87/dup-presenter/actions/workflows/ci.yml)
