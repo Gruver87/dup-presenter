@@ -40,6 +40,7 @@ def main() -> int:
     parser.add_argument("--voice-mode", choices=["single", "podcast"], default="single")
     parser.add_argument("--no-captions", action="store_true")
     parser.add_argument("--render", action="store_true", help="Render MP4 after building the voice")
+    parser.add_argument("--draft", action="store_true", help="With --render: render only the draft preview (storyboard gate before master)")
     args = parser.parse_args()
 
     py = sys.executable
@@ -76,8 +77,13 @@ def main() -> int:
     build_cmd = [py, str(SCRIPTS / "build_deck.py"), str(ROOT / "decks" / f"{args.slug}.json")]
     if args.render:
         build_cmd.append("--render")
+        if args.draft:
+            build_cmd.append("--draft")
     run(build_cmd)
-    print(f"[OK] deck {args.slug} built" + (f"; MP4 in out\\{args.slug}.mp4" if args.render else ""))
+    if args.render and args.draft:
+        print(f"[OK] deck {args.slug} built; draft in out\\{args.slug}_draft.mp4 (approve storyboard before master)")
+    else:
+        print(f"[OK] deck {args.slug} built" + (f"; MP4 in out\\{args.slug}.mp4" if args.render else ""))
     return 0
 
 

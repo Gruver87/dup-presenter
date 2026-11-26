@@ -167,13 +167,44 @@ export interface CaptionCue {
   words?: CaptionWord[];
 }
 
+export type CinemaGrade = "none" | "cinema_warm" | "cinema_cold" | "noir" | "vivid";
+
+export interface CinemaShot {
+  src: string;
+  kind?: "video" | "image";
+  duration_sec?: number;
+  start_sec?: number;
+  end_sec?: number;
+  playback_rate?: number;
+  zoom?: number;
+  pan_x?: number;
+  pan_y?: number;
+  audio_volume?: number;
+  clip_duration_sec?: number;
+}
+
 export interface CinemaClipData {
   src?: string;
+  shots?: CinemaShot[];
   badge?: string;
   caption?: string;
   loop?: boolean;
   zoom?: number;
+  start_sec?: number;
+  end_sec?: number;
+  playback_rate?: number;
+  audio_volume?: number;
+  crossfade_frames?: number;
+  letterbox?: boolean;
+  grade?: CinemaGrade;
   clip_duration_sec?: number;
+}
+
+export interface SlideSfxCue {
+  src: string;
+  at_sec: number;
+  volume?: number;
+  duration_sec?: number;
 }
 
 export interface StockMedia {
@@ -245,6 +276,7 @@ export interface ResolvedSlide {
   stat_burst?: StatBurstData;
   broll?: BRollCinematicData;
   cinema?: CinemaClipData;
+  sfx?: SlideSfxCue[];
   captions?: CaptionCue[];
 }
 
@@ -256,6 +288,8 @@ export interface ResolvedDeck {
   burn_captions?: boolean;
   // box = boxed cue (default); karaoke = word-by-word highlight from word timings; bold = large text, no box.
   caption_style?: "box" | "karaoke" | "bold";
+  /** Cinema clip video engine: "offthread" (default) or "media" (@remotion/media, fallback disabled). */
+  media_engine?: "offthread" | "media";
   brand: string;
   fps: number;
   width: number;

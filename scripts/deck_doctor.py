@@ -82,7 +82,7 @@ def _estimate_slide_sec(slide: dict, probe_media: Callable[[Path], float], lang:
     return round(base, 2)
 
 
-def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = True) -> dict:
+def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = True, draft: bool = False) -> dict:
     """Return {"ok", "errors", "warnings", "estimates"} for a deck dict.
 
     `ok` is False when there is any error. Callers must refuse to render in that case.
@@ -158,10 +158,13 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = T
         warnings.append(f"estimated length {total_sec:.0f}s is longer than {LONG_VIDEO_WARN_SEC:.0f}s; check retention")
 
     slug = str(deck.get("slug") or "")
-    out_mp4 = OUT_DIR / f"{slug}.mp4"
+    out_name = f"{slug}_draft.mp4" if draft else f"{slug}.mp4"
+    out_mp4 = OUT_DIR / out_name
     if out_mp4.exists():
-        msg = f"out/{slug}.mp4 already exists"
-        if overwrite:
+        msg = f"out/{out_name} already exists"
+        if draft:
+            warnings.append(msg + " and will be refreshed (draft mode)")
+        elif overwrite:
             warnings.append(msg + " and will be overwritten (overwrite=true)")
         else:
             errors.append(msg + "; refusing to overwrite (pass overwrite=true or use a new slug)")

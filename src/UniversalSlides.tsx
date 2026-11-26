@@ -1,6 +1,7 @@
 import React from "react";
-import { AbsoluteFill, Img, Loop, OffthreadVideo, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import type { ResolvedSlide } from "./types";
+import { AbsoluteFill, Img, Loop, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { SceneVideo } from "./composition/sceneVideo";
+import type { CinemaGrade, CinemaShot, ResolvedSlide } from "./types";
 import type { ThemePalette } from "./themes";
 
 interface UniversalSlideProps {
@@ -8,7 +9,33 @@ interface UniversalSlideProps {
   dur: number;
   theme: ThemePalette;
   isPortrait: boolean;
+  duckRatio?: number;
 }
+
+export const computeSlideLocalDuck = (
+  timeSec: number,
+  speechWindows: [number, number][] | undefined,
+  duckRatio: number,
+): number => {
+  if (!speechWindows || speechWindows.length === 0 || duckRatio >= 0.999) return 1.0;
+  const attack = 0.22;
+  const release = 0.42;
+  let maxDepth = 0;
+  for (let i = 0; i < speechWindows.length; i++) {
+    const [s, e] = speechWindows[i];
+    if (timeSec >= s && timeSec <= e) {
+      return duckRatio;
+    }
+    if (timeSec >= s - attack && timeSec < s) {
+      const p = (timeSec - (s - attack)) / attack;
+      if (p > maxDepth) maxDepth = p;
+    } else if (timeSec > e && timeSec <= e + release) {
+      const p = 1 - (timeSec - e) / release;
+      if (p > maxDepth) maxDepth = p;
+    }
+  }
+  return 1.0 - maxDepth * (1.0 - duckRatio);
+};
 
 const floatTextShadow = (color: string, heavy = false): string =>
   heavy
@@ -814,35 +841,310 @@ export const BRollCinematicSlide: React.FC<UniversalSlideProps> = ({ slide, dur,
   );
 };
 
-export const CinemaClipSlide: React.FC<UniversalSlideProps> = ({ slide, dur, theme, isPortrait }) => {
+const CINEMA_GRADE_FILTER: Record<CinemaGrade, string | undefined> = {
+  none: undefined,
+  cinema_warm: "contrast(1.08) saturate(1.14) sepia(0.14)",
+  cinema_cold: "contrast(1.1) saturate(0.92) hue-rotate(-10deg) brightness(0.98)",
+  noir: "grayscale(0.92) contrast(1.24) brightness(0.94)",
+  vivid: "contrast(1.12) saturate(1.26)",
+};
+
+const inferShotKind = (src: string, explicit?: "video" | "image"): "video" | "image" => {
+  if (explicit) return explicit;
+  const lower = src.toLowerCase();
+  if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp")) {
+    return "image";
+  }
+  return "video";
+};
+
+const CinemaLoopSegment: React.FC<{
+  src: string;
+  trimBefore?: number;
+  srcDurationFrames?: number;
+  playbackRate: number;
+  muted: boolean;
+  fadeInFrames: number;
+  volumeFn?: (frame: number) => number;
+}> = ({ src, trimBefore, srcDurationFrames, playbackRate, muted, fadeInFrames, volumeFn }) => {
+  const segFrame = useCurrentFrame();
+  const opacity =
+    fadeInFrames > 0
+      ? interpolate(segFrame, [0, fadeInFrames], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+      : 1;
+  return (
+    <AbsoluteFill style={{ opacity }}>
+      <SceneVideo
+        src={staticFile(src)}
+        trimBefore={trimBefore}
+        durationInFrames={srcDurationFrames}
+        playbackRate={playbackRate}
+        muted={muted}
+        volume={muted ? undefined : volumeFn}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+const CinemaShotLayer: React.FC<{
+  shot: CinemaShot;
+  slotFrom: number;
+  slotDur: number;
+  fadeInFrames: number;
+  fadeOutAudioFrames: number;
+  crossfadeFrames: number;
+  loop: boolean;
+  fps: number;
+  speechWindows?: [number, number][];
+  duckRatio: number;
+}> = ({
+  shot,
+  slotFrom,
+  slotDur,
+  fadeInFrames,
+  fadeOutAudioFrames,
+  crossfadeFrames,
+  loop,
+  fps,
+  speechWindows,
+  duckRatio,
+}) => {
+  const localFrame = useCurrentFrame();
+  const layerOpacity =
+    fadeInFrames > 0
+      ? interpolate(localFrame, [0, fadeInFrames], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+      : 1;
+  const maxZoom = typeof shot.zoom === "number" && shot.zoom >= 1.0 ? shot.zoom : 1.06;
+  const scale = interpolate(localFrame, [0, Math.max(1, slotDur)], [1.0, maxZoom], { extrapolateRight: "clamp" });
+  const panX =
+    typeof shot.pan_x === "number"
+      ? interpolate(localFrame, [0, Math.max(1, slotDur)], [0, shot.pan_x], { extrapolateRight: "clamp" })
+      : 0;
+  const panY =
+    typeof shot.pan_y === "number"
+      ? interpolate(localFrame, [0, Math.max(1, slotDur)], [0, shot.pan_y], { extrapolateRight: "clamp" })
+      : 0;
+
+  const kind = inferShotKind(shot.src, shot.kind);
+  const camTransform = `scale(${scale}) translate3d(${panX}px, ${panY}px, 0)`;
+
+  if (kind === "image") {
+    return (
+      <AbsoluteFill style={{ opacity: layerOpacity, overflow: "hidden" }}>
+        <AbsoluteFill style={{ transform: camTransform, transformOrigin: "center center" }}>
+          <Img src={staticFile(shot.src)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
+
+  const rate = typeof shot.playback_rate === "number" && shot.playback_rate > 0 ? shot.playback_rate : 1.0;
+  const startSec = typeof shot.start_sec === "number" && shot.start_sec > 0 ? shot.start_sec : 0;
+  const trimBefore = startSec > 0 ? Math.round(startSec * fps) : undefined;
+  const srcEndSec =
+    typeof shot.end_sec === "number" && shot.end_sec > startSec
+      ? shot.end_sec
+      : typeof shot.clip_duration_sec === "number" && shot.clip_duration_sec > startSec
+        ? shot.clip_duration_sec
+        : 0;
+  const srcSpanSec = srcEndSec > startSec ? srcEndSec - startSec : 0;
+  const srcDurationFrames = srcSpanSec > 0 ? Math.max(15, Math.floor(srcSpanSec * fps)) : undefined;
+  const effectivePlayFrames = srcSpanSec > 0 ? Math.max(30, Math.floor((srcSpanSec / rate) * fps)) : 0;
+
+  const baseVol = typeof shot.audio_volume === "number" && shot.audio_volume > 0 ? shot.audio_volume : 0;
+  const muted = baseVol <= 0;
+  const makeVolumeFn =
+    (segOffsetInSlot: number, segDur: number, segFadeIn: number, segFadeOut: number) =>
+    (audioFrame: number): number => {
+      const slideSec = (slotFrom + segOffsetInSlot + audioFrame) / fps;
+      const duck = computeSlideLocalDuck(slideSec, speechWindows, duckRatio);
+      let env = 1.0;
+      if (segFadeIn > 0 && audioFrame < segFadeIn) {
+        env *= Math.max(0, audioFrame / segFadeIn);
+      }
+      if (segFadeOut > 0 && audioFrame > segDur - segFadeOut) {
+        env *= Math.max(0, (segDur - audioFrame) / segFadeOut);
+      }
+      return baseVol * duck * env;
+    };
+
+  const shouldLoop = loop && effectivePlayFrames > 0 && effectivePlayFrames < slotDur;
+  const loopXfade = shouldLoop ? Math.min(crossfadeFrames, Math.floor(effectivePlayFrames / 3)) : 0;
+
+  let mediaContent: React.ReactNode;
+  if (shouldLoop && loopXfade > 0) {
+    const step = Math.max(15, effectivePlayFrames - loopXfade);
+    const segs: { from: number; dur: number; idx: number }[] = [];
+    for (let from = 0, idx = 0; from < slotDur; from += step, idx++) {
+      const dur = Math.min(effectivePlayFrames, slotDur - from);
+      segs.push({ from, dur, idx });
+      if (from + dur >= slotDur) break;
+    }
+    mediaContent = (
+      <>
+        {segs.map((seg, i) => {
+          const isFirst = i === 0;
+          const isLast = i === segs.length - 1;
+          const segFadeIn = isFirst ? 0 : Math.min(loopXfade, Math.floor(seg.dur / 2));
+          const segAudioFadeIn = isFirst ? fadeInFrames : segFadeIn;
+          const segAudioFadeOut = isLast ? fadeOutAudioFrames : Math.min(loopXfade, Math.floor(seg.dur / 2));
+          return (
+            <Sequence key={`loop-${seg.idx}`} from={seg.from} durationInFrames={seg.dur}>
+              <CinemaLoopSegment
+                src={shot.src}
+                trimBefore={trimBefore}
+                srcDurationFrames={srcDurationFrames}
+                playbackRate={rate}
+                muted={muted}
+                fadeInFrames={segFadeIn}
+                volumeFn={muted ? undefined : makeVolumeFn(seg.from, seg.dur, segAudioFadeIn, segAudioFadeOut)}
+              />
+            </Sequence>
+          );
+        })}
+      </>
+    );
+  } else if (shouldLoop) {
+    mediaContent = (
+      <Loop durationInFrames={effectivePlayFrames}>
+        <SceneVideo
+          src={staticFile(shot.src)}
+          trimBefore={trimBefore}
+          durationInFrames={srcDurationFrames}
+          playbackRate={rate}
+          muted={muted}
+          volume={muted ? undefined : makeVolumeFn(0, effectivePlayFrames, 0, 0)}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </Loop>
+    );
+  } else {
+    mediaContent = (
+      <SceneVideo
+        src={staticFile(shot.src)}
+        trimBefore={trimBefore}
+        durationInFrames={srcDurationFrames}
+        playbackRate={rate}
+        muted={muted}
+        volume={muted ? undefined : makeVolumeFn(0, slotDur, fadeInFrames, fadeOutAudioFrames)}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
+    );
+  }
+
+  return (
+    <AbsoluteFill style={{ opacity: layerOpacity, overflow: "hidden" }}>
+      <AbsoluteFill style={{ transform: camTransform, transformOrigin: "center center" }}>
+        {mediaContent}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const CinemaClipSlide: React.FC<UniversalSlideProps> = ({ slide, dur, theme, isPortrait, duckRatio = 0.36 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const cc = slide.cinema || {};
-  const videoSrc = cc.src || slide.media?.video_file;
-  const maxZoom = typeof cc.zoom === "number" && cc.zoom >= 1.0 ? cc.zoom : 1.06;
-  const scale = interpolate(frame, [0, Math.max(1, dur)], [1.0, maxZoom], { extrapolateRight: "clamp" });
+  const loopEnabled = cc.loop !== false;
+  const rawCrossfade = typeof cc.crossfade_frames === "number" ? Math.max(0, Math.min(30, cc.crossfade_frames)) : 12;
+  const gradeFilter = CINEMA_GRADE_FILTER[cc.grade ?? "none"];
+  const showLetterbox = cc.letterbox === true && !isPortrait;
+
   const badgeOpacity = interpolate(frame, [0, 18, Math.max(24, dur - 20), Math.max(25, dur)], [0, 0.92, 0.92, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const clipFrames = cc.clip_duration_sec && cc.clip_duration_sec > 0.5 ? Math.max(30, Math.floor(cc.clip_duration_sec * fps)) : 0;
-  const shouldLoop = cc.loop !== false && clipFrames > 0 && clipFrames < dur;
 
-  const videoEl = videoSrc ? (
-    <OffthreadVideo
-      src={staticFile(videoSrc)}
-      muted
-      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-    />
-  ) : null;
+  const shots: CinemaShot[] = (() => {
+    if (cc.shots && cc.shots.length > 0) {
+      return cc.shots;
+    }
+    const singleSrc = cc.src || slide.media?.video_file;
+    if (!singleSrc) return [];
+    return [
+      {
+        src: singleSrc,
+        zoom: cc.zoom,
+        start_sec: cc.start_sec,
+        end_sec: cc.end_sec,
+        playback_rate: cc.playback_rate,
+        audio_volume: cc.audio_volume,
+        clip_duration_sec: cc.clip_duration_sec,
+      },
+    ];
+  })();
+
+  const plannedSlots = (() => {
+    if (shots.length === 0) return [];
+    const explicitFrames = shots.map((s) =>
+      typeof s.duration_sec === "number" && s.duration_sec > 0 ? Math.max(15, Math.round(s.duration_sec * fps)) : null,
+    );
+    const explicitSum = explicitFrames.reduce<number>((acc, v) => acc + (v ?? 0), 0);
+    const unspecifiedCount = explicitFrames.filter((v) => v === null).length;
+
+    let baseDurs: number[];
+    if (unspecifiedCount > 0) {
+      const remaining = Math.max(unspecifiedCount * 15, dur - explicitSum);
+      const perUnspecified = Math.max(15, Math.floor(remaining / unspecifiedCount));
+      baseDurs = explicitFrames.map((v) => (v !== null ? v : perUnspecified));
+    } else {
+      baseDurs = explicitFrames.map((v) => v as number);
+    }
+
+    const sumBase = baseDurs.reduce((a, b) => a + b, 0);
+    if (sumBase !== dur && sumBase > 0) {
+      const ratio = dur / sumBase;
+      baseDurs = baseDurs.map((d) => Math.max(15, Math.round(d * ratio)));
+      const diff = dur - baseDurs.reduce((a, b) => a + b, 0);
+      baseDurs[baseDurs.length - 1] = Math.max(15, baseDurs[baseDurs.length - 1] + diff);
+    }
+
+    const minSlot = Math.min(...baseDurs);
+    const shotXfade = shots.length > 1 ? Math.min(rawCrossfade, Math.floor(minSlot / 3)) : 0;
+
+    const starts: number[] = [];
+    let cursor = 0;
+    for (let i = 0; i < baseDurs.length; i++) {
+      starts.push(i === 0 ? 0 : Math.max(0, cursor - Math.floor(shotXfade / 2)));
+      cursor += baseDurs[i];
+    }
+
+    return shots.map((shot, i) => {
+      const from = starts[i];
+      const isLast = i === shots.length - 1;
+      const end = isLast ? dur : Math.min(dur, starts[i + 1] + shotXfade);
+      const slotDur = Math.max(1, end - from);
+      return {
+        shot,
+        from,
+        slotDur,
+        fadeInFrames: i === 0 ? 0 : Math.min(shotXfade, Math.floor(slotDur / 2)),
+        fadeOutAudioFrames: isLast ? 0 : Math.min(shotXfade, Math.floor(slotDur / 2)),
+      };
+    });
+  })();
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000", overflow: "hidden" }}>
-      {videoEl && (
-        <AbsoluteFill style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-          {shouldLoop ? <Loop durationInFrames={clipFrames}>{videoEl}</Loop> : videoEl}
-        </AbsoluteFill>
-      )}
+      <AbsoluteFill style={gradeFilter ? { filter: gradeFilter } : undefined}>
+        {plannedSlots.map((slot, idx) => (
+          <Sequence key={`shot-${idx}`} from={slot.from} durationInFrames={slot.slotDur}>
+            <CinemaShotLayer
+              shot={slot.shot}
+              slotFrom={slot.from}
+              slotDur={slot.slotDur}
+              fadeInFrames={slot.fadeInFrames}
+              fadeOutAudioFrames={slot.fadeOutAudioFrames}
+              crossfadeFrames={rawCrossfade}
+              loop={loopEnabled}
+              fps={fps}
+              speechWindows={slide.speech_windows}
+              duckRatio={duckRatio}
+            />
+          </Sequence>
+        ))}
+      </AbsoluteFill>
       <AbsoluteFill
         style={{
           background:
@@ -850,11 +1152,17 @@ export const CinemaClipSlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
           pointerEvents: "none",
         }}
       />
+      {showLetterbox && (
+        <>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "10.5%", backgroundColor: "#000000", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "10.5%", backgroundColor: "#000000", pointerEvents: "none" }} />
+        </>
+      )}
       {cc.badge && (
         <div
           style={{
             position: "absolute",
-            top: isPortrait ? 44 : 26,
+            top: isPortrait ? 44 : showLetterbox ? 130 : 26,
             left: isPortrait ? 28 : 34,
             opacity: badgeOpacity,
             padding: "6px 14px",
@@ -871,7 +1179,7 @@ export const CinemaClipSlide: React.FC<UniversalSlideProps> = ({ slide, dur, the
           {cc.badge}
         </div>
       )}
-      {slide.media?.credit && !cc.src && (
+      {slide.media?.credit && !cc.src && !(cc.shots && cc.shots.length > 0) && (
         <div
           style={{
             position: "absolute",

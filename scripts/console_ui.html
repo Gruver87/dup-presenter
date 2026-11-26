@@ -94,6 +94,9 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
 .bullet-edit { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 8px; margin-top: 6px; }
 .check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer; margin-top: 8px; }
 .hidden { display: none; }
+  .sb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .sb-card { border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); padding: 8px; font-size: 0.78rem; }
+  .sb-card img { width: 100%; border-radius: 6px; display: block; }
 </style>
 </head>
 <body>
@@ -332,10 +335,28 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
             </label>
           </div>
           <div class="row">
-            <button class="btn primary" id="saveRenderBtn" data-i18n="btn_save_render">Сохранить правки слайдов и пересобрать MP4</button>
+            <button class="btn primary" id="saveRenderBtn" data-i18n="btn_save_render">Сохранить правки и собрать черновик</button>
             <span id="saveMsg" style="font-size:0.82rem;color:var(--muted);"></span>
           </div>
         </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+          <h3 style="margin:0;">Раскадровка и согласование мастера</h3>
+          <span id="sbStatus" class="pill">—</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">
+          Порядок: черновик (draft) → раскадровка по кадрам → одобрение → мастер MP4. Любая правка колоды или новый черновик сбрасывают одобрение. Атрибуции CC BY / BY-SA в кадре не выводятся: см. <code>out/&lt;slug&gt;_visual_credits.txt</code>.
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:8px;">
+          <button class="btn sm" id="sbBuildBtn" disabled>Собрать раскадровку из черновика</button>
+          <button class="btn sm primary" id="sbApproveBtn" disabled>Одобрить раскадровку</button>
+          <button class="btn sm" id="sbRevokeBtn" disabled>Отозвать одобрение</button>
+          <button class="btn primary" id="sbMasterBtn" disabled>Собрать мастер MP4</button>
+          <span id="sbMsg" style="font-size:0.82rem;color:var(--muted);"></span>
+        </div>
+        <div id="sbGrid" class="sb-grid" style="margin-top:12px;"></div>
       </div>
 
       <div class="grid2">
@@ -455,7 +476,7 @@ const I18N = {
     btn_gen: "Анализ → План → Озвучка → MP4 + SRT + Обложка",
     edit_h2: "Редактор колоды, видео и правки",
     chk_burn: "Вшитые субтитры",
-    btn_save_render: "Сохранить правки слайдов и пересобрать MP4",
+    btn_save_render: "Сохранить правки и собрать черновик",
     h3_video: "Готовое видео и файлы",
     lbl_fb: "Правка через ИИ (напиши, что поменять — сохранит новую версию)",
     fb_ph: "Например: добавь слайд со схемой архитектуры, упрости 3-й слайд, сделай короче",
@@ -520,7 +541,7 @@ const I18N = {
     btn_gen: "Analyze → Plan → Voice → MP4 + SRT + Thumbnail",
     edit_h2: "Deck Editor, Preview & Revisions",
     chk_burn: "Burned-in captions",
-    btn_save_render: "Save Slide Edits & Re-Render MP4",
+    btn_save_render: "Save Edits & Build Draft",
     h3_video: "Rendered Video & Exports",
     lbl_fb: "AI Revision (describe what to change — saves a new version)",
     fb_ph: "e.g. add an architecture diagram slide, simplify slide 3, make it shorter",
@@ -747,6 +768,91 @@ $("saveRenderBtn").onclick = async () => {
   const d = await r.json();
   $("saveMsg").textContent = d.ok ? "OK" : `Error: ${d.error}`;
   if (d.ok) document.querySelector('[data-tab="logs"]').click();
+  poll();
+};
+
+/* ---------- STORYBOARD APPROVAL GATE (Stage 4) ---------- */
+const jobBusy = () => !!(STATE && STATE.job && STATE.job.status === "running");
+
+function sbCreditHtml(v) {
+  if (!v) return `<span style="color:var(--muted);">без внешнего визуала (текст/графика)</span>`;
+  if (!v.source) return `<span style="color:var(--muted);">локальный файл: ${esc(v.file || "")}</span>`;
+  const lic = v.license ? esc(String(v.license).toUpperCase()) : "?";
+  const needsCredit = (v.license === "by" || v.license === "by-sa") ? " · <b>нужна атрибуция</b>" : "";
+  const link = v.page_url ? ` <a href="${esc(v.page_url)}" target="_blank" rel="noopener">источник</a>` : "";
+  return `${esc(v.source)} · ${esc(v.creator || "?")} · ${lic}${needsCredit}${link}`;
+}
+
+function sbRenderGrid(index, framesBase) {
+  const box = $("sbGrid");
+  if (!index) { box.innerHTML = ""; return; }
+  box.innerHTML = index.slides.map((s) => `
+    <div class="sb-card">
+      <img src="${esc(framesBase)}${encodeURIComponent(s.frame)}?t=${encodeURIComponent(index.built_at)}" alt="${esc(s.id)}"/>
+      <div style="margin-top:6px;"><b>${esc(s.id)}</b> · ${esc(s.type)} · ${Number(s.start_sec).toFixed(1)}–${(Number(s.start_sec) + Number(s.duration_sec)).toFixed(1)} с</div>
+      <div style="margin-top:3px;">${esc(s.title)}</div>
+      <div style="margin-top:4px;">${sbCreditHtml(s.visual)}</div>
+    </div>`).join("");
+}
+
+async function loadStoryboard(slug) {
+  if (!slug) return;
+  let d;
+  try {
+    const r = await fetch("/api/storyboard?slug=" + encodeURIComponent(slug));
+    d = await r.json();
+  } catch { return; }
+  if (!d.ok) {
+    $("sbStatus").className = "pill err";
+    $("sbStatus").textContent = `ошибка: ${d.error || ""}`;
+    return;
+  }
+  const st = d.status;
+  let label = "нет актуального черновика";
+  let cls = "err";
+  if (st.approved) { label = "одобрено · мастер разрешён"; cls = "ok"; }
+  else if (st.storyboard_ready) { label = "раскадровка ждёт одобрения"; cls = "run"; }
+  else if (st.draft_fresh) { label = "черновик актуален · раскадровка не собрана"; cls = "run"; }
+  $("sbStatus").className = `pill ${cls}`;
+  $("sbStatus").textContent = label;
+  const busy = jobBusy();
+  $("sbBuildBtn").disabled = busy || !st.draft_fresh;
+  $("sbApproveBtn").disabled = busy || !st.storyboard_ready || st.approved;
+  $("sbRevokeBtn").disabled = busy || !st.approved;
+  $("sbMasterBtn").disabled = busy || !st.can_master;
+  $("sbMsg").textContent = st.reason ? st.reason : (st.approved_at ? `одобрено: ${st.approved_at}` : "");
+  sbRenderGrid(d.index, d.frames_base);
+}
+
+async function sbPost(path, okMsg) {
+  if (!CURRENT_SLUG) return null;
+  $("sbMsg").textContent = "...";
+  const r = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(path === "/api/render" ? { slug: CURRENT_SLUG, draft: false } : { slug: CURRENT_SLUG }),
+  });
+  const d = await r.json();
+  $("sbMsg").textContent = d.ok ? okMsg : `Ошибка: ${d.error}`;
+  return d;
+}
+
+$("sbBuildBtn").onclick = async () => {
+  const d = await sbPost("/api/storyboard/build", "Сборка раскадровки запущена");
+  if (d && d.ok) document.querySelector('[data-tab="logs"]').click();
+  poll();
+};
+$("sbApproveBtn").onclick = async () => {
+  await sbPost("/api/storyboard/approve", "Раскадровка одобрена");
+  loadStoryboard(CURRENT_SLUG);
+};
+$("sbRevokeBtn").onclick = async () => {
+  await sbPost("/api/storyboard/revoke", "Одобрение отозвано");
+  loadStoryboard(CURRENT_SLUG);
+};
+$("sbMasterBtn").onclick = async () => {
+  const d = await sbPost("/api/render", "Мастер-сборка запущена");
+  if (d && d.ok) document.querySelector('[data-tab="logs"]').click();
   poll();
 };
 
@@ -1014,6 +1120,7 @@ function esc(s) {
 async function loadDeck(slug) {
   if (!slug) return;
   CURRENT_SLUG = slug;
+  loadStoryboard(slug);
   const r = await fetch("/api/deck?slug=" + encodeURIComponent(slug));
   const d = await r.json();
   if (!d.ok) return;
@@ -1042,6 +1149,8 @@ async function loadDeck(slug) {
       tr.src = `/out/${encodeURIComponent(slug)}.vtt?t=${d.mp4_mtime}`; tr.default = true;
       video.appendChild(tr);
     }
+  } else if (d.has_draft) {
+    video.src = `/video/${encodeURIComponent(slug)}_draft.mp4?t=${Date.now()}`;
   } else {
     video.removeAttribute("src"); video.load();
   }
@@ -1155,6 +1264,10 @@ async function poll() {
     if (job.step === "merge") showMergedPreview(job.slug);
     else loadDeck(job.slug);
   }
+  if (busy) {
+    ["sbBuildBtn", "sbApproveBtn", "sbRevokeBtn", "sbMasterBtn"].forEach((id) => { $(id).disabled = true; });
+  }
+  if (LAST_JOB_STATUS === "running" && job.status === "error" && CURRENT_SLUG) loadStoryboard(CURRENT_SLUG);
   LAST_JOB_STATUS = job.status || "";
   renderMergeLists();
 

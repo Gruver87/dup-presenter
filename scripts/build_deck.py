@@ -61,6 +61,16 @@ QUOTE_MAX_CHARS = 220
 # ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
 UI_RECORDING_SRC_RE = re.compile(r"ui_recordings/[a-z0-9][a-z0-9_-]{0,60}\.mp4")
 
+ALLOWED_CINEMA_VIDEO_EXTS = frozenset({".mp4", ".webm", ".mov"})
+ALLOWED_CINEMA_IMAGE_EXTS = frozenset({".png", ".jpg", ".jpeg", ".webp"})
+ALLOWED_SFX_EXTS = frozenset({".wav", ".mp3", ".ogg", ".m4a", ".flac"})
+ALLOWED_CINEMA_GRADES = frozenset({"none", "cinema_warm", "cinema_cold", "noir", "vivid"})
+DEFAULT_RENDER_CRF = 20
+DRAFT_RENDER_CRF = 26
+DRAFT_RENDER_SCALE = 0.5
+CRF_MIN = 14
+CRF_MAX = 32
+
 
 def _media_duration_sec(path: Path) -> float:
     """Duration of a media file via ffprobe. Fail-closed: a missing file or unreadable duration raises."""
@@ -77,6 +87,103 @@ def _media_duration_sec(path: Path) -> float:
     if proc.returncode != 0 or duration <= 0:
         raise DeckValidationError(f"ffprobe failed on {path} (exit {proc.returncode})")
     return duration
+
+
+def _media_has_audio(path: Path) -> bool:
+    """Check via ffprobe whether a media file contains at least one audio stream (fail-closed on unreadable file)."""
+    from audio_fx import find_ffprobe
+
+    if not path.is_file():
+        raise DeckValidationError(f"media file not found: {path}")
+    cmd = [
+        str(find_ffprobe()),
+        "-v", "error",
+        "-select_streams", "a",
+        "-show_entries", "stream=codec_type",
+        "-of", "default=nw=1:nk=1",
+        str(path),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        raise DeckValidationError(f"ffprobe failed checking audio stream on {path} (exit {proc.returncode})")
+    return bool(proc.stdout.strip())
+
+
+def _is_number(val: object) -> bool:
+    return isinstance(val, (int, float)) and not isinstance(val, bool)
+
+
+def _validate_safe_public_rel(value: object, field: str, sid: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or ".." in value
+        or ":" in value
+        or value.startswith(("/", "\\"))
+    ):
+        raise DeckValidationError(f"Slide {sid}: {field} must be a safe relative path under public/")
+    return value.strip()
+
+
+def _validate_cinema_media_params(
+    obj: dict,
+    field_prefix: str,
+    sid: str,
+    *,
+    kind: str,
+    clip_dur: float | None,
+    clip_path: Path | None,
+    check_assets: bool,
+) -> None:
+    if "zoom" in obj and obj["zoom"] is not None:
+        z = obj["zoom"]
+        if not _is_number(z) or not (1.0 <= float(z) <= 1.5):
+            raise DeckValidationError(f"Slide {sid}: {field_prefix}.zoom must be in [1.0, 1.5]")
+    for pan_key in ("pan_x", "pan_y"):
+        if pan_key in obj and obj[pan_key] is not None:
+            pv = obj[pan_key]
+            if not _is_number(pv) or not (-160.0 <= float(pv) <= 160.0):
+                raise DeckValidationError(f"Slide {sid}: {field_prefix}.{pan_key} must be in [-160, 160]")
+
+    if kind == "image":
+        for bad_k in ("start_sec", "end_sec", "playback_rate"):
+            if obj.get(bad_k) is not None:
+                raise DeckValidationError(f"Slide {sid}: {field_prefix}.{bad_k} is only valid for video shots")
+        av = obj.get("audio_volume")
+        if av is not None and (not _is_number(av) or float(av) != 0.0):
+            raise DeckValidationError(f"Slide {sid}: {field_prefix}.audio_volume cannot be non-zero for an image shot")
+        return
+
+    start_sec = 0.0
+    if obj.get("start_sec") is not None:
+        if not _is_number(obj["start_sec"]) or float(obj["start_sec"]) < 0.0:
+            raise DeckValidationError(f"Slide {sid}: {field_prefix}.start_sec must be >= 0")
+        start_sec = float(obj["start_sec"])
+        if clip_dur is not None and start_sec >= clip_dur:
+            raise DeckValidationError(
+                f"Slide {sid}: {field_prefix}.start_sec ({start_sec}s) must be < clip duration ({clip_dur}s)"
+            )
+    if obj.get("end_sec") is not None:
+        if not _is_number(obj["end_sec"]) or float(obj["end_sec"]) <= start_sec:
+            raise DeckValidationError(f"Slide {sid}: {field_prefix}.end_sec must be > start_sec ({start_sec})")
+        end_sec = float(obj["end_sec"])
+        if clip_dur is not None and end_sec > clip_dur + 0.15:
+            raise DeckValidationError(
+                f"Slide {sid}: {field_prefix}.end_sec ({end_sec}s) exceeds clip duration ({clip_dur}s)"
+            )
+    if obj.get("playback_rate") is not None:
+        pr = obj["playback_rate"]
+        if not _is_number(pr) or not (0.25 <= float(pr) <= 2.0):
+            raise DeckValidationError(f"Slide {sid}: {field_prefix}.playback_rate must be in [0.25, 2.0]")
+    if obj.get("audio_volume") is not None:
+        av = obj["audio_volume"]
+        if not _is_number(av) or not (0.0 <= float(av) <= 1.0):
+            raise DeckValidationError(f"Slide {sid}: {field_prefix}.audio_volume must be in [0.0, 1.0]")
+        if float(av) > 0.0 and check_assets and clip_path is not None:
+            if not _media_has_audio(clip_path):
+                raise DeckValidationError(
+                    f"Slide {sid}: {field_prefix}.audio_volume={av} requested, but clip has no audio stream: {clip_path}"
+                )
 from theme_catalog import THEME_IDS  # noqa: E402
 from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_available, synth_edge_with_timings  # noqa: E402
 from audio_fx import (  # noqa: E402
@@ -88,6 +195,7 @@ from audio_fx import (  # noqa: E402
     ensure_sfx_files,
     normalize_mp4_loudness,
 )
+from sfx_library import LIBRARY_NAMES as SFX_LIBRARY_NAMES, SfxLibraryError, resolve_deck_sfx  # noqa: E402
 from voice_clean import deess  # noqa: E402
 from ru_speech import normalize_ru_ssml  # noqa: E402
 from tts_engines import (  # noqa: E402
@@ -106,6 +214,7 @@ ALLOWED_TRANSITIONS = {"fade", "slide", "wipe", "none"}
 # box: current boxed cue (default, unchanged output). karaoke: word-by-word highlight from word timings.
 # bold: large text without a box, for short-form/vertical videos.
 ALLOWED_CAPTION_STYLES = {"box", "karaoke", "bold"}
+ALLOWED_MEDIA_ENGINES = frozenset({"offthread", "media"})
 ASPECT_DIMS = {"16:9": (1920, 1080), "9:16": (1080, 1920)}
 ALLOWED_SPEAKERS_BY_LANG = {
     "ru": {"xenia", "eugene", "aidar", "baya", "kseniya"} | set(EDGE_RU_VOICES),
@@ -194,6 +303,11 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
         if not 0.0 <= sv <= 0.5:
             raise DeckValidationError(f"sfx.volume must be in [0, 0.5], got {sv}")
 
+    # Video engine for cinema clips. "offthread" (default, unchanged) or "media" (@remotion/media, opt-in).
+    media_engine = deck.get("media_engine")
+    if media_engine is not None and media_engine not in ALLOWED_MEDIA_ENGINES:
+        raise DeckValidationError(f"media_engine must be one of {sorted(ALLOWED_MEDIA_ENGINES)}, got {media_engine!r}")
+
     voice = deck.get("voice") or {}
     lang = deck_lang(deck)
     if lang not in ALLOWED_SPEAKERS_BY_LANG:
@@ -223,6 +337,10 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
         if not isinstance(sid, str) or not sid or sid in seen_ids:
             raise DeckValidationError(f"Slide #{idx} has missing or duplicate id: {sid!r}")
         seen_ids.add(sid)
+        if slide.get("min_duration_sec") is not None:
+            md = slide["min_duration_sec"]
+            if not _is_number(md) or not (1 <= float(md) <= 120):
+                raise DeckValidationError(f"Slide {sid}: min_duration_sec must be a number in 1..120")
         if slide.get("background_query") is not None:
             from stock_media import StockMediaError, validate_query  # noqa: E402
 
@@ -443,16 +561,133 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
             cc = slide.get("cinema")
             if not isinstance(cc, dict):
                 raise DeckValidationError(f"Slide {sid}: cinema_clip requires a cinema object")
+            grade = cc.get("grade")
+            if grade is not None and grade not in ALLOWED_CINEMA_GRADES:
+                raise DeckValidationError(
+                    f"Slide {sid}: cinema.grade {grade!r} unsupported; allowed: {sorted(ALLOWED_CINEMA_GRADES)}"
+                )
+            if cc.get("crossfade_frames") is not None:
+                cf = cc["crossfade_frames"]
+                if isinstance(cf, bool) or not isinstance(cf, int) or not (0 <= cf <= 30):
+                    raise DeckValidationError(f"Slide {sid}: cinema.crossfade_frames must be an int in [0, 30]")
+            if cc.get("letterbox") is not None and not isinstance(cc["letterbox"], bool):
+                raise DeckValidationError(f"Slide {sid}: cinema.letterbox must be a boolean")
+
             src = cc.get("src")
-            if src is not None:
-                if not isinstance(src, str) or not src.strip() or ".." in src or src.startswith(("/", "\\")):
-                    raise DeckValidationError(f"Slide {sid}: cinema.src must be a safe relative path under public/")
-                clip_path = PUBLIC_DIR / src
-                if not clip_path.is_file():
-                    raise DeckValidationError(f"Slide {sid}: cinema.src file not found: {clip_path}")
-                cc["clip_duration_sec"] = round(_media_duration_sec(clip_path), 2)
+            shots = cc.get("shots")
+            if src is not None and shots is not None:
+                raise DeckValidationError(f"Slide {sid}: cinema_clip cannot set both cinema.src and cinema.shots")
+
+            if shots is not None:
+                if not isinstance(shots, list) or not (1 <= len(shots) <= 8):
+                    raise DeckValidationError(f"Slide {sid}: cinema.shots must contain 1..8 shot objects")
+                for sh_idx, sh in enumerate(shots):
+                    if not isinstance(sh, dict):
+                        raise DeckValidationError(f"Slide {sid}: cinema.shots[{sh_idx}] must be an object")
+                    sh_src = _validate_safe_public_rel(sh.get("src"), f"cinema.shots[{sh_idx}].src", sid)
+                    ext = Path(sh_src).suffix.lower()
+                    if ext in ALLOWED_CINEMA_VIDEO_EXTS:
+                        inferred_kind = "video"
+                    elif ext in ALLOWED_CINEMA_IMAGE_EXTS:
+                        inferred_kind = "image"
+                    else:
+                        raise DeckValidationError(
+                            f"Slide {sid}: cinema.shots[{sh_idx}].src unsupported extension {ext!r}"
+                        )
+                    if sh.get("kind") is not None and sh["kind"] != inferred_kind:
+                        raise DeckValidationError(
+                            f"Slide {sid}: cinema.shots[{sh_idx}].kind={sh['kind']!r} conflicts with extension {ext!r}"
+                        )
+                    sh["kind"] = inferred_kind
+                    if sh.get("duration_sec") is not None:
+                        if not _is_number(sh["duration_sec"]) or float(sh["duration_sec"]) < 0.5:
+                            raise DeckValidationError(f"Slide {sid}: cinema.shots[{sh_idx}].duration_sec must be >= 0.5")
+                    clip_path = PUBLIC_DIR / sh_src
+                    clip_dur: float | None = None
+                    if check_assets:
+                        if not clip_path.is_file():
+                            raise DeckValidationError(f"Slide {sid}: cinema.shots[{sh_idx}].src file not found: {clip_path}")
+                        if inferred_kind == "video":
+                            clip_dur = round(_media_duration_sec(clip_path), 2)
+                            sh["clip_duration_sec"] = clip_dur
+                    _validate_cinema_media_params(
+                        sh,
+                        f"cinema.shots[{sh_idx}]",
+                        sid,
+                        kind=inferred_kind,
+                        clip_dur=clip_dur,
+                        clip_path=clip_path if check_assets else None,
+                        check_assets=check_assets,
+                    )
+            elif src is not None:
+                clean_src = _validate_safe_public_rel(src, "cinema.src", sid)
+                ext = Path(clean_src).suffix.lower()
+                if ext in ALLOWED_CINEMA_IMAGE_EXTS:
+                    inferred_kind = "image"
+                elif ext in ALLOWED_CINEMA_VIDEO_EXTS:
+                    inferred_kind = "video"
+                else:
+                    raise DeckValidationError(f"Slide {sid}: cinema.src unsupported extension {ext!r}")
+                clip_path = PUBLIC_DIR / clean_src
+                clip_dur = None
+                if check_assets:
+                    if not clip_path.is_file():
+                        raise DeckValidationError(f"Slide {sid}: cinema.src file not found: {clip_path}")
+                    if inferred_kind == "video":
+                        clip_dur = round(_media_duration_sec(clip_path), 2)
+                        cc["clip_duration_sec"] = clip_dur
+                _validate_cinema_media_params(
+                    cc,
+                    "cinema",
+                    sid,
+                    kind=inferred_kind,
+                    clip_dur=clip_dur,
+                    clip_path=clip_path if check_assets else None,
+                    check_assets=check_assets,
+                )
             elif not slide.get("background_query"):
-                raise DeckValidationError(f"Slide {sid}: cinema_clip requires cinema.src or background_query")
+                raise DeckValidationError(f"Slide {sid}: cinema_clip requires cinema.src or background_query (or cinema.shots)")
+
+        if slide.get("sfx") is not None:
+            slide_sfx = slide["sfx"]
+            if not isinstance(slide_sfx, list) or len(slide_sfx) > 8:
+                raise DeckValidationError(f"Slide {sid}: sfx must be a list of 0..8 cues")
+            for q_idx, cue in enumerate(slide_sfx):
+                if not isinstance(cue, dict):
+                    raise DeckValidationError(f"Slide {sid}: sfx[{q_idx}] must be an object")
+                has_src = cue.get("src") is not None
+                has_name = cue.get("name") is not None
+                if has_src == has_name:
+                    raise DeckValidationError(f"Slide {sid}: sfx[{q_idx}] needs exactly one of src (file) or name (library)")
+                if has_name:
+                    if cue["name"] not in SFX_LIBRARY_NAMES:
+                        raise DeckValidationError(
+                            f"Slide {sid}: sfx[{q_idx}].name {cue['name']!r} is not in the SFX library: {sorted(SFX_LIBRARY_NAMES)}"
+                        )
+                    # Library files are generated by resolve_deck_sfx() before rendering (not checked here).
+                    cue_src = f"sfx/library/{cue['name']}.wav"
+                else:
+                    cue_src = _validate_safe_public_rel(cue.get("src"), f"sfx[{q_idx}].src", sid)
+                ext = Path(cue_src).suffix.lower()
+                if ext not in ALLOWED_SFX_EXTS:
+                    raise DeckValidationError(
+                        f"Slide {sid}: sfx[{q_idx}].src unsupported audio extension {ext!r}; allowed: {sorted(ALLOWED_SFX_EXTS)}"
+                    )
+                if check_assets and has_src:
+                    cue_path = PUBLIC_DIR / cue_src
+                    if not cue_path.is_file():
+                        raise DeckValidationError(f"Slide {sid}: sfx[{q_idx}].src file not found: {cue_path}")
+                at_sec = cue.get("at_sec")
+                if not _is_number(at_sec) or float(at_sec) < 0.0:
+                    raise DeckValidationError(f"Slide {sid}: sfx[{q_idx}].at_sec must be a number >= 0")
+                if cue.get("volume") is not None:
+                    cv = cue["volume"]
+                    if not _is_number(cv) or not (0.0 < float(cv) <= 1.0):
+                        raise DeckValidationError(f"Slide {sid}: sfx[{q_idx}].volume must be in (0, 1.0]")
+                if cue.get("duration_sec") is not None:
+                    cd = cue["duration_sec"]
+                    if not _is_number(cd) or float(cd) <= 0.0:
+                        raise DeckValidationError(f"Slide {sid}: sfx[{q_idx}].duration_sec must be > 0")
         if stype == "kpi":
             kpis = slide.get("kpis") or []
             if not (1 <= len(kpis) <= 4):
@@ -843,6 +1078,10 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
             # Renderer needs the clip length to freeze its last frame after the clip ends.
             slide = {**slide, "recording": {**slide["recording"], "duration_sec": round(rec_sec, 3)}}
 
+        # Optional floor from the storyboard: a scene keeps its planned length even if narration is shorter.
+        if slide.get("min_duration_sec") is not None:
+            scene_s = max(scene_s, int(math.ceil(float(slide["min_duration_sec"]))))
+
         start_sec = round(cursor_frames / float(fps), 3)
         slide_frames = max(tr_frames * 2 + 1, int(round(scene_s * fps)))
         cursor_frames += slide_frames - (tr_frames if idx < total_slides else 0)
@@ -882,6 +1121,7 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
     resolved["theme"] = deck.get("theme", "neon_cyber")
     resolved["burn_captions"] = deck.get("burn_captions", True)
     resolved["caption_style"] = deck.get("caption_style", "box")
+    resolved["media_engine"] = deck.get("media_engine", "offthread")
     resolved["transition_style"] = tr_style
     resolved["transition_frames"] = tr_frames
     resolved["sfx_enabled"] = sfx_enabled
@@ -945,7 +1185,19 @@ def main() -> int:
     parser.add_argument("--audit-repo", default="", help="Run Claim Audit against this source repo before build")
     parser.add_argument("--strict-audit", action="store_true", help="Fail build on any unverified number in Claim Audit")
     parser.add_argument("--overwrite", action="store_true", help="Allow --render to replace an existing out/<slug>.mp4")
+    parser.add_argument("--crf", type=int, default=None, help=f"H.264 CRF quality ({CRF_MIN}..{CRF_MAX}, default {DEFAULT_RENDER_CRF}; draft default {DRAFT_RENDER_CRF})")
+    parser.add_argument("--draft", action="store_true", help="Fast 0.5x draft preview -> out/<slug>_draft.mp4 (never overwrites master MP4)")
+    parser.add_argument(
+        "--require-storyboard",
+        action="store_true",
+        help="Master render (no --draft) only if the storyboard is approved for this exact deck + draft (fail-closed)",
+    )
     args = parser.parse_args()
+
+    effective_crf = args.crf if args.crf is not None else (DRAFT_RENDER_CRF if args.draft else DEFAULT_RENDER_CRF)
+    if not (CRF_MIN <= effective_crf <= CRF_MAX):
+        print(f"[ERROR] --crf must be in [{CRF_MIN}, {CRF_MAX}], got {effective_crf}", file=sys.stderr)
+        return 2
 
     deck_path = Path(args.deck)
     if not deck_path.is_absolute():
@@ -955,13 +1207,47 @@ def main() -> int:
         return 2
 
     deck = json.loads(deck_path.read_text(encoding="utf-8"))
+    from storyboard_gate import (  # noqa: E402  (storyboard_gate has no build_deck dependency)
+        StoryboardGateError,
+        assert_master_allowed,
+        deck_fingerprint,
+        record_draft_build,
+    )
+
+    raw_deck_sha = deck_fingerprint(deck)
+    # Only decks stored under decks/<slug>.json are gated/recorded: the console and the storyboard
+    # reader both address the deck by slug. A deck file elsewhere cannot satisfy the gate.
+    # --skip-tts reuses the shared src/generated/deck_resolved.json (not necessarily this deck), so such
+    # a render cannot be bound to the deck content: it is never recorded and never gated-through.
+    storyboard_target = (
+        deck_path.resolve() == (ROOT / "decks" / f"{deck.get('slug')}.json").resolve()
+        and not args.only_slide.strip()
+        and not args.skip_tts
+    )
+    if args.render and not args.draft and args.require_storyboard:
+        if not storyboard_target:
+            print(
+                "[ERROR] storyboard gate: master render requires decks/<slug>.json, no --only-slide and no --skip-tts; refusing",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            assert_master_allowed(str(deck.get("slug")), deck_sha256=raw_deck_sha)
+        except StoryboardGateError as exc:
+            print(f"[ERROR] {exc}", file=sys.stderr)
+            return 2
     deck = resolve_director_preset(deck)
+    try:
+        resolve_deck_sfx(deck)  # named SFX cues -> src (generates public/sfx/library/ if needed)
+    except SfxLibraryError as exc:
+        print(f"[ERROR] {exc}", file=sys.stderr)
+        return 2
     validate_deck(deck)
 
     if args.render:
         from deck_doctor import diagnose_deck  # noqa: E402  (lazy import: deck_doctor imports this module)
 
-        report = diagnose_deck(deck, overwrite=args.overwrite)
+        report = diagnose_deck(deck, overwrite=args.overwrite, draft=args.draft)
         for w in report["warnings"]:
             print(f"[doctor:warn] {w}")
         if not report["ok"]:
@@ -1022,6 +1308,7 @@ def main() -> int:
         resolved["theme"] = deck.get("theme", resolved.get("theme", "neon_cyber"))
         resolved["burn_captions"] = deck.get("burn_captions", resolved.get("burn_captions", True))
         resolved["caption_style"] = deck.get("caption_style", "box")
+        resolved["media_engine"] = deck.get("media_engine", "offthread")
         tr = deck.get("transition") or {}
         if tr:
             resolved["transition_style"] = tr.get("style", resolved.get("transition_style", "fade"))
@@ -1056,14 +1343,19 @@ def main() -> int:
         print(f"[OK] Rendered {len(resolved['slides'])} slide stills -> {stills_dir}")
 
     if args.render:
-        out_mp4 = ROOT / "out" / f"{resolved['slug']}.mp4"
+        out_stem = f"{resolved['slug']}_draft" if args.draft else resolved["slug"]
+        out_mp4 = ROOT / "out" / f"{out_stem}.mp4"
         out_thumb = ROOT / "out" / f"{resolved['slug']}_thumb.png"
         out_mp4.parent.mkdir(parents=True, exist_ok=True)
         run_cmd(["npx", "tsc", "--noEmit"])
-        run_cmd([
+        render_cmd = [
             "npx", "remotion", "render", "DupPresenter", str(out_mp4),
             "--audio-codec=aac", "--audio-bitrate=320K",
-        ])
+            f"--crf={effective_crf}",
+        ]
+        if args.draft:
+            render_cmd.append(f"--scale={DRAFT_RENDER_SCALE}")
+        run_cmd(render_cmd)
         loudnorm_applied = False
         if not args.no_loudnorm and (deck.get("audio") or {}).get("loudnorm", True):
             lufs = normalize_mp4_loudness(out_mp4, target_lufs=-16.0, true_peak=-1.5)
@@ -1077,8 +1369,14 @@ def main() -> int:
         if not args.no_qa:
             from media_qa import run_media_qa  # noqa: E402
 
-            qa_report = run_media_qa(out_mp4, resolved=resolved, expect_loudnorm=loudnorm_applied)
-            qa_path = out_mp4.parent / f"{resolved['slug']}_qa.json"
+            qa_report = run_media_qa(
+                out_mp4,
+                resolved=resolved,
+                expect_loudnorm=loudnorm_applied,
+                expected_scale=(DRAFT_RENDER_SCALE if args.draft else 1.0),
+                draft=args.draft,
+            )
+            qa_path = out_mp4.parent / f"{out_stem}_qa.json"
             qa_path.write_text(json.dumps(qa_report, ensure_ascii=False, indent=2), encoding="utf-8")
             print(
                 f"[qa] {'PASS' if qa_report['ok'] else 'FAIL'} | "
@@ -1088,6 +1386,16 @@ def main() -> int:
             )
             if not qa_report["ok"]:
                 raise RuntimeError(f"Media QA Gate FAILED ({qa_report['hard_fails']} hard fail(s)); see {qa_path}")
+
+        if args.draft:
+            if storyboard_target and resolved.get("slug") == deck.get("slug"):
+                record_draft_build(deck["slug"], raw_deck_sha, list(resolved["slides"]))
+                print(f"[storyboard] draft bound to deck sha256={raw_deck_sha[:12]} (approve in console before master)")
+            print(
+                f"[OK] Draft rendered ({DRAFT_RENDER_SCALE}x, crf={effective_crf}): "
+                f"{out_mp4} ({out_mp4.stat().st_size / 1_048_576:.2f} MB) — master MP4 untouched"
+            )
+            return 0
 
         total_frames = int(resolved.get("total_frames") or round(resolved["total_seconds"] * resolved.get("fps", 30)))
         thumb_frame = min(45, max(0, total_frames - 1))
@@ -1099,7 +1407,7 @@ def main() -> int:
         print(
             f"[pack] wrote {pack['chapters'].name}, {pack['post_copy'].name}, {pack['metadata'].name}"
         )
-        print(f"[OK] Rendered: {out_mp4} ({out_mp4.stat().st_size / 1_048_576:.2f} MB) + {out_thumb.name}")
+        print(f"[OK] Rendered (crf={effective_crf}): {out_mp4} ({out_mp4.stat().st_size / 1_048_576:.2f} MB) + {out_thumb.name}")
     return 0
 
 

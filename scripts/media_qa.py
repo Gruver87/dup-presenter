@@ -102,10 +102,14 @@ def run_media_qa(
     resolved: dict | None = None,
     expect_loudnorm: bool = True,
     max_silence_sec: float = 4.5,
+    expected_scale: float = 1.0,
+    draft: bool = False,
 ) -> dict:
     """Run fail-closed Media QA checks on a rendered MP4. Returns structured QA report."""
     if not mp4_path.is_file():
         raise MediaQAError(f"MP4 file not found: {mp4_path}")
+    if expected_scale <= 0.0 or expected_scale > 2.0:
+        raise MediaQAError(f"expected_scale must be in (0, 2.0], got {expected_scale}")
     size_bytes = mp4_path.stat().st_size
     if size_bytes < 10_000:
         raise MediaQAError(f"MP4 file is suspiciously small ({size_bytes} bytes)")
@@ -133,8 +137,8 @@ def run_media_qa(
     add("audio_sample_rate", sample_rate >= 44100, f"{sample_rate} Hz")
 
     if resolved:
-        exp_w = int(resolved.get("width") or 1920)
-        exp_h = int(resolved.get("height") or 1080)
+        exp_w = int(round(int(resolved.get("width") or 1920) * expected_scale))
+        exp_h = int(round(int(resolved.get("height") or 1080) * expected_scale))
         exp_dur = float(resolved.get("total_seconds") or 0.0)
         add("resolution_match", (width, height) == (exp_w, exp_h), f"got {width}x{height}, expected {exp_w}x{exp_h}")
         if exp_dur > 0:
@@ -168,6 +172,8 @@ def run_media_qa(
     hard_fails = [c for c in checks if not c["ok"] and c["severity"] == "hard"]
     return {
         "ok": len(hard_fails) == 0,
+        "draft": bool(draft),
+        "expected_scale": expected_scale,
         "mp4": mp4_path.name,
         "bytes": size_bytes,
         "width": width,

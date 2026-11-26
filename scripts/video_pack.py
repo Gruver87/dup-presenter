@@ -180,7 +180,8 @@ def execute_video_pack(plan: dict[str, Any]) -> dict[str, Any]:
                 f"translate_{target_lang}",
             )
 
-        cmd = [sys.executable, str(ROOT / "scripts" / "build_deck.py"), str(deck_file), "--render"]
+        # Video Pack publishes master MP4s: every target must be storyboard-approved (fail-closed).
+        cmd = [sys.executable, str(ROOT / "scripts" / "build_deck.py"), str(deck_file), "--render", "--require-storyboard"]
         if overwrite:
             cmd.append("--overwrite")
         _run_step(cmd, f"render_{tgt['slug']}")

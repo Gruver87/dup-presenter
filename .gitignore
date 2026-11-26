@@ -3,6 +3,7 @@ out/
 models/
 public/voice/*.wav
 public/sfx/*.wav
+public/sfx/library/
 src/generated/deck_resolved.json
 .env
 secrets/
@@ -24,3 +25,5 @@ assets/music/*
 # AI-generated cinema clips (Grok Imagine) are large binaries; regenerate per machine, do not commit.
 # decks/big-bang-cinema-real.json expects them; build_deck.py fails closed if they are missing.
 public/cinema/
+# Visual sourcing downloads (third-party archive media; per-machine, credited in out/*_visual_credits.txt)
+public/visual/

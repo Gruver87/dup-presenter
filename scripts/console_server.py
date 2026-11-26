@@ -61,6 +61,7 @@ from plan_deck import voice_ssml  # noqa: E402
 from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumbnail  # noqa: E402
 from tiktok_uploader import refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
 from video_pack import VideoPackError, pack_cli_args, plan_video_pack  # noqa: E402
+from storyboard_gate import StoryboardGateError, approve as sb_approve, gate_status, revoke as sb_revoke, storyboard_view  # noqa: E402
 
 from theme_catalog import THEME_CATALOG  # noqa: E402
 from tts_engines import KOKORO_DEFAULT, KOKORO_VOICE_CATALOG  # noqa: E402
@@ -267,6 +268,7 @@ def read_deck_detail(slug: str) -> dict[str, Any]:
         "history": history,
         "has_mp4": mp4.is_file(),
         "mp4_mtime": int(mp4.stat().st_mtime) if mp4.is_file() else 0,
+        "has_draft": (OUT_DIR / f"{slug}_draft.mp4").is_file(),
         "has_srt": srt.is_file(),
         "has_vtt": vtt.is_file(),
         "has_thumb": thumb.is_file(),
@@ -500,6 +502,32 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             })
             return
 
+        if path == "/api/storyboard":
+            slug = (qs.get("slug") or [""])[0]
+            try:
+                slug = _valid_slug(slug)
+                view = storyboard_view(slug)
+            except (ValueError, StoryboardGateError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, **view, "frames_base": f"/storyboard/{slug}/"})
+            return
+
+        sb_frame = re.match(r"^/storyboard/([A-Za-z0-9][A-Za-z0-9_-]{0,63})/([A-Za-z0-9_-]{1,64}\.jpg)$", path)
+        if sb_frame:
+            fpath = WORK_DIR / sb_frame.group(1) / "storyboard" / sb_frame.group(2)
+            if not fpath.is_file():
+                self._json(404, {"ok": False, "error": "Frame not found"})
+                return
+            data = fpath.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/jpeg")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         if path == "/api/deck":
             slug = (qs.get("slug") or [""])[0]
             try:
@@ -605,7 +633,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 sys.executable, str(SCRIPTS / "make_project_deck.py"),
                 source, "--slug", slug, "--provider", provider, "--slides", str(slides),
                 "--lang", lang, "--speaker", speaker, "--theme", theme,
-                "--aspect", aspect, "--voice-mode", voice_mode, "--render",
+                "--aspect", aspect, "--voice-mode", voice_mode, "--render", "--draft",
             ]
             if not burn_captions:
                 cmd.append("--no-captions")
@@ -638,7 +666,7 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             cmd = [
                 sys.executable, str(SCRIPTS / "make_project_deck.py"),
                 "--slug", slug, "--feedback", feedback, "--provider", provider, "--lang", lang,
-                "--theme", theme, "--aspect", aspect, "--voice-mode", voice_mode, "--render",
+                "--theme", theme, "--aspect", aspect, "--voice-mode", voice_mode, "--render", "--draft",
             ]
             if speaker:
                 cmd += ["--speaker", speaker]
@@ -926,7 +954,9 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             deck_path.write_text(json.dumps(deck, ensure_ascii=False, indent=2), encoding="utf-8")
 
             if body.get("render", True):
-                cmd = [sys.executable, str(SCRIPTS / "build_deck.py"), str(deck_path), "--render"]
+                # Saving edits changes the deck, which invalidates any storyboard approval:
+                # the save path builds a DRAFT only. Master MP4 needs a new approval (/api/render).
+                cmd = [sys.executable, str(SCRIPTS / "build_deck.py"), str(deck_path), "--render", "--draft"]
                 if not JOBS.start("save-render", slug, cmd):
                     self._json(409, {"ok": False, "error": "Сохранено, но уже идёт другая сборка."})
                     return
@@ -959,7 +989,24 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                     return
                 deck_path.write_text(json.dumps(deck, ensure_ascii=False, indent=2), encoding="utf-8")
 
+            is_draft = bool(body.get("draft"))
             cmd = [sys.executable, str(SCRIPTS / "build_deck.py"), str(deck_path), "--render"]
+            if is_draft:
+                cmd.append("--draft")
+            elif str(body.get("only_slide") or "").strip():
+                self._json(400, {"ok": False, "error": "Мастер-сборка по одному слайду не допускается: для проверки собери черновик"})
+                return
+            else:
+                # Fail-closed: master MP4 only for a storyboard-approved deck + draft (build_deck re-checks).
+                try:
+                    sb_status = gate_status(slug)
+                except StoryboardGateError as exc:
+                    self._json(409, {"ok": False, "error": str(exc)})
+                    return
+                if not sb_status["can_master"]:
+                    self._json(409, {"ok": False, "error": f"Мастер заблокирован: {sb_status['reason']}", "storyboard": sb_status})
+                    return
+                cmd.append("--require-storyboard")
             only_slide = str(body.get("only_slide") or "").strip()
             if only_slide:
                 if not re.match(r"^[A-Za-z0-9_-]+$", only_slide):
@@ -968,10 +1015,55 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 cmd += ["--only-slide", only_slide]
             if body.get("offline_only"):
                 cmd.append("--offline-only")
+            if body.get("crf") is not None:
+                try:
+                    crf_val = int(body["crf"])
+                except (TypeError, ValueError):
+                    self._json(400, {"ok": False, "error": "Invalid crf integer"})
+                    return
+                if not (14 <= crf_val <= 32):
+                    self._json(400, {"ok": False, "error": "crf must be in [14, 32]"})
+                    return
+                cmd += ["--crf", str(crf_val)]
             if not JOBS.start("render", slug, cmd):
                 self._json(409, {"ok": False, "error": "Уже идёт другая сборка. Дождись её завершения."})
                 return
-            self._json(202, {"ok": True, "slug": slug, "step": "render", "only_slide": only_slide or None})
+            self._json(202, {"ok": True, "slug": slug, "step": "render", "only_slide": only_slide or None, "draft": is_draft})
+            return
+
+        if path == "/api/storyboard/build":
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            try:
+                sb_status = gate_status(slug)
+            except StoryboardGateError as exc:
+                self._json(409, {"ok": False, "error": str(exc)})
+                return
+            if not sb_status["draft_fresh"]:
+                self._json(409, {"ok": False, "error": f"Нельзя собрать раскадровку: {sb_status['reason']}", "storyboard": sb_status})
+                return
+            cmd = [sys.executable, str(SCRIPTS / "storyboard_gate.py"), "build", slug]
+            if not JOBS.start("storyboard", slug, cmd):
+                self._json(409, {"ok": False, "error": "Уже идёт другая сборка. Дождись её завершения."})
+                return
+            self._json(202, {"ok": True, "slug": slug, "step": "storyboard"})
+            return
+
+        if path in {"/api/storyboard/approve", "/api/storyboard/revoke"}:
+            try:
+                slug = _valid_slug(str(body.get("slug") or ""))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            try:
+                sb_status = sb_approve(slug) if path.endswith("/approve") else sb_revoke(slug)
+            except StoryboardGateError as exc:
+                self._json(409, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "status": sb_status})
             return
 
         if path == "/api/pronunciation":
