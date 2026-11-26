@@ -1,6 +1,6 @@
 import React from "react";
 import { OffthreadVideo, VolumeProp } from "remotion";
-import { Video as MediaVideo } from "@remotion/media";
+import { Video as MediaVideo, VideoObjectFit } from "@remotion/media";
 import { DECK } from "./deckContext";
 
 /**
@@ -30,6 +30,8 @@ export const SceneVideo: React.FC<SceneVideoProps> = ({
   style,
 }) => {
   if (DECK.media_engine === "media") {
+    // @remotion/media takes objectFit as a prop (style.objectFit logs a warning per tab).
+    const { objectFit, ...restStyle } = style ?? {};
     return (
       <MediaVideo
         src={src}
@@ -37,7 +39,8 @@ export const SceneVideo: React.FC<SceneVideoProps> = ({
         playbackRate={playbackRate}
         muted={muted}
         volume={volume}
-        style={style}
+        objectFit={objectFit as VideoObjectFit | undefined}
+        style={restStyle}
         disallowFallbackToOffthreadVideo
       />
     );

@@ -20,6 +20,34 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# CC BY and CC BY-SA require attribution regardless of commercial use. CC0 / PDM do not.
+CREDIT_LICENCES = frozenset({"by", "by-sa"})
+
+
+def visual_credit_lines(slug: str, plan_path: Path | None = None) -> list[str]:
+    """Attribution lines for CC BY / CC BY-SA visuals assigned in the sourcing plan.
+
+    Source of truth is work/visual_sources/<slug>/plan.json (written by visual_sourcing.py plan).
+    No plan -> no lines (the deck then has no archive-sourced visuals).
+    """
+    from visual_sourcing import LICENCE_LABEL, plan_path_for
+
+    path = plan_path or plan_path_for(slug)
+    if not path.is_file():
+        return []
+    plan = json.loads(path.read_text(encoding="utf-8"))
+    lines: list[str] = []
+    for scene in plan.get("scenes", []):
+        asset = scene.get("asset")
+        if not asset or asset.get("license") not in CREDIT_LICENCES:
+            continue
+        label = LICENCE_LABEL.get(asset["license"], asset["license"])
+        licence_url = asset.get("license_url") or "no licence URL"
+        lines.append(
+            f"- \"{asset['title']}\" by {asset['creator']} — {label} — {licence_url} — source: {asset['page_url']}"
+        )
+    return lines
+
 
 def _fmt_chapter_ts(sec: float) -> str:
     total = max(0, int(round(sec)))
@@ -110,6 +138,10 @@ def build_publish_pack(
     if url:
         full_url = url if url.startswith("http") else f"https://{url}"
         md_lines += [f"Repository: {full_url}", ""]
+    credit_lines = visual_credit_lines(slug)
+    if credit_lines:
+        credits_hdr = "## Источники визуалов" if lang == "ru" else "## Visual credits"
+        md_lines += [credits_hdr, ""] + credit_lines + [""]
     md_lines += [chap_hdr, "", "```text", chapters_txt.strip(), "```", "", tags, "", disclaimer, ""]
 
     copy_path = dest / f"{slug}_post_copy.md"
