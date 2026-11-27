@@ -1,0 +1,184 @@
+{
+  "slug": "dup-labs-solar-cinema",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "95%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "c0",
+      "type": "cinema_clip",
+      "tag": "00 · ГЛАВНОЕ ЯДРО · DUP LABS",
+      "title": "Солнечная система DUP Labs",
+      "cinema": {
+        "src": "cinema/dup_00_solar_intro.mp4",
+        "badge": "DUP LABS · ГЛАВНОЕ ЯДРО И 8 СИСТЕМ · GITHUB.COM/GRUVER87",
+        "loop": false,
+        "playback_rate": 0.9,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Добро пожаловать в ДАП Лабс. В центре сияет главное ядро суверенной инженерии, а вокруг него по орбитам вращаются восемь живых ядер нашей экосистемы. Сейчас каждое из них раскроет свой внутренний механизм."
+    },
+    {
+      "id": "c1",
+      "type": "cinema_clip",
+      "tag": "01 · L1 BLOCKCHAIN · INDUSTRIAL PIN",
+      "title": "dup-protocol",
+      "cinema": {
+        "src": "cinema/dup_01_protocol.mp4",
+        "badge": "ЯДРО 01 · DUP-PROTOCOL · RUST + PYTHON L1 CORE",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро один — дап протокол. Внутри сплетены три точные шестерни: горячий путь на Раст с криптографией и Рокс Ди Би, детерминированные корни состояния и отказоустойчивая трёхнодовая сеть либ-пи-ту-пи."
+    },
+    {
+      "id": "c2",
+      "type": "cinema_clip",
+      "tag": "02 · MEDIA STUDIO · CINEMA ENGINE",
+      "title": "dup-presenter",
+      "cinema": {
+        "src": "cinema/dup_02_presenter.mp4",
+        "badge": "ЯДРО 02 · DUP-PRESENTER · 3D & CINEMA STUDIO",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро два — дап презентер. Кристалл раскрывает оптический киномеханизм: студия интерактивной сборки слайдов, встроенная трёхмерная оптика и нейронная озвучка с экспортом в Full HD кино."
+    },
+    {
+      "id": "c3",
+      "type": "cinema_clip",
+      "tag": "03 · MARKET OPS · LIVE INTELLIGENCE",
+      "title": "dup-market-radar",
+      "cinema": {
+        "src": "cinema/dup_03_market_radar.mp4",
+        "badge": "ЯДРО 03 · DUP-MARKET-RADAR · SPOT COCKPIT & PWA",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро три — маркет радар. Внутри гироскопа работают три контура: часовые движения и экстремумы фандинга, живые дайджесты в Телеграм и мобильный кокпит, а красное кольцо жёстко блокирует фьючерсы."
+    },
+    {
+      "id": "c4",
+      "type": "cinema_clip",
+      "tag": "04 · AGENT TRUST · CONTROL PLANE",
+      "title": "dup-skill-trust-plane",
+      "cinema": {
+        "src": "cinema/dup_04_trust_plane.mp4",
+        "badge": "ЯДРО 04 · DUP-SKILL-TRUST-PLANE · ZERO-KEY TRUST",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро четыре — скилл траст плэйн. Аметистовый кристалл открывает криптографическое хранилище: паспорта навыков и рисков, подпись издателя и локальная проверка всей цепочки доверия без секретных ключей."
+    },
+    {
+      "id": "c5",
+      "type": "cinema_clip",
+      "tag": "05 · ECOSYSTEM · SOVEREIGN ENTRY",
+      "title": "dup-lab",
+      "cinema": {
+        "src": "cinema/dup_05_dup_lab.mp4",
+        "badge": "ЯДРО 05 · DUP-LAB · ONE-COMMAND PORTAL",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро пять — дап лаб. Кристаллический лотос раскрывает турбину запуска: развёртывание одной командой, автоматическое подключение проверенных агентских навыков и локальный Эм Си Пи сервер без ключей."
+    },
+    {
+      "id": "c6",
+      "type": "cinema_clip",
+      "tag": "06 · GUARDRAILS · HARD FIREWALL",
+      "title": "dup-policy-gate",
+      "cinema": {
+        "src": "cinema/dup_06_policy_gate.mp4",
+        "badge": "ЯДРО 06 · DUP-POLICY-GATE · FAIL-CLOSED FIREWALL",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро шесть — полиси гейт. Бронированный щит открывает стальной замок-фаервол: он мгновенно отсекает фьючерсы и плечо, держит жёсткие лимиты позиций и пишет неизменяемый аудит каждого решения."
+    },
+    {
+      "id": "c7",
+      "type": "cinema_clip",
+      "tag": "07 · L1 R&D · FRONTIER SANDBOX",
+      "title": "dup-protocol-experimental",
+      "cinema": {
+        "src": "cinema/dup_07_experimental.mp4",
+        "badge": "ЯДРО 07 · DUP-PROTOCOL-EXPERIMENTAL · R&D FRONTIER",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро семь — протокол экспериментал. Хромовый реактор открывает передний край исследований: глубокий И Ви Эм и реорги, лаборатория защиты от дальних атак и стресс-тесты сети либ-пи-ту-пи."
+    },
+    {
+      "id": "c8",
+      "type": "cinema_clip",
+      "tag": "08 · VERIFICATION · PROVENANCE",
+      "title": "dup-evidence-graph",
+      "cinema": {
+        "src": "cinema/dup_08_evidence_graph.mp4",
+        "badge": "ЯДРО 08 · DUP-EVIDENCE-GRAPH · PROOF ON DISK",
+        "loop": false,
+        "playback_rate": 0.85,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Ядро восемь — эвиденс граф. Геодезическая решётка раскрывает астрономический механизм честности: машинная проверка заявлений, строгая привязка к запечатанным пакам на диске и полный запрет выдуманных отчётов."
+    },
+    {
+      "id": "c9",
+      "type": "cinema_clip",
+      "tag": "09 · ФИНАЛ · DUP LABS",
+      "title": "Код, которому можно доверять",
+      "cinema": {
+        "src": "cinema/dup_09_finale.mp4",
+        "badge": "DUP LABS · 8 ЯДЕР · 15 ОТКРЫТЫХ РЕПОЗИТОРИЕВ · FAIL-CLOSED",
+        "loop": false,
+        "playback_rate": 0.9,
+        "zoom": 1.04,
+        "clip_duration_sec": 12.04
+      },
+      "voice_text": "Восемь живых ядер. Пятнадцать открытых репозиториев. Единая архитектура нового кодинга, где каждое слово подтверждено доказательствами на диске. ДАП Лабс — код, которому можно доверять."
+    }
+  ],
+  "width": 1920,
+  "height": 1080
+}

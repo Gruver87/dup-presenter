@@ -1,0 +1,346 @@
+{
+  "slug": "dup-labs-universe-director-cut",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 18,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "u0",
+      "type": "cinema_clip",
+      "tag": "ПРОЛОГ · РОЖДЕНИЕ ВСЕЛЕННОЙ DUP LABS",
+      "title": "Закон Fail-Closed",
+      "cinema": {
+        "badge": "ПРОЛОГ · DUP LABS · СОЗДАНО НА ДВИЖКЕ DUP-PRESENTER",
+        "grade": "vivid",
+        "crossfade_frames": 18,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_00_genesis_pulse.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/dup_00_solar_intro_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Обычный софт ломается тихо. Ложные зелёные статусы, слепые агенты, утечки ключей и рискованные сделки без тормозов. Из этого хаоса родилась другая архитектура — Вселенная ДАП Лабс. В её центре сияет главное ядро суверенной инженерии, а вокруг него по орбитам движутся восемь живых систем. Все они подчиняются одному закону: если система не уверена — она отказывает, а не притворяется исправной."
+    },
+    {
+      "id": "u1",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 01 · DUP-PROTOCOL",
+      "title": "Гибридный L1: Rust + Python",
+      "cinema": {
+        "badge": "ГЛАВА 01 · DUP-PROTOCOL · RUST HOTPATH + LIBP2P MESH",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_01_protocol_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_01_protocol_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Первое ядро — дап протокол, фундамент блокчейна первого уровня. Плетёный сапфирово-хромовый узел раскрывает три точные шестерни. Внутри горячий путь на языке Раст мгновенно проверяет криптографию и запаковывает состояние в хранилище Рокс Ди Би, а Питон строго оркестрирует правила. Три независимых узла образуют отказоустойчивую сеть либ-пи-ту-пи: любой поддельный блок разбивается о барьер, не попадая в цепь."
+    },
+    {
+      "id": "u2",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 02 · DUP-PRESENTER",
+      "title": "Автономная киностудия",
+      "cinema": {
+        "badge": "ГЛАВА 02 · DUP-PRESENTER · 3D OPTICS & NEURAL CINEMA",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_02_presenter_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_02_presenter_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Второе ядро — дап презентер, автономная киностудия для инженеров и продуктов. Гранёный золотой кристалл раскрывается как диафрагма кинокамеры с латунными шестернями и сапфировой оптикой. Речевая дорожка, синхронизация каждого слова, трёхмерные сцены, переходы и оркестровый мастеринг сливаются в единый луч. На выходе рождается фильм Full HD с автоматической проверкой звука и картинки."
+    },
+    {
+      "id": "u3",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 03 · DUP-MARKET-RADAR",
+      "title": "Спотовый кокпит и телеметрия",
+      "cinema": {
+        "badge": "ГЛАВА 03 · DUP-MARKET-RADAR · LIVE SPOT COCKPIT & PWA",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_03_market_radar_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_03_radar_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Третье ядро — маркет радар, глаза и телеметрия рынка в реальном времени. Хромовый гироскоп раскрывает изумрудный хронометр. Его лазерный луч непрерывно сканирует спотовый рынок, находит резкие часовые импульсы и экстремумы фандинга и отправляет честные дайджесты в Телеграм и мобильный кокпит. А внизу горит красный контур: авто-торговля фьючерсами заблокирована на уровне архитектуры навсегда."
+    },
+    {
+      "id": "u4",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 04 · DUP-SKILL-TRUST-PLANE",
+      "title": "Доверие для ИИ-агентов",
+      "cinema": {
+        "badge": "ГЛАВА 04 · DUP-SKILL-TRUST-PLANE · ZERO-KEY VERIFICATION",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_04_trust_plane_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_04_trust_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Четвёртое ядро — скилл траст плэйн, плоскость проверяемого доверия для ИИ-агентов. Аметистовый кристалл расходится, открывая серебряное хранилище с точными шестернями. Каждый навык проходит криптографическую аттестацию: проверенный паспорт с подписью издателя зажигается изумрудным светом и работает локально без единого секретного ключа, а любой поддельный осколок мгновенно блокируется на входе."
+    },
+    {
+      "id": "u5",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 05 · DUP-LAB",
+      "title": "Портал запуска одной командой",
+      "cinema": {
+        "badge": "ГЛАВА 05 · DUP-LAB · ONE-COMMAND ECOSYSTEM PORTAL",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_05_dup_lab_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_05_lab_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Пятое ядро — дап лаб, единая точка входа во всю экосистему. Хрустальный лотос расцветает и запускает центральную хромовую турбину. Одна команда в терминале запускает цепную реакцию на Windows, Linux и macOS: автоматически разворачивается рабочая среда, подключаются проверенные навыки и оживает локальный Эм Си Пи узел без утечки секретов. Дни ручной настройки сжимаются в секунды."
+    },
+    {
+      "id": "u6",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 06 · DUP-POLICY-GATE",
+      "title": "Детерминированный фаервол сделок",
+      "cinema": {
+        "badge": "ГЛАВА 06 · DUP-POLICY-GATE · HARD PRE-ORDER FIREWALL",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_06_policy_gate_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_06_policy_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Шестое ядро — полиси гейт, последний рубеж защиты реального капитала. Тяжёлый титановый щит раздвигается как дверь банковского сейфа, открывая стальные шестерни-затворы. Когда поток рискованных ордеров с плечом и фьючерсами несётся к рынку, гидравлический замок захлопывается и гасит каждую опасную попытку. Проходит только выверенный спотовый луч в пределах лимитов, оставляя неизменяемую печать аудита."
+    },
+    {
+      "id": "u7",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 07 · DUP-PROTOCOL-EXPERIMENTAL",
+      "title": "Изолированная лаборатория будущего",
+      "cinema": {
+        "badge": "ГЛАВА 07 · DUP-PROTOCOL-EXPERIMENTAL · FRONTIER R&D SANDBOX",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_07_experimental_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_07_experimental_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Седьмое ядро — протокол экспериментал, изолированный реактор будущей эпохи. Хромовый трилистник раскрывает плазменное сердце, наглухо отделённое от промышленной сети. Внутри защитного купола смарт-контракты И Ви Эм выдерживают ураган нативного фаззинга и реоргов, а опытная защита от дальних атак отражает волны из прошлого, доказывая свою прочность прежде, чем попадёт в основу."
+    },
+    {
+      "id": "u8",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 08 · DUP-EVIDENCE-GRAPH",
+      "title": "Машинная честность и доказательства",
+      "cinema": {
+        "badge": "ГЛАВА 08 · DUP-EVIDENCE-GRAPH · CLAIM ↔ DISK PACK PROOF",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_08_evidence_graph_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_08_evidence_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Восьмое ядро — эвиденс граф, верховный судья инженерной честности. Геодезическая решётка кристаллов раскрывается как астролябия с золотым механизмом. Золотой сканер проверяет каждое заявление о готовности: если за ним стоит запечатанный пак тестов и сорокавосьмичасового прогона на диске, узел вспыхивает алмазным светом. Но любой пустой зелёный пузырь без доказательств разбивается в пыль."
+    },
+    {
+      "id": "u9",
+      "type": "cinema_clip",
+      "tag": "ФИНАЛ · ВЕЛИКОЕ ОБЪЕДИНЕНИЕ",
+      "title": "DUP Labs — Единая галактика кода",
+      "cinema": {
+        "badge": "ФИНАЛ · DUP LABS · 8 ЯДЕР · 15 РЕПОЗИТОРИЕВ",
+        "grade": "vivid",
+        "crossfade_frames": 18,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_09_convergence_supernova.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/dup_09_finale_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Восемь ядер сливают свои лучи в едином резонансе. Здесь нет магии на словах и нет тихих компромиссов. Есть только точная механика, прозрачный исходный код и доказательства на диске."
+    },
+    {
+      "id": "u10",
+      "type": "cinema_clip",
+      "tag": "КАРТА ЭКОСИСТЕМЫ · GITHUB.COM/GRUVER87",
+      "title": "Центральное ядро и все 15 репозиториев",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 15,
+        "loop": false,
+        "shots": [
+          {
+            "src": "cinema/u10_constellation_links.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "В самом центре — наш главный репозиторий Грювер восемьдесят семь. А вокруг него в орбитальном кольце — все пятнадцать открытых проектов ДАП Лабс. Каждый адрес перед вами: переходите, проверяйте код и убедитесь сами."
+    },
+    {
+      "id": "u11",
+      "type": "cinema_clip",
+      "tag": "СОЗДАНО С ПОМОЩЬЮ DUP-PRESENTER",
+      "title": "github.com/Gruver87/dup-presenter",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 15,
+        "loop": false,
+        "shots": [
+          {
+            "src": "cinema/u11_created_with_presenter.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "И главный финал: весь этот фильм — от сценария и голоса до монтажа и контроля качества — был создан автономно с помощью нашего репозитория дап презентер. Ссылка прямо на экране."
+    }
+  ],
+  "width": 1920,
+  "height": 1080
+}
