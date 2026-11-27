@@ -918,8 +918,21 @@ function collectSlideEdits() {
   return edits;
 }
 
+// Aspect of the deck as last loaded from disk. A save that changes it must be confirmed (it rewrites the master).
+let LOADED_ASPECT = "16:9";
+
 async function saveDeck(shouldRender) {
   if (!requireSlug($("saveMsg"))) return;
+  const aspectNow = $("editAspectSelect").value;
+  let confirmAspect = false;
+  if (aspectNow !== LOADED_ASPECT) {
+    confirmAspect = window.confirm(`Сменить формат ${LOADED_ASPECT} → ${aspectNow}? Мастер и раскадровка будут пересобраны.`);
+    if (!confirmAspect) {
+      $("saveMsg").textContent = "Смена формата отменена";
+      $("editAspectSelect").value = LOADED_ASPECT;
+      return;
+    }
+  }
   $("saveMsg").textContent = "...";
   const r = await fetch("/api/save-deck", {
     method: "POST",
@@ -927,7 +940,8 @@ async function saveDeck(shouldRender) {
     body: JSON.stringify({
       slug: CURRENT_SLUG,
       theme: $("editThemeSelect").value,
-      aspect: $("editAspectSelect").value,
+      aspect: aspectNow,
+      confirm_aspect_change: confirmAspect,
       speaker: $("speakerSelect").value,
       voice_mode: $("editVoiceModeSelect").value,
       burn_captions: $("editCaptionsCheck").checked,
@@ -942,6 +956,7 @@ async function saveDeck(shouldRender) {
   const d = await r.json();
   $("saveMsg").textContent = d.ok ? (shouldRender ? "OK · черновик запущен" : "Сохранено") : `Error: ${d.error}`;
   if (d.ok) {
+    LOADED_ASPECT = aspectNow;
     if (shouldRender) document.querySelector('[data-tab="logs"]').click();
     else loadStoryboard(CURRENT_SLUG);
   }
@@ -1392,6 +1407,7 @@ async function loadDeck(slug) {
   syncVoices($("speakerSelect"), CURRENT_LANG, deck.voice && deck.voice.speaker);
   syncThemes($("editThemeSelect"), deck.theme || "neon_cyber");
   $("editAspectSelect").value = deck.aspect || "16:9";
+  LOADED_ASPECT = deck.aspect || "16:9";
   $("editVoiceModeSelect").value = (deck.voice && deck.voice.mode) || "single";
   $("editCaptionsCheck").checked = deck.burn_captions !== false;
   $("editCaptionStyleSelect").value = ["box", "karaoke", "bold"].includes(deck.caption_style) ? deck.caption_style : "box";

@@ -1313,6 +1313,16 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             if "theme" in body and body["theme"] in ALLOWED_THEMES:
                 deck["theme"] = body["theme"]
             if "aspect" in body and body["aspect"] in ASPECT_DIMS:
+                # A format change rewrites the master's dimensions. Refuse unless explicitly confirmed, and
+                # refuse before writing anything, so a stale console selector cannot silently re-aspect a deck.
+                old_aspect = str(deck.get("aspect") or "16:9")
+                if body["aspect"] != old_aspect and not bool(body.get("confirm_aspect_change")):
+                    self._json(409, {
+                        "ok": False,
+                        "error": f"Смена формата {old_aspect} → {body['aspect']} не подтверждена. "
+                                 "Сохранение отменено, файл не изменён.",
+                    })
+                    return
                 deck["aspect"] = body["aspect"]
                 deck["width"], deck["height"] = ASPECT_DIMS[body["aspect"]]
             if "burn_captions" in body:
