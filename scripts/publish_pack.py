@@ -3,6 +3,7 @@
 Generates ready-to-paste release/upload artifacts from deck_resolved.json:
 - out/<slug>_chapters.txt   (YouTube-compliant 00:00 chapter timestamps)
 - out/<slug>_post_copy.md   (TikTok/Shorts <=150-char caption + YouTube description + hashtags)
+- out/<slug>_linkedin.md    (LinkedIn post + first comment, checked against 3,000 / 1,250 character limits)
 - out/<slug>_metadata.json  (structured manifest with sha256, duration, voice_used, chapters, QA)
 
 Usage:
@@ -17,6 +18,8 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+from linkedin_copy import build_linkedin_copy, render_linkedin_md
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -170,6 +173,13 @@ def build_publish_pack(
     copy_path = dest / f"{slug}_post_copy.md"
     copy_path.write_text("\n".join(md_lines), encoding="utf-8")
 
+    # 2b. LinkedIn post + first comment, checked against LinkedIn's character limits (see linkedin_copy).
+    linkedin = build_linkedin_copy(resolved, chapters=chapters, qa_report=qa_report)
+    linkedin_path = dest / f"{slug}_linkedin.md"
+    linkedin_path.write_text(render_linkedin_md(slug, linkedin), encoding="utf-8")
+    if linkedin["errors"]:
+        print(f"[WARN] LinkedIn copy over limit ({'; '.join(linkedin['errors'])}) -> {linkedin_path.name}")
+
     # 3. Structured metadata.json
     meta: dict = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -187,6 +197,11 @@ def build_publish_pack(
         "sfx_enabled": resolved.get("sfx_enabled"),
         "chapters": chapters,
         "short_caption": short_caption[:150],
+        "linkedin": {
+            "post_chars": linkedin["post_chars"],
+            "comment_chars": linkedin["comment_chars"],
+            "errors": linkedin["errors"],
+        },
     }
     if mp4_path and mp4_path.is_file():
         meta["mp4"] = {
@@ -203,6 +218,7 @@ def build_publish_pack(
     return {
         "chapters": chapters_path,
         "post_copy": copy_path,
+        "linkedin": linkedin_path,
         "metadata": meta_path,
     }
 
