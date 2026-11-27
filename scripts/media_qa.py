@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -183,6 +184,51 @@ def _measure_video_qa(mp4_path: Path, duration_sec: float) -> dict:
     }
 
 
+def file_sha256(path: Path, *, chunk_size: int = 1024 * 1024) -> str:
+    """Streamed SHA-256 of a file. Broadcast MP4s are often over 1 GB, so the file is never read whole."""
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def qa_report_path(mp4_path: Path) -> Path:
+    """Where build_deck writes the QA report for an MP4: ``<stem>_qa.json`` next to it."""
+    return mp4_path.with_name(f"{mp4_path.stem}_qa.json")
+
+
+def qa_binding_error(mp4_path: Path) -> str | None:
+    """Return why the QA report does not vouch for this exact MP4, or None when it does.
+
+    The report vouches for a file only when it records the file's byte size and SHA-256, both match the
+    file on disk, and it has no hard failures. A missing or unreadable report, a report written before
+    hashes were recorded, and a report for an earlier version of the file are all refused.
+    """
+    if not mp4_path.is_file():
+        return f"MP4 not found: {mp4_path}"
+    qa_path = qa_report_path(mp4_path)
+    if not qa_path.is_file():
+        return f"no media QA report {qa_path.name}; run media QA on this file first"
+    try:
+        qa = json.loads(qa_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return f"media QA report {qa_path.name} is unreadable: {exc}"
+    if not isinstance(qa, dict):
+        return f"media QA report {qa_path.name} is not a JSON object"
+    recorded_sha = str(qa.get("sha256") or "")
+    if not recorded_sha:
+        return f"media QA report {qa_path.name} has no sha256 (written before file binding); re-run media QA"
+    size = mp4_path.stat().st_size
+    if qa.get("bytes") != size:
+        return f"media QA report {qa_path.name} describes {qa.get('bytes')} bytes, file has {size}; re-run media QA"
+    if recorded_sha != file_sha256(mp4_path):
+        return f"media QA report {qa_path.name} is for a different file (sha256 mismatch); re-run media QA"
+    if not qa.get("ok") or int(qa.get("hard_fails") or 0) != 0:
+        return f"media QA failed for {mp4_path.name} (hard_fails={qa.get('hard_fails')})"
+    return None
+
+
 def run_media_qa(
     mp4_path: Path,
     resolved: dict | None = None,
@@ -302,6 +348,7 @@ def run_media_qa(
         "expected_scale": expected_scale,
         "mp4": mp4_path.name,
         "bytes": size_bytes,
+        "sha256": file_sha256(mp4_path),
         "width": width,
         "height": height,
         "duration_sec": round(duration_sec, 3),

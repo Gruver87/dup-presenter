@@ -348,6 +348,27 @@ def _current_access_token(fallback: str) -> str:
     return os.environ.get("TIKTOK_ACCESS_TOKEN", "").strip() or fallback
 
 
+def _record_verification(event: str, verification: dict[str, Any]) -> None:
+    """Append what TikTok actually reported to the audit log.
+
+    The upload row alone never says whether TikTok later processed the file, so a verified or failed
+    result is recorded as its own row keyed by publish_id.
+    """
+    AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "platform": "tiktok",
+        "event": event,
+        "publish_id": verification.get("publish_id"),
+        "status": verification.get("status"),
+        "verified": bool(verification.get("verified")),
+        "polls": verification.get("polls", 0),
+        "fail_reason": verification.get("fail_reason") or verification.get("error") or "",
+    }
+    with AUDIT_LOG.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
 def tiktok_publish(
     mp4: Path,
     *,
@@ -363,6 +384,14 @@ def tiktok_publish(
     """
     if not mp4.is_file():
         return {"ok": False, "error": f"MP4 not found: {mp4}"}
+
+    # Fail-closed media gate, before any token or network call (dry runs too): the file must be the one
+    # media QA passed, byte for byte. Checked by SHA-256 against the QA report, not by name.
+    from media_qa import qa_binding_error  # noqa: E402 (lazy: keeps ffmpeg helpers off the import path)
+
+    qa_error = qa_binding_error(mp4)
+    if qa_error:
+        return {"ok": False, "gate": "media_qa", "mp4": mp4.name, "error": f"refused before upload: {qa_error}"}
 
     mode = (mode or "inbox").strip().lower()
     if mode not in {"inbox", "direct"}:
@@ -519,6 +548,7 @@ def tiktok_publish(
     audit_row = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "platform": "tiktok",
+        "event": "upload",
         "mode": mode,
         "publish_id": publish_id,
         "mp4": mp4.name,
@@ -535,6 +565,8 @@ def tiktok_publish(
     else:
         verification = {"verified": False, "ok": False, "status": "NOT_CHECKED", "publish_id": publish_id}
     verified = bool(verification.get("verified"))
+    if verification.get("status") != "NOT_CHECKED":
+        _record_verification("verification", verification)
     if verified:
         msg = (
             "Verified in TikTok Inbox (Draft) — open TikTok app to review and publish"
@@ -670,6 +702,7 @@ def main() -> int:
 
     if args.check_publish:
         res = tiktok_publish_status(args.check_publish.strip(), wait_sec=max(0.0, args.verify_wait_sec))
+        _record_verification("status_check", res)
         print(json.dumps(res, ensure_ascii=False, indent=2))
         return 0 if res.get("verified") else 1
 
