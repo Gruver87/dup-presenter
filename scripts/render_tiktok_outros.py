@@ -6,6 +6,17 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 import imageio_ffmpeg
 
+from visual_tokens import (  # noqa: E402  (single token source; item 8)
+    BG,
+    BG_GRADIENT_DEEP,
+    BG_GRADIENT_MID,
+    CARD_BG,
+    FONT_MONO_CANVAS,
+    FONT_UI_CANVAS,
+    MUTED,
+    TEXT,
+)
+
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 ASSETS = Path(r"C:\Users\vovun\.cursor\projects\c-Users-vovun-Desktop-Absolute-Blockchain-Experimental\assets")
 OUT = Path(r"C:\Users\vovun\Desktop\DUP_Projects\dup-presenter\public\cinema")
@@ -31,7 +42,7 @@ def make_html(ep: str, slug: str, role: str, emb_b64: str, c1: str, c2: str) -> 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-html, body {{ width:1080px; height:1920px; overflow:hidden; background:#030612; }}
+html, body {{ width:1080px; height:1920px; overflow:hidden; background:{BG}; }}
 canvas {{ display:block; width:1080px; height:1920px; }}
 </style></head>
 <body>
@@ -50,7 +61,7 @@ const stars = Array.from({{length: 200}}, (_, i) => ({{
   y: (Math.sin(i * 311.7) * 0.5 + 0.5) * H,
   r: 0.9 + (i % 3) * 0.75,
   p: i * 0.5,
-  c: i % 5 === 0 ? '{c1}' : (i % 7 === 0 ? '{c2}' : '#e2e8f0')
+  c: i % 5 === 0 ? '{c1}' : (i % 7 === 0 ? '{c2}' : '{TEXT}')
 }}));
 
 function rr(x, y, w, h, r) {{
@@ -99,8 +110,8 @@ window.renderFrame = function(t) {{
   // Deep vertical nebula backdrop
   const bg = ctx.createRadialGradient(CX, CY, 60, CX, CY + 120, 1100);
   bg.addColorStop(0, '{c1}26');
-  bg.addColorStop(0.45, '#091026');
-  bg.addColorStop(1, '#02040b');
+bg.addColorStop(0.45, '{BG_GRADIENT_MID}');
+bg.addColorStop(1, '{BG_GRADIENT_DEEP}');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
@@ -117,14 +128,14 @@ window.renderFrame = function(t) {{
   const topA = Math.min(1, t / 0.45);
   ctx.globalAlpha = topA;
   rr(CX - 250, 225, 500, 56, 28);
-  ctx.fillStyle = 'rgba(7,14,32,0.86)';
+  ctx.fillStyle = '{CARD_BG}';
   ctx.fill();
   ctx.strokeStyle = '{c1}aa';
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.textAlign = 'center';
   ctx.fillStyle = '{c1}';
-  ctx.font = '800 24px "Segoe UI", sans-serif';
+  ctx.font = '800 24px {FONT_UI_CANVAS}';
   ctx.fillText('DUP LABS  ·  ГЛАВА {ep} / 08', CX, 262);
   ctx.globalAlpha = 1;
 
@@ -155,17 +166,17 @@ window.renderFrame = function(t) {{
   grad.addColorStop(1, '{c2}');
   ctx.fillStyle = grad;
   const slugFont = '{slug}'.length > 18 ? 58 : 74;
-  ctx.font = '900 ' + slugFont + 'px "Segoe UI", sans-serif';
+  ctx.font = '900 ' + slugFont + 'px {FONT_UI_CANVAS}';
   ctx.fillText('{slug}', CX, 1020);
 
-  ctx.fillStyle = '#e2e8f0';
-  ctx.font = '600 32px "Segoe UI", sans-serif';
+  ctx.fillStyle = '{TEXT}';
+  ctx.font = '600 32px {FONT_UI_CANVAS}';
   ctx.fillText('{role}', CX, 1082);
 
   // URL Pill (well above TikTok bottom caption/UI safe zone)
   const pillW = 840, pillH = 88;
   rr(CX - pillW / 2, 1142, pillW, pillH, 44);
-  ctx.fillStyle = 'rgba(6,13,30,0.92)';
+  ctx.fillStyle = '{CARD_BG}';
   ctx.fill();
   ctx.strokeStyle = '{c1}';
   ctx.lineWidth = 3;
@@ -173,15 +184,15 @@ window.renderFrame = function(t) {{
 
   ctx.fillStyle = '#ffffff';
   const urlFont = '{slug}'.length > 18 ? 29 : 34;
-  ctx.font = '700 ' + urlFont + 'px Consolas, monospace';
+  ctx.font = '700 ' + urlFont + 'px {FONT_MONO_CANVAS}';
   ctx.fillText('github.com/Gruver87/{slug}', CX, 1198);
 
   // Subtle studio credit pill
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '700 22px "Segoe UI", sans-serif';
+  ctx.fillStyle = '{MUTED}';
+  ctx.font = '700 22px {FONT_UI_CANVAS}';
   ctx.fillText('СОЗДАНО АВТОНОМНО НА DUP-PRESENTER', CX, 1300);
   ctx.fillStyle = '{c1}cc';
-  ctx.font = '700 22px Consolas, monospace';
+  ctx.font = '700 22px {FONT_MONO_CANVAS}';
   ctx.fillText('github.com/Gruver87', CX, 1340);
 
   ctx.globalAlpha = 1;

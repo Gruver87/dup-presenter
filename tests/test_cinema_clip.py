@@ -70,6 +70,9 @@ class CinemaClipValidationTests(unittest.TestCase):
     def test_valid_src_passes_and_records_probed_duration(self) -> None:
         deck = _deck(_cinema_slide())
         validate_deck(deck)
+        # Validation is pure (item 4): annotations come from prepare_deck, on a copy.
+        self.assertNotIn("clip_duration_sec", deck["slides"][0]["cinema"])
+        deck = build_deck.prepare_deck(deck)
         self.assertEqual(deck["slides"][0]["cinema"]["clip_duration_sec"], 12.04)
 
     def test_background_query_without_src_is_accepted(self) -> None:
@@ -136,8 +139,7 @@ class CinemaClipValidationTests(unittest.TestCase):
                 {"src": "cinema/clip2.mp4"},
             ],
         }
-        deck = _deck(slide)
-        validate_deck(deck)
+        deck = build_deck.prepare_deck(_deck(slide))
         shots = deck["slides"][0]["cinema"]["shots"]
         self.assertEqual([s["kind"] for s in shots], ["video", "image", "video"])
         self.assertEqual(shots[0]["clip_duration_sec"], 12.04)
@@ -234,7 +236,15 @@ class CinemaClipValidationTests(unittest.TestCase):
             probe = {
                 "format": {"duration": "10.0"},
                 "streams": [
-                    {"codec_type": "video", "codec_name": "h264", "width": 960, "height": 540},
+                    {
+                        "codec_type": "video",
+                        "codec_name": "h264",
+                        "width": 960,
+                        "height": 540,
+                        "pix_fmt": "yuv420p",
+                        "r_frame_rate": "30/1",
+                        "bit_rate": "3000000",
+                    },
                     {"codec_type": "audio", "codec_name": "aac", "sample_rate": "48000"},
                 ],
             }
@@ -245,10 +255,17 @@ class CinemaClipValidationTests(unittest.TestCase):
                 "interior_silences": [],
                 "max_interior_silence_sec": 0.0,
             }
+            video_qa = {
+                "black_spans": [],
+                "black_defects": [],
+                "freeze_spans": [],
+                "max_freeze_sec": 0.0,
+                "duration_sec": 10.0,
+            }
             resolved = {"width": 1920, "height": 1080, "total_seconds": 10.0}
             with mock.patch.object(media_qa, "_probe_streams", return_value=probe), mock.patch.object(
                 media_qa, "_measure_audio_qa", return_value=audio_qa
-            ):
+            ), mock.patch.object(media_qa, "_measure_video_qa", return_value=video_qa):
                 rep = media_qa.run_media_qa(fake_mp4, resolved=resolved, expected_scale=0.5, draft=True)
             self.assertTrue(rep["ok"])
             self.assertTrue(rep["draft"])

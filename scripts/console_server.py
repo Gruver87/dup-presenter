@@ -537,6 +537,19 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
+    def _refuse(self, code: int, payload: dict[str, Any]) -> None:
+        """Refuse a request after draining its body.
+
+        Answering 403 with an unread request body and closing the socket makes Windows send a TCP reset,
+        so the client can lose the 403 and see ConnectionAbortedError. Draining first avoids that race.
+        The drain is bounded by the same 2 MB cap used by _read_json.
+        """
+        n = int(self.headers.get("Content-Length") or 0)
+        if 0 < n <= 2_000_000:
+            self.rfile.read(n)
+        self.close_connection = True
+        self._json(code, payload)
+
     def _guard_local_request(self, *, state_changing: bool) -> bool:
         """Refuse DNS-rebinding (foreign Host) and cross-site POSTs from other browser tabs.
 
@@ -548,16 +561,16 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         allowed = {f"127.0.0.1:{port}", f"localhost:{port}"}
         host = (self.headers.get("Host") or "").strip().lower()
         if host not in allowed:
-            self._json(403, {"ok": False, "error": "Forbidden: console accepts only 127.0.0.1 / localhost Host"})
+            self._refuse(403, {"ok": False, "error": "Forbidden: console accepts only 127.0.0.1 / localhost Host"})
             return False
         if state_changing:
             origin = (self.headers.get("Origin") or "").strip().lower()
             if origin and origin.removeprefix("http://") not in allowed:
-                self._json(403, {"ok": False, "error": "Forbidden: cross-origin request refused"})
+                self._refuse(403, {"ok": False, "error": "Forbidden: cross-origin request refused"})
                 return False
             fetch_site = (self.headers.get("Sec-Fetch-Site") or "").strip().lower()
             if fetch_site and fetch_site not in {"same-origin", "none"}:
-                self._json(403, {"ok": False, "error": "Forbidden: cross-site request refused"})
+                self._refuse(403, {"ok": False, "error": "Forbidden: cross-site request refused"})
                 return False
         return True
 

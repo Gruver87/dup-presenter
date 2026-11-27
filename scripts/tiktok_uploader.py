@@ -253,14 +253,114 @@ def ensure_access_token() -> dict[str, Any]:
     return {"ok": True, "access_token": token, "refreshed": True}
 
 
+PUBLISH_STATUS_URL = f"{API_BASE}/v2/post/publish/status/fetch/"
+# Terminal states that prove the video reached TikTok. Anything else (PROCESSING_*, unknown) keeps polling.
+PUBLISH_OK_STATES = frozenset({"SEND_TO_USER_INBOX", "PUBLISH_COMPLETE"})
+PUBLISH_FAIL_STATES = frozenset({"FAILED"})
+
+
+class TikTokStatusError(RuntimeError):
+    """Status check could not be performed or TikTok returned an error (fail-closed, never 'verified')."""
+
+
+def _parse_publish_status(http_status: int, body: dict[str, Any], raw_text: str = "") -> dict[str, str]:
+    """Pure parser for the publish status response. Raises on HTTP or API-level errors."""
+    if http_status >= 400:
+        raise TikTokStatusError(f"status HTTP {http_status}: {raw_text[:300]}")
+    err = str(((body.get("error") or {}).get("code")) or "ok")
+    if err not in {"ok", ""}:
+        raise TikTokStatusError(f"status API error: {err} {raw_text[:300]}")
+    data = body.get("data") or {}
+    return {"status": str(data.get("status") or ""), "fail_reason": str(data.get("fail_reason") or "")}
+
+
+def _fetch_publish_status(token: str, publish_id: str) -> dict[str, str]:
+    """One status request to the official Content Posting API."""
+    with httpx.Client(timeout=30.0) as client:
+        resp = client.post(
+            PUBLISH_STATUS_URL,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=UTF-8"},
+            json={"publish_id": publish_id},
+        )
+    try:
+        body = resp.json() or {}
+    except ValueError:
+        body = {}
+    return _parse_publish_status(resp.status_code, body, resp.text or "")
+
+
+def poll_publish_status(
+    publish_id: str,
+    fetch,
+    *,
+    wait_sec: float = 180.0,
+    poll_sec: float = 5.0,
+    sleep=None,
+    clock=None,
+) -> dict[str, Any]:
+    """Poll `fetch(publish_id) -> {'status','fail_reason'}` until a terminal state or the deadline.
+
+    Network and time are injected so the decision logic is testable. `verified` is True only for a
+    terminal OK state; a timeout or unknown state is reported as unverified, never as success.
+    """
+    import time as _time
+
+    if not publish_id:
+        raise TikTokStatusError("publish_id is empty; nothing to verify")
+    sleep = sleep or _time.sleep
+    clock = clock or _time.monotonic
+    deadline = clock() + max(0.0, float(wait_sec))
+    polls = 0
+    while True:
+        polls += 1
+        got = fetch(publish_id)
+        st = got.get("status", "")
+        base = {"publish_id": publish_id, "status": st or "UNKNOWN", "polls": polls}
+        if st in PUBLISH_OK_STATES:
+            return {**base, "verified": True, "ok": True, "fail_reason": ""}
+        if st in PUBLISH_FAIL_STATES:
+            return {**base, "verified": False, "ok": False, "fail_reason": got.get("fail_reason", "")}
+        if clock() >= deadline:
+            return {**base, "verified": False, "ok": False,
+                    "fail_reason": f"timeout after {polls} poll(s); last status {st or 'UNKNOWN'}"}
+        sleep(poll_sec)
+
+
+def tiktok_publish_status(publish_id: str, *, wait_sec: float = 0.0, poll_sec: float = 5.0) -> dict[str, Any]:
+    """Check (and optionally wait for) the TikTok processing state of an upload by publish_id."""
+    ensured = ensure_access_token()
+    if not ensured.get("ok"):
+        return {"ok": False, "verified": False, "publish_id": publish_id, "error": ensured.get("error", "no token")}
+    try:
+        res = poll_publish_status(
+            publish_id,
+            lambda pid: _fetch_publish_status(_current_access_token(ensured["access_token"]), pid),
+            wait_sec=wait_sec,
+            poll_sec=poll_sec,
+        )
+    except TikTokStatusError as exc:
+        return {"ok": False, "verified": False, "publish_id": publish_id, "error": str(exc)}
+    return {**res, "ok": res["verified"], "error": "" if res["verified"] else res.get("fail_reason", "")}
+
+
+def _current_access_token(fallback: str) -> str:
+    """Access token after any refresh performed during the upload (refresh writes the env var)."""
+    return os.environ.get("TIKTOK_ACCESS_TOKEN", "").strip() or fallback
+
+
 def tiktok_publish(
     mp4: Path,
     *,
     mode: str = "inbox",
     caption: str = "",
     dry_run: bool = False,
+    verify_wait_sec: float = 180.0,
 ) -> dict[str, Any]:
-    """Upload MP4 via official TikTok Content Posting API with automatic 401 refresh + retry."""
+    """Upload MP4 via official TikTok Content Posting API with automatic 401 refresh + retry.
+
+    After a successful upload the publish status is polled (verify_wait_sec); `verified` is True only when
+    TikTok reports a terminal OK state. Pass verify_wait_sec=0 to skip the check (reported as NOT_CHECKED).
+    """
     if not mp4.is_file():
         return {"ok": False, "error": f"MP4 not found: {mp4}"}
 
@@ -428,16 +528,31 @@ def tiktok_publish(
     with AUDIT_LOG.open("a", encoding="utf-8") as f:
         f.write(json.dumps(audit_row, ensure_ascii=False) + "\n")
 
-    msg = (
-        "Uploaded to TikTok Inbox (Draft) — open TikTok app to review and publish"
-        if mode == "inbox"
-        else "Direct post submitted to TikTok — check app for processing/visibility"
-    )
-    print(f"[OK] {msg} | publish_id={publish_id}")
+    # Item 6: the upload call returning is not proof that TikTok processed it. Poll the publish status
+    # until a terminal OK state (or the deadline) and report what was actually verified.
+    if verify_wait_sec > 0 and publish_id:
+        verification = tiktok_publish_status(publish_id, wait_sec=verify_wait_sec)
+    else:
+        verification = {"verified": False, "ok": False, "status": "NOT_CHECKED", "publish_id": publish_id}
+    verified = bool(verification.get("verified"))
+    if verified:
+        msg = (
+            "Verified in TikTok Inbox (Draft) — open TikTok app to review and publish"
+            if mode == "inbox"
+            else "Verified: TikTok reports the direct post as published"
+        )
+    else:
+        msg = (
+            f"Upload accepted but NOT verified (status={verification.get('status', 'NOT_CHECKED')}): "
+            f"{verification.get('error') or verification.get('fail_reason') or 'verification not run'}"
+        )
+    print(f"[{'OK' if verified else 'WARN'}] {msg} | publish_id={publish_id}")
     return {
         "ok": True,
+        "verified": verified,
         "dry_run": False,
         "publish_id": publish_id,
+        "publish_status": verification,
         "message": msg,
         **meta,
     }
@@ -543,11 +658,20 @@ def main() -> int:
     parser.add_argument("--mode", choices=["inbox", "direct"], default="inbox")
     parser.add_argument("--caption", default="")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--check-publish", default="", metavar="PUBLISH_ID",
+                        help="Check the processing status of an earlier upload (item 6)")
+    parser.add_argument("--verify-wait-sec", type=float, default=180.0,
+                        help="Seconds to poll for a terminal state after upload (0 = skip verification)")
     args = parser.parse_args()
 
     if args.status:
         print(json.dumps(tiktok_status(), ensure_ascii=False, indent=2))
         return 0
+
+    if args.check_publish:
+        res = tiktok_publish_status(args.check_publish.strip(), wait_sec=max(0.0, args.verify_wait_sec))
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return 0 if res.get("verified") else 1
 
     if args.oauth:
         res = interactive_oauth()
@@ -563,9 +687,15 @@ def main() -> int:
         print("[FAIL] Specify --mp4 <file>, --refresh, or --status", file=sys.stderr)
         return 2
 
-    res = tiktok_publish(Path(args.mp4), mode=args.mode, caption=args.caption, dry_run=args.dry_run)
+    res = tiktok_publish(
+        Path(args.mp4), mode=args.mode, caption=args.caption, dry_run=args.dry_run,
+        verify_wait_sec=max(0.0, args.verify_wait_sec),
+    )
     print(json.dumps(res, ensure_ascii=False, indent=2))
-    return 0 if res.get("ok") else 1
+    if args.dry_run:
+        return 0 if res.get("ok") else 1
+    # Exit 0 only when TikTok confirmed the state. With verification disabled, an upload is not a success.
+    return 0 if (res.get("ok") and res.get("verified")) else 1
 
 
 if __name__ == "__main__":

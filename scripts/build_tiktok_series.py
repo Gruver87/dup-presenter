@@ -1,6 +1,5 @@
 """Generate & render all 8 vertical 9:16 TikTok chapter teasers for DUP Labs via dup-presenter."""
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -177,21 +176,10 @@ def write_deck(r: dict) -> Path:
 
 
 def smooth_pass(mp4: Path) -> None:
-    tmp = mp4.with_name(mp4.stem + "_smooth.mp4")
-    cmd = [
-        FFMPEG, "-y", "-i", str(mp4),
-        "-c:v", "libx264", "-preset", "medium",
-        "-profile:v", "high", "-level:v", "4.1",
-        "-pix_fmt", "yuv420p",
-        "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
-        "-crf", "19", "-maxrate", "10M", "-bufsize", "20M",
-        "-g", "60", "-r", "30",
-        "-c:a", "copy",
-        "-movflags", "+faststart",
-        str(tmp),
-    ]
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    os.replace(tmp, mp4)
+    """Broadcast profile for vertical teasers (shared with build_deck; item 3). Fail-closed on error."""
+    from broadcast_encode import broadcast_encode  # noqa: E402
+
+    broadcast_encode(mp4, maxrate="10M", bufsize="20M")
 
 
 def main():

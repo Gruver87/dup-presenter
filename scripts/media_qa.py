@@ -5,6 +5,9 @@ Checks every rendered video before declaring success:
 2. Audio stream exists, valid sample rate and non-zero bitrate.
 3. Integrated loudness (LUFS) and True Peak (dBTP) within broadcast bounds (no clipping).
 4. No unexpected long dead-air silence (> 4.5s) in the middle of the video.
+5. No black frames inside the film (blackdetect; a fade-in at t=0 is allowed). Hard gate.
+6. Pixel format yuv420p, video bitrate <= 16 Mbps, frame rate 30 fps. Hard gates.
+7. Frozen picture > 6s (freezedetect) is a soft warning, since static end cards can hold.
 
 Usage:
     python scripts/media_qa.py out/radar-pro.mp4 --resolved src/generated/deck_resolved.json
@@ -97,6 +100,89 @@ def _measure_audio_qa(mp4_path: Path, duration_sec: float) -> dict:
     }
 
 
+BLACK_MAX_SEC = 0.6          # any black span longer than this (except the opening frame) fails the gate
+BLACK_OPENING_TOL_SEC = 0.1  # a black span that starts at t=0 and ends this early is a legitimate fade-in
+FREEZE_WARN_SEC = 6.0        # a frozen picture longer than this is a warning (static end cards may hold)
+VIDEO_MAX_BITRATE_BPS = 16_000_000  # broadcast 1080p ceiling; the 34 Mbps renders that stuttered are rejected
+
+
+_VIDEO_QA_FILTERS = ("blackdetect", "freezedetect")
+
+
+def _find_video_qa_ffmpeg() -> Path:
+    """Return an ffmpeg that provides blackdetect and freezedetect. Fail closed if none does.
+
+    The Remotion compositor ffmpeg is a stripped build without these filters, so it cannot be used
+    for video QA. We look for a full build (imageio-ffmpeg ships one) and verify the filters exist.
+    """
+    candidates: list[Path] = []
+    try:
+        import imageio_ffmpeg  # type: ignore[import-not-found]
+
+        candidates.append(Path(imageio_ffmpeg.get_ffmpeg_exe()))
+    except Exception:  # noqa: BLE001 - optional dependency; absence is handled by the candidate check below
+        pass
+    try:
+        candidates.append(find_ffmpeg())
+    except AudioFXError:
+        pass
+
+    for cand in candidates:
+        if not cand.is_file():
+            continue
+        res = subprocess.run([str(cand), "-hide_banner", "-filters"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+        listing = res.stdout + res.stderr
+        if all(re.search(rf"\b{name}\b", listing) for name in _VIDEO_QA_FILTERS):
+            return cand
+    raise MediaQAError(
+        "no ffmpeg with blackdetect+freezedetect found (install imageio-ffmpeg); video QA cannot run, failing closed"
+    )
+
+
+def _measure_video_qa(mp4_path: Path, duration_sec: float) -> dict:
+    """Detect black and frozen video spans with ffmpeg (blackdetect / freezedetect)."""
+    ffmpeg = _find_video_qa_ffmpeg()
+    vf = "blackdetect=d=0.3:pic_th=0.98,freezedetect=n=0.001:d=2.0"
+    res = subprocess.run(
+        [str(ffmpeg), "-hide_banner", "-nostats", "-i", str(mp4_path), "-an", "-vf", vf, "-c:v", "rawvideo", "-f", "null", "-"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if res.returncode != 0:
+        raise MediaQAError(f"ffmpeg video QA failed (exit={res.returncode}): {res.stderr[-400:]}")
+
+    blacks: list[dict] = []
+    for m in re.finditer(r"black_start:([0-9.]+)\s+black_end:([0-9.]+)\s+black_duration:([0-9.]+)", res.stderr):
+        blacks.append({"start": round(float(m.group(1)), 2), "end": round(float(m.group(2)), 2), "dur": round(float(m.group(3)), 2)})
+
+    freezes: list[dict] = []
+    cur_start: float | None = None
+    for line in res.stderr.splitlines():
+        ms = re.search(r"freeze_start:\s*([0-9.]+)", line)
+        if ms:
+            cur_start = float(ms.group(1))
+        md = re.search(r"freeze_duration:\s*([0-9.]+)", line)
+        if md and cur_start is not None:
+            freezes.append({"start": round(cur_start, 2), "dur": round(float(md.group(1)), 2)})
+            cur_start = None
+
+    # Black at the very start is an acceptable fade-in; any other black span longer than BLACK_MAX_SEC is a defect.
+    def _is_opening_fade(b: dict) -> bool:
+        return b["start"] <= 0.0 and b["end"] <= BLACK_OPENING_TOL_SEC
+
+    bad_black = [b for b in blacks if not _is_opening_fade(b) and b["dur"] > BLACK_MAX_SEC]
+    max_freeze = max((f["dur"] for f in freezes), default=0.0)
+    return {
+        "black_spans": blacks,
+        "black_defects": bad_black,
+        "freeze_spans": freezes,
+        "max_freeze_sec": round(max_freeze, 2),
+        "duration_sec": round(duration_sec, 2),
+    }
+
+
 def run_media_qa(
     mp4_path: Path,
     resolved: dict | None = None,
@@ -169,6 +255,46 @@ def run_media_qa(
         f"max interior silence {max_sil:.2f}s (limit <= {max_silence_sec}s)",
     )
 
+    # Video-level gates: black frames, frozen picture, pixel format, bitrate, frame rate.
+    video_qa = _measure_video_qa(mp4_path, duration_sec) if v_stream else {}
+    bad_black = video_qa.get("black_defects", [])
+    add(
+        "no_black_frames",
+        not bad_black,
+        "no black span > %.1fs inside the film" % BLACK_MAX_SEC
+        + ("" if not bad_black else f"; found {bad_black}"),
+    )
+
+    max_freeze = float(video_qa.get("max_freeze_sec", 0.0))
+    add(
+        "no_long_freeze",
+        max_freeze <= FREEZE_WARN_SEC,
+        f"max frozen picture {max_freeze:.2f}s (warn > {FREEZE_WARN_SEC}s; static end cards may hold)",
+        severity="soft",
+    )
+
+    if v_stream:
+        pix_fmt = str(v_stream.get("pix_fmt") or "")
+        add("pixel_format_yuv420p", pix_fmt == "yuv420p", f"pix_fmt={pix_fmt or 'MISSING'} (broadcast-safe requires yuv420p)")
+
+        try:
+            bitrate = int(v_stream.get("bit_rate") or fmt.get("bit_rate") or 0)
+        except (TypeError, ValueError):
+            bitrate = 0
+        add(
+            "video_bitrate_ceiling",
+            0 < bitrate <= VIDEO_MAX_BITRATE_BPS,
+            f"video bitrate {bitrate / 1e6:.2f} Mbps (ceiling {VIDEO_MAX_BITRATE_BPS / 1e6:.0f} Mbps)",
+        )
+
+        fr = str(v_stream.get("r_frame_rate") or "0/1")
+        try:
+            num, den = fr.split("/")
+            fps_val = float(num) / float(den) if float(den) else 0.0
+        except (ValueError, ZeroDivisionError):
+            fps_val = 0.0
+        add("frame_rate_30", abs(fps_val - 30.0) < 0.01, f"r_frame_rate={fr} (expected 30 fps)")
+
     hard_fails = [c for c in checks if not c["ok"] and c["severity"] == "hard"]
     return {
         "ok": len(hard_fails) == 0,
@@ -181,6 +307,7 @@ def run_media_qa(
         "duration_sec": round(duration_sec, 3),
         "audio_sample_rate": sample_rate,
         "audio": audio_qa,
+        "video": video_qa,
         "checks": checks,
         "hard_fails": len(hard_fails),
     }

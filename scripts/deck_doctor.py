@@ -82,6 +82,84 @@ def _estimate_slide_sec(slide: dict, probe_media: Callable[[Path], float], lang:
     return round(base, 2)
 
 
+COVERAGE_TOLERANCE_SEC = 0.5
+
+
+def fractional_rate_warnings(slides: list) -> list[str]:
+    """Warn on cinema playback_rate != 1.0 (item 3).
+
+    The stuttering Russian render used 0.94/0.95 playback on a 30 fps timeline; the fix was 1.0 plus the
+    broadcast encode. Fractional rates are not always wrong (solar-cinema uses 0.85-0.9 by design), so this
+    is a warning that names the cadence risk, not an error. One warning per slide.
+    """
+    out: list[str] = []
+    for s in slides:
+        if not isinstance(s, dict) or s.get("type") != "cinema_clip":
+            continue
+        cc = s.get("cinema") or {}
+        rates: list[object] = [cc.get("playback_rate")]
+        rates += [sh.get("playback_rate") for sh in (cc.get("shots") or []) if isinstance(sh, dict)]
+        for r in rates:
+            if r is None:
+                continue
+            try:
+                rv = float(r)
+            except (TypeError, ValueError):
+                continue
+            if abs(rv - 1.0) > 1e-9:
+                out.append(
+                    f"slide {s.get('id')}: playback_rate {rv:g} is fractional; on a 30 fps timeline its frame "
+                    f"cadence can judder (the 0.94/0.95 renders stuttered). Prefer 1.0 or retime the source to 30 fps."
+                )
+                break
+    return out
+
+
+def cinema_coverage_errors(
+    slides: list, slide_secs: list[float], probe_media: Callable[[Path], float]
+) -> list[str]:
+    """Fail when a `cinema_clip` slide with `loop: false` is longer than its shots.
+
+    The renderer loops by default (`cinema.loop !== false`). With `loop: false` the picture ends
+    after the last shot and the rest of the slide is black. That defect shipped once in a
+    released film, so it is a render error, not a warning.
+    """
+    errors: list[str] = []
+    if len(slide_secs) != len(slides):
+        return errors
+    for s, sec in zip(slides, slide_secs):
+        if s.get("type") != "cinema_clip":
+            continue
+        cc = s.get("cinema") or {}
+        if cc.get("loop") is not False:
+            continue
+        shots = cc.get("shots")
+        if shots:
+            covered = 0.0
+            for sh in shots:
+                clip_len = probe_media(PUBLIC_DIR / str(sh.get("src", ""))) if sh.get("src") else 0.0
+                rate = float(sh.get("playback_rate") or 1.0)
+                if sh.get("duration_sec") is not None:
+                    shot_sec = float(sh["duration_sec"])
+                    if clip_len > 0:
+                        # The clip cannot play longer than its own length at this rate.
+                        shot_sec = min(shot_sec, clip_len / rate)
+                else:
+                    shot_sec = clip_len / rate if clip_len > 0 else 0.0
+                covered += shot_sec
+        else:
+            src = str(cc.get("src", ""))
+            clip_len = probe_media(PUBLIC_DIR / src) if src else 0.0
+            rate = float(cc.get("playback_rate") or 1.0)
+            covered = clip_len / rate if clip_len > 0 else 0.0
+        if covered + COVERAGE_TOLERANCE_SEC < sec:
+            errors.append(
+                f"slide {s.get('id')}: loop=false but shots cover {covered:.1f}s of a {sec:.1f}s slide "
+                f"-> black tail after the last shot (set loop=true or extend the shots)"
+            )
+    return errors
+
+
 def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = True, draft: bool = False) -> dict:
     """Return {"ok", "errors", "warnings", "estimates"} for a deck dict.
 
@@ -149,6 +227,16 @@ def diagnose_deck(deck: dict, *, overwrite: bool = False, check_assets: bool = T
             slide_secs.append(_estimate_slide_sec(s, probe_media, lang))
         except DeckValidationError as exc:
             errors.append(f"slide {s.get('id')}: {exc}")
+    # slide_secs here are word-count ESTIMATES (ceil(speech)+1), typically 2-5 s above the real narration.
+    # Enforcing coverage on estimates rejects valid films, so the doctor only warns. The hard gate runs in
+    # build_deck on real narration durations (build_deck.enforce_cinema_coverage).
+    if check_assets:
+        for msg in cinema_coverage_errors(slides, slide_secs, probe_media):
+            warnings.append(f"ESTIMATE {msg}")
+    else:
+        warnings.append("cinema shot coverage not checked (check_assets=false): loop=false black tails are not detected")
+    warnings.extend(fractional_rate_warnings(slides))
+
     total_sec = round(sum(slide_secs), 2)
     fps = int(deck.get("fps") or 30)
     frames = int(round(total_sec * fps))

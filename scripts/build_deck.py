@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import copy
 import html
 import json
 import math
@@ -197,6 +198,16 @@ from audio_fx import (  # noqa: E402
 from sfx_library import LIBRARY_NAMES as SFX_LIBRARY_NAMES, SfxLibraryError, resolve_deck_sfx  # noqa: E402
 from voice_clean import deess  # noqa: E402
 from ru_speech import normalize_ru_ssml  # noqa: E402
+from pacing import (  # noqa: E402
+    MAX_PASSES,
+    PacingError,
+    PacingSpec,
+    format_rate,
+    next_rate,
+    parse_pacing,
+    rate_pct,
+    words_per_minute,
+)
 from tts_engines import (  # noqa: E402
     KOKORO_DEFAULT,
     KOKORO_PARTNERS,
@@ -241,7 +252,28 @@ def deck_lang(deck: dict) -> str:
 
 
 def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
-    """Fail-closed schema validation. check_assets=False skips local screenshot files (schema-only, e.g. CI)."""
+    """Fail-closed schema validation. Pure: never mutates `deck`.
+
+    Writers (console save, asset binding, plan/idea generators) validate then persist the deck, so this
+    function must not add derived fields (kind, clip_duration_sec) that would leak into source decks.
+    Use `prepare_deck` for the build pipeline, which needs those annotations in its resolved copy.
+    """
+    prepare_deck(deck, check_assets=check_assets)
+
+
+def prepare_deck(deck: dict, *, check_assets: bool = True) -> dict:
+    """Validate and annotate a COPY of the deck (inferred shot kind, probed clip durations).
+
+    The input is never modified. The returned copy is what the build pipeline renders from; the source
+    file under decks/ stays exactly as the author (or console) saved it.
+    """
+    work = copy.deepcopy(deck)
+    _validate_and_annotate(work, check_assets=check_assets)
+    return work
+
+
+def _validate_and_annotate(deck: dict, *, check_assets: bool = True) -> None:
+    """Fail-closed schema validation that also annotates `deck` in place. Internal: use prepare_deck/validate_deck."""
     if not isinstance(deck.get("slug"), str) or not deck["slug"].strip():
         raise DeckValidationError("deck.slug must be a non-empty string")
     slides = deck.get("slides")
@@ -261,6 +293,11 @@ def validate_deck(deck: dict, *, check_assets: bool = True) -> None:
     aspect = deck.get("aspect", "16:9")
     if aspect not in ASPECT_DIMS:
         raise DeckValidationError(f"Unsupported aspect {aspect!r}; allowed: {sorted(ASPECT_DIMS)}")
+
+    try:
+        parse_pacing(deck.get("pacing"))
+    except PacingError as exc:
+        raise DeckValidationError(f"pacing: {exc}") from exc
 
     bg = deck.get("background") or {}
     if bg.get("enabled"):
@@ -917,6 +954,43 @@ class VoiceSynth:
         return audio
 
 
+def _paced_synth(
+    synther: "VoiceSynth",
+    speaker: str,
+    plain: str,
+    slide: dict,
+    spec: "PacingSpec | None",
+    base_rate: str,
+    sid: str,
+) -> tuple[np.ndarray, list[dict], str, float | None]:
+    """Synthesize one single-speaker slide; with a pacing spec, correct the rate in bounded passes (item 5).
+
+    Returns (audio, bounds, rate_used, measured_wpm). Slides with voice_ssml keep their own prosody rate.
+    The synther rate is restored to the deck base rate on return, so other slides are unaffected.
+    """
+    synther.rate = base_rate
+    raw, bounds = synther.synth_with_timings(speaker, plain, slide.get("voice_ssml") or None)
+    if spec is None:
+        return raw, bounds, base_rate, None
+    if slide.get("voice_ssml"):
+        print(f"[pacing] {sid}: voice_ssml fixes its own prosody rate; automatic pacing not applied")
+        return raw, bounds, base_rate, None
+    cur = rate_pct(base_rate)
+    wpm = words_per_minute(plain, len(raw) / float(SR))
+    print(f"[pacing] {sid}: {wpm:.0f} wpm at rate {format_rate(cur)} (target {spec.target_wpm:g})")
+    for pass_no in range(1, MAX_PASSES + 1):
+        new_pct = next_rate(cur, wpm, spec)
+        if new_pct is None:
+            break
+        synther.rate = format_rate(new_pct)
+        raw, bounds = synther.synth_with_timings(speaker, plain)
+        cur = float(round(new_pct))
+        wpm = words_per_minute(plain, len(raw) / float(SR))
+        print(f"[pacing] {sid}: pass {pass_no} -> rate {format_rate(cur)}, {wpm:.0f} wpm")
+    synther.rate = base_rate
+    return raw, bounds, format_rate(cur), wpm
+
+
 def _word_events_for_clip(audio: np.ndarray, lang: str, tag: str, engine_events: list[dict]) -> list[dict]:
     """Word timing events for one voiced clip.
 
@@ -984,6 +1058,15 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
     voice = deck.get("voice") or {}
     mode = voice.get("mode", "single")
     rate = voice.get("rate", "95%")
+    try:
+        pacing_spec = parse_pacing(deck.get("pacing"))
+        if pacing_spec is not None:
+            rate_pct(rate)  # pacing starts from a percent base rate such as '86%'
+    except PacingError as exc:
+        raise DeckValidationError(f"pacing: {exc}") from exc
+    if pacing_spec is not None and mode == "podcast":
+        print("[pacing] podcast mode: automatic pacing is not applied (per-turn rates are not measured)")
+        pacing_spec = None
     fps = int(deck.get("fps", 30))
     transition = deck.get("transition") or {}
     tr_style = str(transition.get("style", "fade"))
@@ -1004,6 +1087,7 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
         sid = slide["id"]
         plain = _plain_spoken_text(slide)
         voice_delay_sec = round((tr_frames / float(fps)) * 0.55, 3) if (idx > 1 and tr_frames > 0) else 0.0
+        slide_rate_used, slide_wpm = rate, None  # podcast slides keep the deck rate; single slides may be paced
 
         if mode == "podcast":
             turns = slide.get("dialogue") or [
@@ -1041,7 +1125,9 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
             scene_s = max(2, math.ceil(voice_delay_sec + dur) + 1)
             print(f"[tts] {sid} (podcast {speaker_a}+{speaker_b}): {dur:.2f}s -> slide {scene_s}s")
         else:
-            raw_audio, bounds = synther.synth_with_timings(speaker_a, plain, slide.get("voice_ssml") or None)
+            raw_audio, bounds, slide_rate_used, slide_wpm = _paced_synth(
+                synther, speaker_a, plain, slide, pacing_spec, rate, sid
+            )
             audio = postprocess_voice(raw_audio)
             dur = len(audio) / float(SR)
             if dur < 1.0 and len(plain) > 40:
@@ -1088,12 +1174,25 @@ def _synthesize_deck_with(deck: dict, speaker_a: str, speaker_b: str, voice_used
         item["duration_sec"] = scene_s
         item["start_sec"] = start_sec
         item["voice_delay_sec"] = voice_delay_sec
+        item["voice_rate_used"] = slide_rate_used  # audit trail for automatic pacing (item 5)
+        item["measured_wpm"] = round(slide_wpm, 1) if slide_wpm is not None else None
         item["speech_windows"] = speech_windows
         item["num"] = slide.get("_override_num") or f"{idx:02d} / {total_slides:02d}"
         item.pop("_override_num", None)
         item["voice_file"] = f"voice/{wav_name}"
         item["captions"] = captions
         resolved_slides.append(item)
+
+    # Pre-render heuristic on REAL slide lengths (narration-derived scene_s). It is a warning, not a gate:
+    # the authoritative black-tail gate is media_qa `no_black_frames` on the rendered MP4 (blackdetect).
+    # Coverage is only a proxy: the approved universe-imax film has 0.5-1.5 s of shot-coverage deficit on
+    # some slides but no black in the output, so a hard error here would reject a valid film.
+    from deck_doctor import cinema_coverage_errors  # noqa: E402  (lazy: deck_doctor imports this module)
+
+    for msg in cinema_coverage_errors(
+        resolved_slides, [float(it["duration_sec"]) for it in resolved_slides], _media_duration_sec
+    ):
+        print(f"[coverage] WARN {msg}")
 
     total_frames = max(1, cursor_frames)
     total_sec = round(total_frames / float(fps), 3)
@@ -1240,7 +1339,8 @@ def main() -> int:
     except SfxLibraryError as exc:
         print(f"[ERROR] {exc}", file=sys.stderr)
         return 2
-    validate_deck(deck)
+    # Annotated COPY: the source file on disk is never written by the build (pipeline item 4).
+    deck = prepare_deck(deck)
 
     if args.render:
         from deck_doctor import diagnose_deck  # noqa: E402  (lazy import: deck_doctor imports this module)
@@ -1354,6 +1454,13 @@ def main() -> int:
         if args.draft:
             render_cmd.append(f"--scale={DRAFT_RENDER_SCALE}")
         run_cmd(render_cmd)
+        # Item 3: every render gets the broadcast profile (yuv420p/bt709, maxrate, GOP, 30 fps) before
+        # loudness and QA. Media QA then enforces the hard limits on the encoded file.
+        from broadcast_encode import broadcast_encode  # noqa: E402
+
+        bc = broadcast_encode(out_mp4)
+        print(f"[encode] broadcast profile: {bc['bytes_before'] / 1_048_576:.1f} MB -> "
+              f"{bc['bytes_after'] / 1_048_576:.1f} MB (maxrate {bc['maxrate']}, crf {bc['crf']})")
         loudnorm_applied = False
         if not args.no_loudnorm and (deck.get("audio") or {}).get("loudnorm", True):
             lufs = normalize_mp4_loudness(out_mp4, target_lufs=-16.0, true_peak=-1.5)
