@@ -50,7 +50,7 @@ decks/<slug>.json  (или examples/*.md -> scripts/md_deck.py)
    + STFT де-эссер + детектор речи для динамического дакинга музыки
    + пословные тайминги субтитров (Edge WordBoundary RU / локальный faster-whisper ASR EN)
    + процедурные SFX (transition whoosh + UI pop)
-3. Рендер в Remotion 4 (TransitionSeries fade/slide/wipe + 12 тем + 14 шаблонов 3D-слайдов)
+3. Рендер в Remotion 4 (TransitionSeries fade/slide/wipe + 12 тем + 18 шаблонов 3D-слайдов)
 4. Мастеринг звука в -16.0 LUFS / -1.5 dBTP (two-pass ffmpeg loudnorm, 48 kHz AAC 320 kbps)
 5. Media QA Gate (ffprobe + LUFS + True Peak + dead-air check) -> out/<slug>_qa.json
 6. Publish Pack: out/<slug>.srt/.vtt, _chapters.txt, _post_copy.md, _metadata.json, _thumb.png

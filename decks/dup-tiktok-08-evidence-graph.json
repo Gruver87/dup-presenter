@@ -1,0 +1,82 @@
+{
+  "slug": "dup-tiktok-08-evidence-graph",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "tt08_main",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 08 / 08 · DUP-EVIDENCE-GRAPH",
+      "title": "Машинная честность на диске",
+      "cinema": {
+        "badge": "ГЛАВА 08 / 08 · EVIDENCE GRAPH · DISK PROOF",
+        "grade": "vivid",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_08_evidence_graph_hd.mp4",
+            "duration_sec": 10.5,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_08_evidence_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Сколько проектов обещают готовность без единого доказательства? Восьмое ядро ДАП Лабс — эвиденс граф, верховный судья инженерной честности. Золотой сканер сверяет каждое заявление с запечатанным паком тестов и сорокавосьмичасового прогона на диске. Пустой зелёный пузырь без фактов разбивается в пыль за долю секунды."
+    },
+    {
+      "id": "tt08_outro",
+      "type": "cinema_clip",
+      "tag": "GITHUB.COM/GRUVER87/DUP-EVIDENCE-GRAPH",
+      "title": "dup-evidence-graph",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/tt_outro_08.mp4",
+            "duration_sec": 6.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "Все восемь глав и пятнадцать репозиториев ждут тебя на Гитхаб Грювер восемьдесят семь."
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "slug": "dup-tiktok-02-presenter",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "tt02_main",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 02 / 08 · DUP-PRESENTER",
+      "title": "Автономная киностудия",
+      "cinema": {
+        "badge": "ГЛАВА 02 / 08 · DUP-PRESENTER · 3D & CINEMA",
+        "grade": "vivid",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_02_presenter_hd.mp4",
+            "duration_sec": 10.5,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_02_presenter_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Этот ролик смонтирован без единого клика в видеоредакторе. Второе ядро Вселенной ДАП Лабс — дап презентер. Гранёный золотой кристалл работает как автономная киностудия: речевая дорожка, синхронизация субтитров по словам, трёхмерные сцены, переходы и мастеринг минус шестнадцать люфс собираются из одного сценария в готовый фильм."
+    },
+    {
+      "id": "tt02_outro",
+      "type": "cinema_clip",
+      "tag": "GITHUB.COM/GRUVER87/DUP-PRESENTER",
+      "title": "dup-presenter",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/tt_outro_02.mp4",
+            "duration_sec": 6.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "Попробуй сам — репозиторий дап презентер открыт на Гитхаб. Ссылка перед тобой."
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "slug": "dup-tiktok-01-protocol",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "tt01_main",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 01 / 08 · DUP-PROTOCOL",
+      "title": "Гибридный L1: Rust + Python",
+      "cinema": {
+        "badge": "ГЛАВА 01 / 08 · DUP-PROTOCOL · RUST + LIBP2P",
+        "grade": "vivid",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_01_protocol_hd.mp4",
+            "duration_sec": 10.5,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_01_protocol_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Как устроен блокчейн первого уровня, который не врёт? Знакомьтесь — дап протокол. Внутри горячий путь на языке Раст мгновенно проверяет криптографию и запаковывает состояние в Рокс Ди Би, а Питон строго оркестрирует правила. Три независимых узла в сети либ-пи-ту-пи: любой поддельный блок разбивается о барьер, не попадая в цепь."
+    },
+    {
+      "id": "tt01_outro",
+      "type": "cinema_clip",
+      "tag": "GITHUB.COM/GRUVER87/DUP-PROTOCOL",
+      "title": "dup-protocol",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/tt_outro_01.mp4",
+            "duration_sec": 6.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "Исходный код открыт на Гитхаб. Ссылка прямо на экране. Смотри все восемь глав Вселенной ДАП Лабс."
+    }
+  ]
+}

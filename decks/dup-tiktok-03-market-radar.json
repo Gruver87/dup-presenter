@@ -1,0 +1,82 @@
+{
+  "slug": "dup-tiktok-03-market-radar",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "tt03_main",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 03 / 08 · DUP-MARKET-RADAR",
+      "title": "Спотовый кокпит и телеметрия",
+      "cinema": {
+        "badge": "ГЛАВА 03 / 08 · DUP-MARKET-RADAR · SPOT COCKPIT",
+        "grade": "vivid",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_03_market_radar_hd.mp4",
+            "duration_sec": 10.5,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_03_radar_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Почему торговые боты сливают депозиты? Из-за слепых фьючерсов с плечом. Третье ядро ДАП Лабс — маркет радар. Его лазерный луч в реальном времени сканирует спотовый рынок, ловит часовые импульсы и экстремумы фандинга и шлёт честные дайджесты в Телеграм и мобильный кокпит. Авто-торговля фьючерсами заблокирована в архитектуре навсегда."
+    },
+    {
+      "id": "tt03_outro",
+      "type": "cinema_clip",
+      "tag": "GITHUB.COM/GRUVER87/DUP-MARKET-RADAR",
+      "title": "dup-market-radar",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/tt_outro_03.mp4",
+            "duration_sec": 6.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "Весь код маркет радара открыт на Гитхаб. Ссылка на экране. Впереди четвёртая глава."
+    }
+  ]
+}

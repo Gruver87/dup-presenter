@@ -1,0 +1,82 @@
+{
+  "slug": "dup-tiktok-06-policy-gate",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "tt06_main",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 06 / 08 · DUP-POLICY-GATE",
+      "title": "Детерминированный фаервол",
+      "cinema": {
+        "badge": "ГЛАВА 06 / 08 · DUP-POLICY-GATE · HARD FIREWALL",
+        "grade": "vivid",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_06_policy_gate_hd.mp4",
+            "duration_sec": 10.5,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_06_policy_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Последний рубеж защиты реального капитала — шестое ядро полиси гейт. Когда поток рискованных ордеров с плечом и фьючерсами несётся к рынку, титановый замок захлопывается и гасит каждую опасную попытку. Проходит только выверенный спотовый луч в пределах жёстких лимитов, оставляя неизменяемую печать аудита."
+    },
+    {
+      "id": "tt06_outro",
+      "type": "cinema_clip",
+      "tag": "GITHUB.COM/GRUVER87/DUP-POLICY-GATE",
+      "title": "dup-policy-gate",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/tt_outro_06.mp4",
+            "duration_sec": 6.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "Правила сильнее эмоций. Исходный код полиси гейт открыт на Гитхаб."
+    }
+  ]
+}

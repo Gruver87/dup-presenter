@@ -1,0 +1,82 @@
+{
+  "slug": "dup-tiktok-04-skill-trust-plane",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 15,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "tt04_main",
+      "type": "cinema_clip",
+      "tag": "ГЛАВА 04 / 08 · DUP-SKILL-TRUST-PLANE",
+      "title": "Zero-Key доверие для ИИ",
+      "cinema": {
+        "badge": "ГЛАВА 04 / 08 · SKILL TRUST PLANE · ZERO-KEY AI",
+        "grade": "vivid",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_04_trust_plane_hd.mp4",
+            "duration_sec": 10.5,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_04_trust_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Ты запускаешь чужие навыки для ИИ-агентов вслепую? Это главная дыра безопасности сегодня. Четвёртое ядро ДАП Лабс — скилл траст плэйн. Каждый навык проходит криптографическую аттестацию: проверенный паспорт с подписью издателя работает локально без секретных ключей, а любой поддельный или вредоносный осколок мгновенно блокируется на входе."
+    },
+    {
+      "id": "tt04_outro",
+      "type": "cinema_clip",
+      "tag": "GITHUB.COM/GRUVER87/DUP-SKILL-TRUST-PLANE",
+      "title": "dup-skill-trust-plane",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/tt_outro_04.mp4",
+            "duration_sec": 6.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "Проверяй код скилл траст плэйн на Гитхаб. Ссылка перед тобой."
+    }
+  ]
+}
