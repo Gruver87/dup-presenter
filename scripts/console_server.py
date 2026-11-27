@@ -59,7 +59,7 @@ from idea_engine import GENRE_CATALOG, IdeaDeckExistsError, IdeaEngineError, aut
 from md_deck import MarkdownDeckError, MarkdownDeckExists, MarkdownImportError, write_deck_from_markdown  # noqa: E402
 from plan_deck import voice_ssml  # noqa: E402
 from thumbnail_studio import ThumbnailError, build_thumbnail_props, render_thumbnail  # noqa: E402
-from tiktok_uploader import refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
+from tiktok_uploader import EXIT_PENDING as TIKTOK_EXIT_PENDING, refresh_access_token as tiktok_refresh, tiktok_status  # noqa: E402
 from video_pack import VideoPackError, pack_cli_args, plan_video_pack  # noqa: E402
 from storyboard_gate import StoryboardGateError, approve as sb_approve, gate_status, revoke as sb_revoke, storyboard_view  # noqa: E402
 from asset_store import (  # noqa: E402
@@ -204,7 +204,13 @@ class JobRunner:
             rc = proc.wait()
             with self._lock:
                 self.exit_code = rc
-                self.status = "ok" if rc == 0 else "error"
+                if rc == 0:
+                    self.status = "ok"
+                elif rc == TIKTOK_EXIT_PENDING and self.step.startswith("tiktok"):
+                    # TikTok accepted the upload but has not confirmed it yet: not an error, re-check later.
+                    self.status = "pending"
+                else:
+                    self.status = "error"
                 self.finished_at = time.time()
                 self.lines.append(f"[done] exit_code={rc}")
         except Exception as exc:  # noqa: BLE001
@@ -1583,6 +1589,15 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         if path == "/api/tiktok/refresh":
             res = tiktok_refresh(persist=True)
             self._json(200 if res.get("ok") else 400, {**res, "tiktok": tiktok_status()})
+            return
+
+        if path == "/api/tiktok/recheck":
+            # Re-query uploads TikTok accepted but has not confirmed yet (audit log). Runs as a job.
+            cmd = [sys.executable, str(SCRIPTS / "tiktok_uploader.py"), "--recheck-pending", "--verify-wait-sec", "120"]
+            if not JOBS.start("tiktok_recheck", "", cmd):
+                self._json(409, {"ok": False, "error": "Уже идёт другая задача. Дождись её завершения."})
+                return
+            self._json(202, {"ok": True, "step": "tiktok_recheck"})
             return
 
         if path == "/api/tiktok/upload":

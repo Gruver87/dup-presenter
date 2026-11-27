@@ -35,6 +35,11 @@ LOCAL_ENV = ROOT / ".env"
 SIBLING_ENV = ROOT.parent / "dup-content-engine" / ".env"
 AUDIT_LOG = ROOT / "work" / "tiktok_publish_audit.jsonl"
 
+# CLI exit codes. 0 = TikTok confirmed, 3 = accepted but still processing (not an error), 1 = failed.
+EXIT_VERIFIED = 0
+EXIT_FAILED = 1
+EXIT_PENDING = 3
+
 API_BASE = "https://open.tiktokapis.com"
 TOKEN_URL = f"{API_BASE}/v2/oauth/token/"
 
@@ -369,6 +374,57 @@ def _record_verification(event: str, verification: dict[str, Any]) -> None:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+def _is_pending(verification: dict[str, Any]) -> bool:
+    """Accepted by TikTok but not confirmed yet: TikTok reported a real non-terminal status.
+
+    An error while asking for the status (for example an invalid publish_id) is a failure, not pending,
+    and a run that skipped verification (NOT_CHECKED) is never pending.
+    """
+    if verification.get("verified"):
+        return False
+    status = verification.get("status")
+    return bool(status) and status not in ("NOT_CHECKED", "FAILED")
+
+
+def pending_publish_ids() -> list[str]:
+    """publish_ids of accepted uploads that no audit row has since confirmed or failed."""
+    if not AUDIT_LOG.is_file():
+        return []
+    accepted: dict[str, None] = {}
+    settled: set[str] = set()
+    for line in AUDIT_LOG.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        pid = row.get("publish_id")
+        if not pid:
+            continue
+        # Rows written before the event field existed are upload rows (the only kind that lacked it).
+        if row.get("event", "upload") == "upload":
+            accepted[pid] = None
+        elif row.get("verified") or row.get("status") == "FAILED":
+            settled.add(pid)
+    return [pid for pid in accepted if pid not in settled]
+
+
+def recheck_pending(*, wait_sec: float = 0.0) -> dict[str, Any]:
+    """Re-query every still-pending upload once (or until wait_sec) and audit each result."""
+    results: list[dict[str, Any]] = []
+    for pid in pending_publish_ids():
+        res = tiktok_publish_status(pid, wait_sec=wait_sec)
+        _record_verification("recheck", res)
+        results.append(res)
+    return {
+        "ok": True,
+        "checked": len(results),
+        "verified": [r["publish_id"] for r in results if r.get("verified")],
+        "still_pending": [r["publish_id"] for r in results if not r.get("verified") and _is_pending(r)],
+        "failed": [r["publish_id"] for r in results if not r.get("verified") and not _is_pending(r)],
+        "results": results,
+    }
+
+
 def tiktok_publish(
     mp4: Path,
     *,
@@ -565,6 +621,7 @@ def tiktok_publish(
     else:
         verification = {"verified": False, "ok": False, "status": "NOT_CHECKED", "publish_id": publish_id}
     verified = bool(verification.get("verified"))
+    pending = _is_pending(verification)
     if verification.get("status") != "NOT_CHECKED":
         _record_verification("verification", verification)
     if verified:
@@ -572,6 +629,11 @@ def tiktok_publish(
             "Verified in TikTok Inbox (Draft) — open TikTok app to review and publish"
             if mode == "inbox"
             else "Verified: TikTok reports the direct post as published"
+        )
+    elif pending:
+        msg = (
+            f"Upload accepted, TikTok still processing (status={verification.get('status')}). "
+            f"Not confirmed yet; re-check later with --recheck-pending | publish_id={publish_id}"
         )
     else:
         msg = (
@@ -582,6 +644,7 @@ def tiktok_publish(
     return {
         "ok": True,
         "verified": verified,
+        "pending": pending,
         "dry_run": False,
         "publish_id": publish_id,
         "publish_status": verification,
@@ -694,6 +757,10 @@ def main() -> int:
                         help="Check the processing status of an earlier upload (item 6)")
     parser.add_argument("--verify-wait-sec", type=float, default=180.0,
                         help="Seconds to poll for a terminal state after upload (0 = skip verification)")
+    parser.add_argument("--recheck-pending", action="store_true",
+                        help="Re-query every accepted upload that is still not confirmed (audit log)")
+    parser.add_argument("--list-pending", action="store_true",
+                        help="List accepted uploads that are still not confirmed (audit log)")
     args = parser.parse_args()
 
     if args.status:
@@ -704,7 +771,18 @@ def main() -> int:
         res = tiktok_publish_status(args.check_publish.strip(), wait_sec=max(0.0, args.verify_wait_sec))
         _record_verification("status_check", res)
         print(json.dumps(res, ensure_ascii=False, indent=2))
-        return 0 if res.get("verified") else 1
+        if res.get("verified"):
+            return EXIT_VERIFIED
+        return EXIT_PENDING if _is_pending(res) else EXIT_FAILED
+
+    if args.list_pending:
+        print(json.dumps({"ok": True, "pending": pending_publish_ids()}, ensure_ascii=False, indent=2))
+        return EXIT_VERIFIED
+
+    if args.recheck_pending:
+        res = recheck_pending(wait_sec=max(0.0, args.verify_wait_sec))
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return EXIT_PENDING if res["still_pending"] else EXIT_VERIFIED
 
     if args.oauth:
         res = interactive_oauth()
@@ -726,9 +804,14 @@ def main() -> int:
     )
     print(json.dumps(res, ensure_ascii=False, indent=2))
     if args.dry_run:
-        return 0 if res.get("ok") else 1
-    # Exit 0 only when TikTok confirmed the state. With verification disabled, an upload is not a success.
-    return 0 if (res.get("ok") and res.get("verified")) else 1
+        return EXIT_VERIFIED if res.get("ok") else EXIT_FAILED
+    # Exit 0 only when TikTok confirmed the state. Accepted-but-still-processing is EXIT_PENDING (3), not a
+    # failure. With verification disabled, an upload is not a success.
+    if not res.get("ok"):
+        return EXIT_FAILED
+    if res.get("verified"):
+        return EXIT_VERIFIED
+    return EXIT_PENDING if res.get("pending") else EXIT_FAILED
 
 
 if __name__ == "__main__":

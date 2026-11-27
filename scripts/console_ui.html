@@ -440,6 +440,7 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
             <div class="row">
               <button class="btn primary" id="ttUploadBtn" data-i18n="btn_tt_upload">Отправить видео в TikTok</button>
               <button class="btn sm" id="ttRefreshBtn" data-i18n="btn_tt_refresh">Обновить токен</button>
+              <button class="btn sm" id="ttRecheckBtn">Проверить ожидающие TikTok</button>
               <span id="ttMsg" style="font-size:0.82rem;color:var(--muted);"></span>
             </div>
           </div>
@@ -1352,6 +1353,15 @@ $("ttUploadBtn").onclick = () => {
   uploadToTikTok(CURRENT_SLUG, $("ttModeSelect").value, $("ttCaptionInput").value.trim());
 };
 
+$("ttRecheckBtn").onclick = async () => {
+  $("ttMsg").textContent = "...";
+  const r = await fetch("/api/tiktok/recheck", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  const d = await r.json();
+  $("ttMsg").textContent = d.ok ? "Проверка ожидающих запущена (см. лог)" : `Error: ${d.error || "recheck failed"}`;
+  if (d.ok) document.querySelector('[data-tab="logs"]').click();
+  poll();
+};
+
 $("ttRefreshBtn").onclick = async () => {
   $("ttMsg").textContent = "...";
   const r = await fetch("/api/tiktok/refresh", { method: "POST", body: "{}" });
@@ -1785,7 +1795,7 @@ async function poll() {
   }
 
   const job = STATE.job || {};
-  const cls = job.status === "running" ? "run" : job.status === "ok" ? "ok" : job.status === "error" ? "err" : "";
+  const cls = job.status === "running" ? "run" : job.status === "ok" ? "ok" : job.status === "error" ? "err" : job.status === "pending" ? "run" : "";
   $("jobBadge").innerHTML = `${T("stat_lbl")}: <span class="pill ${cls}">${job.status || "idle"}${job.slug ? " · " + job.slug : ""}</span>`;
   if (job.log) {
     $("liveLog").textContent = job.log;
