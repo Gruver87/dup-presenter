@@ -1,0 +1,346 @@
+{
+  "slug": "dup-labs-universe-director-cut-en",
+  "lang": "en",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "width": 1920,
+  "height": 1080,
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 18,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "en",
+    "speaker": "am_michael",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "u0",
+      "type": "cinema_clip",
+      "tag": "PROLOGUE · BIRTH OF THE DUP LABS UNIVERSE",
+      "title": "The Fail-Closed Law",
+      "cinema": {
+        "badge": "PROLOGUE · DUP LABS · BUILT WITH DUP-PRESENTER",
+        "grade": "vivid",
+        "crossfade_frames": 18,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_00_genesis_pulse.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/dup_00_solar_intro_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Ordinary software fails silently. False green statuses, blind agents, leaked keys, and risky trades with no brakes. Out of that chaos came a different architecture: the DUP Labs Universe. At its center shines the sovereign engineering core, and around it eight living systems orbit under one unbreakable law. If a system is not certain, it refuses. It never pretends to be healthy."
+    },
+    {
+      "id": "u1",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 01 · DUP-PROTOCOL",
+      "title": "A Hybrid L1: Rust + Python",
+      "cinema": {
+        "badge": "CHAPTER 01 · DUP-PROTOCOL · RUST HOTPATH + LIBP2P MESH",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_01_protocol_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_01_protocol_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The first core is DUP Protocol, the foundation of a first-layer blockchain. A woven sapphire and chrome knot unfolds three precise gears. Inside, a Rust hot path verifies cryptography instantly and packs state into RocksDB, while Python strictly orchestrates the rules. Three independent nodes form a fault-tolerant libp2p mesh. Any forged block shatters against the barrier and never reaches the chain."
+    },
+    {
+      "id": "u2",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 02 · DUP-PRESENTER",
+      "title": "The Autonomous Film Studio",
+      "cinema": {
+        "badge": "CHAPTER 02 · DUP-PRESENTER · 3D OPTICS & NEURAL CINEMA",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_02_presenter_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_02_presenter_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The second core is DUP Presenter, an autonomous film studio for engineers and product teams. A faceted golden crystal opens like a camera diaphragm, with brass gears and sapphire optics. Voice tracks, word-level subtitle sync, three-dimensional scenes, transitions, and broadcast mastering flow into one beam. The result is a Full HD film with automatic audio and picture quality checks."
+    },
+    {
+      "id": "u3",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 03 · DUP-MARKET-RADAR",
+      "title": "Spot Cockpit and Live Telemetry",
+      "cinema": {
+        "badge": "CHAPTER 03 · DUP-MARKET-RADAR · LIVE SPOT COCKPIT & PWA",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_03_market_radar_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_03_radar_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The third core is DUP Market Radar, the eyes and telemetry of the market in real time. A chrome gyroscope unfolds into an emerald chronometer. Its laser beam scans the spot market, catches sharp hourly impulses and funding extremes, and sends honest digests to Telegram and the mobile cockpit. Below it, a red ring glows: automated futures trading is blocked at the architecture level, permanently."
+    },
+    {
+      "id": "u4",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 04 · DUP-SKILL-TRUST-PLANE",
+      "title": "Trust for AI Agents",
+      "cinema": {
+        "badge": "CHAPTER 04 · DUP-SKILL-TRUST-PLANE · ZERO-KEY VERIFICATION",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_04_trust_plane_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_04_trust_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The fourth core is DUP Skill Trust Plane, a verifiable trust layer for AI agents. An amethyst crystal opens, revealing a silver vault with precise gears. Every skill passes cryptographic attestation. A verified passport with the publisher's signature lights up green and runs locally, with no secret keys involved. Any forged or malicious fragment is blocked at the gate."
+    },
+    {
+      "id": "u5",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 05 · DUP-LAB",
+      "title": "One-Command Launch Portal",
+      "cinema": {
+        "badge": "CHAPTER 05 · DUP-LAB · ONE-COMMAND ECOSYSTEM PORTAL",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_05_dup_lab_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_05_lab_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The fifth core is DUP Lab, the single entry point to the entire ecosystem. A crystal lotus blooms and sets a central chrome turbine in motion. One command in the terminal starts a chain reaction on Windows, Linux, and macOS. The working environment is provisioned automatically, verified skills are connected, and a local MCP node comes alive without leaking secrets. Days of manual setup compress into seconds."
+    },
+    {
+      "id": "u6",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 06 · DUP-POLICY-GATE",
+      "title": "A Deterministic Trade Firewall",
+      "cinema": {
+        "badge": "CHAPTER 06 · DUP-POLICY-GATE · HARD PRE-ORDER FIREWALL",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_06_policy_gate_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_06_policy_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The sixth core is DUP Policy Gate, the last line of defense for real capital. A heavy titanium shield slides open like a bank vault door, revealing steel locking gears. When a flood of risky leveraged and futures orders rushes toward the market, a hydraulic lock slams shut and stops every dangerous attempt. Only a verified spot order within limits gets through, leaving an immutable audit seal behind."
+    },
+    {
+      "id": "u7",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 07 · DUP-PROTOCOL-EXPERIMENTAL",
+      "title": "An Isolated Lab for the Future",
+      "cinema": {
+        "badge": "CHAPTER 07 · DUP-PROTOCOL-EXPERIMENTAL · FRONTIER R&D SANDBOX",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_07_experimental_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_07_experimental_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The seventh core is DUP Protocol Experimental, an isolated reactor of the future. A chrome trefoil reveals a plasma heart, sealed off from the production network. Inside a protective dome, nested EVM smart contracts withstand a storm of native fuzzing and reorgs, and frontier long-range defenses repel waves from the past. They prove their strength here, before anything reaches the mainline."
+    },
+    {
+      "id": "u8",
+      "type": "cinema_clip",
+      "tag": "CHAPTER 08 · DUP-EVIDENCE-GRAPH",
+      "title": "Machine-Checked Honesty",
+      "cinema": {
+        "badge": "CHAPTER 08 · DUP-EVIDENCE-GRAPH · CLAIM ↔ DISK PACK PROOF",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_08_evidence_graph_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/u_08_evidence_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "The eighth core is DUP Evidence Graph, the supreme judge of engineering honesty. A geodesic crystal lattice opens like a golden astrolabe. A golden scanner checks every readiness claim. If it is backed by a sealed pack of tests and a forty-eight-hour run on disk, the node ignites with diamond light. An empty green badge with no evidence shatters into dust in a fraction of a second."
+    },
+    {
+      "id": "u9",
+      "type": "cinema_clip",
+      "tag": "FINALE · THE GREAT CONVERGENCE",
+      "title": "DUP Labs — Code You Can Trust",
+      "cinema": {
+        "badge": "FINALE · DUP LABS · 8 CORES · 15 REPOSITORIES",
+        "grade": "vivid",
+        "crossfade_frames": 18,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_09_convergence_supernova.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          },
+          {
+            "src": "cinema/dup_09_finale_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03
+          }
+        ]
+      },
+      "voice_text": "Eight cores merge their beams into a single resonance. There is no magic in the words and no quiet compromise. There is only precise machinery, transparent source code, and proof on disk."
+    },
+    {
+      "id": "u10",
+      "type": "cinema_clip",
+      "tag": "ECOSYSTEM MAP · GITHUB.COM/GRUVER87",
+      "title": "The Core and All 15 Repositories",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u10_constellation_links.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "At the very center is our main repository, Gruver87. Around it, in an orbital ring, are all fifteen open DUP Labs projects. Every address is on screen. Visit them, read the code, and verify it yourself."
+    },
+    {
+      "id": "u11",
+      "type": "cinema_clip",
+      "tag": "CREATED WITH DUP-PRESENTER",
+      "title": "github.com/Gruver87/dup-presenter",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u11_created_with_presenter_en.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0
+          }
+        ]
+      },
+      "voice_text": "And the final credit: this entire film, from script and voice to editing and quality control, was created autonomously with our repository, dup presenter. The link is on screen."
+    }
+  ]
+}
