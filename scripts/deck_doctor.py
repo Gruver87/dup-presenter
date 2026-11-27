@@ -30,7 +30,7 @@ RENDER_SEC_PER_FRAME = 0.055
 # Speech length per slide = a + b * words(voice). Least-squares fit on 31 slides from our build logs
 # (en: 19 slides, ru: 12 slides; mean abs error ~1.5 s). Refit with scripts/calibrate_speech.py when voices change.
 VOICE_FIT = {"en": (-1.50, 0.514), "ru": (-1.73, 0.558)}
-LONG_VIDEO_WARN_SEC = 240.0
+LONG_VIDEO_WARN_SEC = 300.0
 TAG_RE = re.compile(r"<[^>]+>")
 
 
