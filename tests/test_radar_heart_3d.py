@@ -136,6 +136,12 @@ class RadarHeart3DValidationTests(unittest.TestCase):
                     check_assets=False,
                 )
 
+    # public/cinema/ is git-ignored (large AI-generated clips, regenerated per machine). Without them this
+    # check cannot run, so it is skipped with an explicit reason instead of failing on a clean checkout.
+    @unittest.skipUnless(
+        (Path(__file__).resolve().parents[1] / "public" / "cinema" / "world3026").is_dir(),
+        "public/cinema/world3026 clips are not in the repo (git-ignored); run on a machine with the generated clips",
+    )
     def test_year_3026_deck_passes_with_assets(self) -> None:
         deck_path = Path(__file__).resolve().parents[1] / "decks" / "dup-market-radar-3026.json"
         raw = json.loads(deck_path.read_text(encoding="utf-8"))
