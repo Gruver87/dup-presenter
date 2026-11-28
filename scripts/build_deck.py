@@ -57,7 +57,22 @@ ALLOWED_TYPES = {
     "stat_burst",
     "broll_cinematic",
     "cinema_clip",
+    "radar_arena",
+    "radar_heart_3d",
 }
+ALLOWED_RADAR_ARENA_MODES = frozenset({"core_army", "live_candles", "trap_gauntlet", "integer_vault"})
+ALLOWED_RADAR_HEART_SCENES = frozenset({
+    "core_birth",
+    "emblem_ingest",
+    "emblem_mtf_score",
+    "emblem_runners",
+    "emblem_stop_cut",
+    "emblem_traps",
+    "emblem_integer",
+    "emblem_recovery",
+    "constellation_radar",
+    "presenter_core",
+})
 QUOTE_MAX_CHARS = 220
 # ui_recording clips come from scripts/record_ui.py and live in public/ui_recordings/ (gitignored).
 UI_RECORDING_SRC_RE = re.compile(r"ui_recordings/[a-z0-9][a-z0-9_-]{0,60}\.mp4")
@@ -186,7 +201,7 @@ def _validate_cinema_media_params(
                     f"Slide {sid}: {field_prefix}.audio_volume={av} requested, but clip has no audio stream: {clip_path}"
                 )
 from theme_catalog import THEME_IDS  # noqa: E402
-from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_available, synth_edge_with_timings  # noqa: E402
+from edge_engine import EDGE_RU_VOICES, EdgeEngineError, edge_allowed, edge_available, synth_edge_with_timings  # noqa: E402
 from audio_fx import (  # noqa: E402
     WordTimingUnavailable,
     build_word_captions,
@@ -198,6 +213,7 @@ from audio_fx import (  # noqa: E402
 from sfx_library import LIBRARY_NAMES as SFX_LIBRARY_NAMES, SfxLibraryError, resolve_deck_sfx  # noqa: E402
 from voice_clean import deess  # noqa: E402
 from ru_speech import normalize_ru_ssml  # noqa: E402
+from speech_phrasing import assemble, split_phrases  # noqa: E402
 from pacing import (  # noqa: E402
     MAX_PASSES,
     PacingError,
@@ -683,6 +699,50 @@ def _validate_and_annotate(deck: dict, *, check_assets: bool = True) -> None:
             elif not slide.get("background_query"):
                 raise DeckValidationError(f"Slide {sid}: cinema_clip requires cinema.src or background_query (or cinema.shots)")
 
+        if stype == "radar_arena":
+            ar = slide.get("arena")
+            if not isinstance(ar, dict):
+                raise DeckValidationError(f"Slide {sid}: radar_arena requires an arena object")
+            mode = ar.get("mode")
+            if mode not in ALLOWED_RADAR_ARENA_MODES:
+                raise DeckValidationError(
+                    f"Slide {sid}: arena.mode must be one of {sorted(ALLOWED_RADAR_ARENA_MODES)}"
+                )
+            for opt_key in ("badge", "headline", "subline", "footer_note"):
+                val = ar.get(opt_key)
+                if val is not None and (not isinstance(val, str) or not val.strip()):
+                    raise DeckValidationError(f"Slide {sid}: arena.{opt_key} must be a non-empty string")
+
+        if stype == "radar_heart_3d":
+            h3 = slide.get("heart3d")
+            if not isinstance(h3, dict):
+                raise DeckValidationError(f"Slide {sid}: radar_heart_3d requires a heart3d object")
+            scene = h3.get("scene")
+            if scene not in ALLOWED_RADAR_HEART_SCENES:
+                raise DeckValidationError(
+                    f"Slide {sid}: heart3d.scene must be one of {sorted(ALLOWED_RADAR_HEART_SCENES)}"
+                )
+            for opt_key in ("emblem_label", "headline", "repo_url", "repo_caption", "disclaimer", "bg_tint", "world_title"):
+                val = h3.get(opt_key)
+                if val is not None and (not isinstance(val, str) or not val.strip()):
+                    raise DeckValidationError(f"Slide {sid}: heart3d.{opt_key} must be a non-empty string")
+            bg_video = h3.get("bg_video")
+            if bg_video is not None:
+                if not isinstance(bg_video, str) or not bg_video.strip():
+                    raise DeckValidationError(f"Slide {sid}: heart3d.bg_video must be a non-empty string")
+                if bg_video.startswith("/") or bg_video.startswith("\\") or ".." in Path(bg_video).parts:
+                    raise DeckValidationError(f"Slide {sid}: heart3d.bg_video must be a safe relative path under public/")
+                if check_assets and not (PUBLIC_DIR / bg_video).is_file():
+                    raise DeckValidationError(f"Slide {sid}: heart3d.bg_video asset not found: {PUBLIC_DIR / bg_video}")
+            bg_opacity = h3.get("bg_opacity")
+            if bg_opacity is not None:
+                if not isinstance(bg_opacity, (int, float)) or isinstance(bg_opacity, bool) or not (0.1 <= float(bg_opacity) <= 1.0):
+                    raise DeckValidationError(f"Slide {sid}: heart3d.bg_opacity must be a number between 0.1 and 1.0")
+            chips = h3.get("chips")
+            if chips is not None:
+                if not isinstance(chips, list) or len(chips) > 4 or not all(isinstance(c, str) and c.strip() for c in chips):
+                    raise DeckValidationError(f"Slide {sid}: heart3d.chips must be 0..4 non-empty strings")
+
         if slide.get("sfx") is not None:
             slide_sfx = slide["sfx"]
             if not isinstance(slide_sfx, list) or len(slide_sfx) > 8:
@@ -969,6 +1029,13 @@ def _paced_synth(
     The synther rate is restored to the deck base rate on return, so other slides are unaffected.
     """
     synther.rate = base_rate
+    if slide.get("phrasing"):
+        # Explicit phrase-level synthesis with measured silences (see scripts/speech_phrasing.py).
+        # SSML <break> is not used here: the measured Silero effect on pauses was negligible.
+        phrases = split_phrases(plain)
+        raw = assemble(phrases, lambda t: synther.synth(speaker, t, None), SR)
+        print(f"[phrasing] {sid}: {len(phrases)} phrases, {len(raw) / float(SR):.2f}s")
+        return raw, [], base_rate, None
     raw, bounds = synther.synth_with_timings(speaker, plain, slide.get("voice_ssml") or None)
     if spec is None:
         return raw, bounds, base_rate, None
@@ -1011,6 +1078,35 @@ def _word_events_for_clip(audio: np.ndarray, lang: str, tag: str, engine_events:
     return events
 
 
+def skip_tts_source_error(resolved: dict, raw_deck_sha: str) -> str | None:
+    """Return why --skip-tts must not reuse the shared deck_resolved.json, or None when it may.
+
+    --skip-tts reuses one shared file for every deck, so its timeline, voice and text can belong to another
+    deck (a Russian timeline was once rendered under the English slug). It is allowed only when that file
+    records the fingerprint of this exact deck, which a full synthesis run writes.
+    """
+    recorded = resolved.get("source_deck_sha256")
+    if not recorded:
+        return ("deck_resolved.json does not record its source deck (source_deck_sha256 missing); "
+                "run without --skip-tts so the narration is synthesized for this deck")
+    if recorded != raw_deck_sha:
+        return ("deck_resolved.json was synthesized from a different deck; "
+                "run without --skip-tts so the narration is synthesized for this deck")
+    return None
+
+
+def bind_resolved_to_deck(resolved: dict, raw_deck_sha: str, *, only_slide: str) -> None:
+    """Record (or clear) the deck fingerprint on a timeline before it is written to the shared file.
+
+    A full-deck timeline records raw_deck_sha. A --only-slide timeline covers one slide, so it records nothing
+    and cannot later be reused as the full deck by --skip-tts.
+    """
+    if only_slide.strip():
+        resolved.pop("source_deck_sha256", None)
+    else:
+        resolved["source_deck_sha256"] = raw_deck_sha
+
+
 def synthesize_deck(deck: dict, offline_only: bool = False) -> dict:
     """Synthesize with the deck's online voice when Edge TTS is reachable; otherwise the offline fallback.
 
@@ -1034,6 +1130,9 @@ def synthesize_deck(deck: dict, offline_only: bool = False) -> dict:
         return _synthesize_deck_with(deck, speaker_a, speaker_b, voice_used=speaker_a)
     if not online:
         return _synthesize_deck_with(deck, speaker_a, speaker_b, voice_used=speaker_a)
+    if not edge_allowed():
+        print(f"[voice] no egress grant for Edge TTS (internet off or not approved) -> offline fallback '{fallback}' for the whole deck")
+        return _synthesize_deck_with(deck, fallback, fallback, voice_used=fallback)
     if not edge_available():
         print(f"[voice] no connection to Edge TTS -> offline fallback '{fallback}' for the whole deck")
         return _synthesize_deck_with(deck, fallback, fallback, voice_used=fallback)
@@ -1391,11 +1490,18 @@ def main() -> int:
 
     if not args.skip_tts:
         resolved = synthesize_deck(deck, offline_only=args.offline_only)
+        bind_resolved_to_deck(resolved, raw_deck_sha, only_slide=args.only_slide)
+        RESOLVED_JSON.write_text(json.dumps(resolved, ensure_ascii=False, indent=2), encoding="utf-8")
     else:
         if not RESOLVED_JSON.is_file():
             print("[ERROR] --skip-tts used but deck_resolved.json does not exist", file=sys.stderr)
             return 2
         resolved = json.loads(RESOLVED_JSON.read_text(encoding="utf-8"))
+        # Fail closed: refuse a timeline that was synthesized from another deck, before anything is overwritten.
+        skip_err = skip_tts_source_error(resolved, raw_deck_sha)
+        if skip_err:
+            print(f"[ERROR] --skip-tts refused: {skip_err}", file=sys.stderr)
+            return 2
         # Apply slug/theme/aspect/caption/transition/sfx switches from deck even on --skip-tts.
         # slug must come from the deck: it names the output MP4/SRT/pack, and a stale cached slug
         # silently overwrote a previous render.
@@ -1424,6 +1530,7 @@ def main() -> int:
             attach_music(deck, resolved)
         else:
             resolved.pop("music_file", None)
+        bind_resolved_to_deck(resolved, raw_deck_sha, only_slide=args.only_slide)
         RESOLVED_JSON.write_text(json.dumps(resolved, ensure_ascii=False, indent=2), encoding="utf-8")
         write_subtitles(resolved)
 

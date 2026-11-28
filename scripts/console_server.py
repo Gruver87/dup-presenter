@@ -23,6 +23,7 @@ import argparse
 import json
 import os
 import re
+import socket
 import shutil
 import subprocess
 import sys
@@ -75,6 +76,37 @@ from asset_store import (  # noqa: E402
     update_asset_meta,
 )
 from web_search import configured_provider as web_search_provider  # noqa: E402
+from cinema_api import (  # noqa: E402
+    CinemaApiError,
+    build_cinema_prompts,
+    cinema_api_status,
+    generate_batch_runway,
+    generate_image_runway,
+    generate_video_runway,
+)
+from research_agent import ResearchAgentError, analyze_topic, solve_problem  # noqa: E402
+from edge_engine import EDGE_HOST  # noqa: E402
+from credstore import PROVIDER_KEY_NAMES, get_secret  # noqa: E402
+from secret_guard import (  # noqa: E402
+    SecretLeakError,
+    active_approval,
+    grant_egress_approval,
+    install_egress_guard,
+    redact_secrets,
+    reset_egress_approvals,
+    revoke_egress_approval,
+    set_approval_renewer,
+)
+from workspace_tools import (  # noqa: E402
+    WorkspaceGuardError,
+    allowed_roots,
+    create_dir,
+    find_files,
+    list_dir,
+    read_text_file,
+)
+
+install_egress_guard()
 from studio_3d import (  # noqa: E402
     MAX_GLB_BYTES,
     MAX_IMG_BYTES,
@@ -84,6 +116,109 @@ from studio_3d import (  # noqa: E402
     list_models as studio_3d_list,
     save_glb_bytes as studio_3d_save_glb,
 )
+from cloud_llm import cloud_llm_config  # noqa: E402
+
+# Internet toggle (default ON: uses online LLM when internet is available, auto-falls back to local Ollama if offline).
+INTERNET_ENABLED: bool = True
+_INTERNET_PROBE_CACHE: dict[str, Any] = {"ts": 0.0, "online": False}
+
+
+def _internet_managed_hosts() -> list[str]:
+    _load_user_env_into_os()
+    hosts: list[str] = []
+    cloud = cloud_llm_config()
+    if cloud:
+        h = (urlparse(cloud[1]).hostname or "").lower()
+        if h and h not in hosts:
+            hosts.append(h)
+    if os.environ.get("SERPER_API_KEY", "").strip():
+        hosts.append("google.serper.dev")
+    if os.environ.get("BRAVE_API_KEY", "").strip():
+        hosts.append("api.search.brave.com")
+    if os.environ.get("RUNWAYML_API_SECRET", "").strip():
+        hosts.append("api.dev.runwayml.com")
+    if os.environ.get("TRIPO_API_KEY", "").strip():
+        hosts.append("api.tripo3d.ai")
+    if os.environ.get("FAL_KEY", "").strip():
+        hosts.append("queue.fal.run")
+    hosts.append(EDGE_HOST)  # Edge TTS needs no key, but the voice text leaves the computer
+    return hosts
+
+
+def _sync_internet_approvals(enabled: bool, *, min_remaining_sec: int = 0) -> list[str]:
+    """Toggle ON: grant dashboard-managed hosts. Toggle OFF: remove every grant. Returns error lines.
+
+    min_remaining_sec > 0 replaces a live grant that would expire sooner (used before background jobs,
+    which run in a separate process and cannot renew on demand).
+    """
+    errors: list[str] = []
+    if enabled:
+        now = int(time.time())
+        for h in _internet_managed_hosts():
+            try:
+                live = active_approval(h)
+                if live and min_remaining_sec > 0 and int(live.get("expires_ts") or 0) - now < min_remaining_sec:
+                    revoke_egress_approval(str(live.get("id") or ""))
+                grant_egress_approval(h, ttl_min=60, uses=500, confirm_text=f"APPROVE {h}")
+            except SecretLeakError as exc:
+                errors.append(f"{h}: {redact_secrets(str(exc))}")
+        return errors
+    try:
+        reset_egress_approvals()
+    except SecretLeakError as exc:
+        errors.append(f"revoke: {redact_secrets(str(exc))}")
+    return errors
+
+
+def _renew_internet_approval(host: str) -> bool:
+    """On-demand grant used by the egress guard: only while the toggle is ON and only for managed hosts."""
+    if not INTERNET_ENABLED:
+        return False
+    if host not in _internet_managed_hosts():
+        return False
+    grant_egress_approval(host, ttl_min=60, uses=500, confirm_text=f"APPROVE {host}")
+    return True
+
+
+def _probe_internet_online(force: bool = False) -> bool:
+    """Quick TCP reachability check (zero data/keys sent), cached 15s."""
+    now = time.time()
+    if not force and (now - float(_INTERNET_PROBE_CACHE["ts"])) < 15.0:
+        return bool(_INTERNET_PROBE_CACHE["online"])
+    cloud = cloud_llm_config()
+    probe_host = (urlparse(cloud[1]).hostname or "1.1.1.1") if cloud else "1.1.1.1"
+    online = False
+    try:
+        with socket.create_connection((probe_host, 443), timeout=1.5):
+            online = True
+    except OSError:
+        online = False
+    _INTERNET_PROBE_CACHE["ts"] = now
+    _INTERNET_PROBE_CACHE["online"] = online
+    return online
+
+
+def _internet_status_payload(force_probe: bool = False) -> dict[str, Any]:
+    _load_user_env_into_os()
+    cloud = cloud_llm_config()
+    online = _probe_internet_online(force=force_probe) if INTERNET_ENABLED else False
+    if not INTERNET_ENABLED:
+        eff = "offline_manual"
+    elif online and cloud:
+        eff = "online"
+    elif online:
+        eff = "online_no_key"
+    else:
+        eff = "offline_no_net"
+    return {
+        "ok": True,
+        "enabled": INTERNET_ENABLED,
+        "online": online,
+        "effective_mode": eff,
+        "cloud_configured": cloud is not None,
+        "cloud_model": cloud[2] if cloud else None,
+        "cloud_host": (urlparse(cloud[1]).hostname or "") if cloud else None,
+    }
 
 from theme_catalog import THEME_CATALOG  # noqa: E402
 from tts_engines import KOKORO_DEFAULT, KOKORO_VOICE_CATALOG  # noqa: E402
@@ -111,16 +246,18 @@ SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 
 def _load_user_env_into_os() -> None:
-    """On Windows, refresh provider keys from User registry env so a newly set key works without relaunch."""
+    """On Windows, fill missing provider keys without relaunch: Credential Manager first, then User registry env."""
     if os.name != "nt":
         return
+    for name in PROVIDER_KEY_NAMES:
+        if not os.environ.get(name):
+            stored = get_secret(name)
+            if stored:
+                os.environ[name] = stored
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
-            for name in (
-                "DUP_LLM_BASE_URL", "DUP_LLM_MODEL", "DUP_LLM_API_KEY",
-                "SERPER_API_KEY", "BRAVE_API_KEY", "TRIPO_API_KEY", "FAL_KEY",
-            ):
+            for name in PROVIDER_KEY_NAMES:
                 if not os.environ.get(name):
                     try:
                         val, _ = winreg.QueryValueEx(key, name)
@@ -176,6 +313,10 @@ class JobRunner:
             self.exit_code = None
             self.lines = [f"[{step}] starting..."]
 
+        if INTERNET_ENABLED:
+            for err in _sync_internet_approvals(True, min_remaining_sec=15 * 60):
+                with self._lock:
+                    self.lines.append(f"[internet] approval: {err}")
         t = threading.Thread(target=self._run, args=(cmd,), daemon=True)
         t.start()
         return True
@@ -484,6 +625,7 @@ def system_status(ollama_online: bool | None = None, ollama_models: list[str] | 
         "tiktok": tiktok_status(),
         "web_search_provider": web_search_provider(),
         "studio_3d_provider": studio_3d_provider(),
+        "cinema_api": cinema_api_status(),
     }
 
 
@@ -513,7 +655,8 @@ def provider_info() -> dict[str, Any]:
     ollama_models = live_models if live_models else ["qwen2.5:14b", "qwen2.5:7b"]
     sys_info = system_status(ollama_online=ollama_online, ollama_models=live_models)
     return {
-        "default_provider": "cloud" if has_key else "ollama",
+        # Local by default: deck text stays on this computer unless the user explicitly picks the cloud provider.
+        "default_provider": "ollama",
         "cloud_configured": has_key,
         "cloud_model": env_model,
         "cloud_models": cloud_models,
@@ -535,7 +678,8 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         pass
 
     def _json(self, code: int, payload: dict[str, Any]) -> None:
-        raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        safe_payload = redact_secrets(payload)
+        raw = json.dumps(safe_payload, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
@@ -749,14 +893,51 @@ class ConsoleHandler(BaseHTTPRequestHandler):
 
         if path == "/api/assets/search":
             qs = parse_qs(parsed.query)
-            q = (qs.get("q") or [""])[0]
+            q = (qs.get("q") or [""])[0].strip()
             kind = (qs.get("kind") or ["any"])[0]
             try:
                 lim = int((qs.get("limit") or ["8"])[0])
             except ValueError:
                 lim = 8
+            translated_q = q
+            if INTERNET_ENABLED and re.search(r"[а-яА-ЯёЁ]", q):
+                _load_user_env_into_os()
+                cloud = cloud_llm_config()
+                if cloud:
+                    _sync_internet_approvals(True)
+                    api_key, base_url, cloud_model = cloud
+                    try:
+                        req_body = json.dumps(
+                            {
+                                "model": cloud_model,
+                                "temperature": 0.0,
+                                "max_tokens": 30,
+                                "messages": [
+                                    {
+                                        "role": "system",
+                                        "content": "Translate the user's Russian image search request into 2-4 concise English keywords for Wikimedia/NASA/Openverse. Output ONLY the English keywords, no quotes, no punctuation.",
+                                    },
+                                    {"role": "user", "content": q},
+                                ],
+                            }
+                        ).encode("utf-8")
+                        req = urllib.request.Request(
+                            f"{base_url}/chat/completions",
+                            data=req_body,
+                            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                            method="POST",
+                        )
+                        with urllib.request.urlopen(req, timeout=12.0) as resp:
+                            raw = json.loads(resp.read().decode("utf-8", errors="replace"))
+                        cand = str((((raw.get("choices") or [{}])[0].get("message") or {}).get("content")) or "").strip().strip('"\'.,')
+                        if cand and len(cand) <= 80:
+                            translated_q = cand
+                    except Exception:
+                        pass
             try:
-                res = search_free_archives(q, kind=kind, limit=lim)
+                res = search_free_archives(translated_q, kind=kind, limit=lim)
+                if translated_q != q and isinstance(res, dict):
+                    res["translated_query"] = translated_q
             except AssetStoreError as exc:
                 self._json(400, {"ok": False, "error": str(exc)})
                 return
@@ -765,6 +946,10 @@ class ConsoleHandler(BaseHTTPRequestHandler):
 
         if path == "/api/3d/models":
             self._json(200, {"ok": True, "provider": studio_3d_provider(), "models": studio_3d_list()})
+            return
+
+        if path == "/api/internet":
+            self._json(200, _internet_status_payload(force_probe=("force" in parsed.query)))
             return
 
         if path.startswith("/voice/") and path.endswith(".wav"):
@@ -1151,6 +1336,167 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 self._json(400, {"ok": False, "error": str(exc)})
                 return
             self._json(200, {"ok": True, "slug": deck["slug"], "path": str(deck_path)})
+            return
+
+        if path == "/api/cinema/prompts":
+            topic = str(body.get("topic") or "").strip()
+            raw_scenes = body.get("scenes")
+            if isinstance(raw_scenes, str):
+                scenes = [line.strip() for line in raw_scenes.splitlines() if line.strip()]
+            elif isinstance(raw_scenes, list):
+                scenes = [str(x).strip() for x in raw_scenes if str(x).strip()]
+            else:
+                scenes = []
+            style = str(body.get("style") or "").strip()
+            try:
+                prompts = build_cinema_prompts(topic, scenes, style=style) if style else build_cinema_prompts(topic, scenes)
+            except CinemaApiError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "prompts": prompts, "cinema_api": cinema_api_status()})
+            return
+
+        if path == "/api/cinema/generate":
+            _load_user_env_into_os()
+            kind = str(body.get("kind") or "image").strip().lower()
+            prompt = str(body.get("prompt") or "").strip()
+            ratio = str(body.get("ratio") or "1280:720").strip()
+            try:
+                slug = _valid_slug(str(body.get("slug") or "cinema-gen"))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            name = re.sub(r"[^a-zA-Z0-9_-]", "_", str(body.get("name") or "scene_00"))[:48] or "scene_00"
+            out_dir = ROOT / "public" / "cinema" / "generated" / slug
+            try:
+                if kind == "image":
+                    model = str(body.get("model") or "gen4_image").strip()
+                    res = generate_image_runway(prompt, out_path=out_dir / f"{name}.png", ratio=ratio, model=model)
+                elif kind == "video":
+                    model = str(body.get("model") or "gen4_turbo").strip()
+                    duration = int(body.get("duration") or 5)
+                    image_rel = str(body.get("image_path") or "").strip()
+                    if not image_rel:
+                        raise CinemaApiError("image_path is required for image-to-video")
+                    img_path = Path(image_rel).resolve()
+                    allowed_root = (ROOT / "public" / "cinema").resolve()
+                    if allowed_root not in img_path.parents:
+                        raise CinemaApiError("image_path must be inside public/cinema")
+                    res = generate_video_runway(
+                        img_path, prompt, out_path=out_dir / f"{name}.mp4", duration=duration, ratio=ratio, model=model
+                    )
+                else:
+                    raise CinemaApiError("kind must be 'image' or 'video'")
+            except (CinemaApiError, SecretLeakError, ValueError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/cinema/batch":
+            _load_user_env_into_os()
+            raw_scenes = body.get("scenes")
+            if isinstance(raw_scenes, str):
+                scenes = [line.strip() for line in raw_scenes.splitlines() if line.strip()]
+            elif isinstance(raw_scenes, list):
+                scenes = [str(x).strip() for x in raw_scenes if str(x).strip()]
+            else:
+                scenes = []
+            topic = str(body.get("topic") or "").strip()
+            make_video = bool(body.get("make_video", False))
+            try:
+                duration = int(body.get("duration") or 5)
+                slug = _valid_slug(str(body.get("slug") or "cinema-batch"))
+            except (TypeError, ValueError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            out_dir = ROOT / "public" / "cinema" / "generated" / slug
+            try:
+                res = generate_batch_runway(
+                    scenes, topic=topic, out_dir=out_dir, make_video=make_video, duration=duration
+                )
+            except (CinemaApiError, SecretLeakError, ValueError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200 if res.get("ok") else 502, res)
+            return
+
+        if path == "/api/workspace/list":
+            try:
+                res = list_dir(str(body.get("path") or ""))
+                res["allowed_roots"] = [str(p) for p in allowed_roots()]
+            except WorkspaceGuardError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/workspace/find":
+            try:
+                res = find_files(str(body.get("pattern") or ""), str(body.get("root") or ""))
+            except WorkspaceGuardError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/workspace/read":
+            try:
+                res = read_text_file(str(body.get("path") or ""))
+            except WorkspaceGuardError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/workspace/mkdir":
+            try:
+                res = create_dir(str(body.get("path") or ""))
+            except WorkspaceGuardError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/internet":
+            global INTERNET_ENABLED
+            enabled = bool(body.get("enabled", True))
+            INTERNET_ENABLED = enabled
+            sync_errors = _sync_internet_approvals(enabled)
+            payload = _internet_status_payload(force_probe=True)
+            if sync_errors:
+                payload["sync_errors"] = sync_errors
+            self._json(200, payload)
+            return
+
+        if path == "/api/research/solve":
+            _load_user_env_into_os()
+            try:
+                res = solve_problem(
+                    str(body.get("question") or ""),
+                    num_results=int(body.get("num_results") or 6),
+                    pages_to_read=int(body.get("pages_to_read") or 5),
+                    save_report=bool(body.get("save_report", True)),
+                )
+            except (ResearchAgentError, SecretLeakError, ValueError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
+            return
+
+        if path == "/api/research/analyze":
+            _load_user_env_into_os()
+            try:
+                res = analyze_topic(
+                    str(body.get("query") or ""),
+                    num_results=int(body.get("num_results") or 6),
+                    inspect_github=bool(body.get("inspect_github", True)),
+                    save_report=bool(body.get("save_report", False)),
+                )
+            except (ResearchAgentError, SecretLeakError, ValueError) as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, res)
             return
 
         if path == "/api/critique":
@@ -1711,6 +2057,18 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         self._json(404, {"ok": False, "error": "Not found"})
 
 
+class _DupConsoleServer(ThreadingHTTPServer):
+    """Console server: a client closing the socket mid-response (browser video seek, tab close,
+    WinError 10054) is a normal event and must not print a traceback. Every other error is still reported."""
+
+    _CLIENT_GONE = (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)
+
+    def handle_error(self, request: Any, client_address: Any) -> None:
+        if isinstance(sys.exc_info()[1], self._CLIENT_GONE):
+            return
+        super().handle_error(request, client_address)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="DUP Presenter local web console")
     parser.add_argument("--port", type=int, default=8790)
@@ -1725,11 +2083,14 @@ def main() -> int:
         f"tts_ru={'OK' if st['silero_ru_ready'] else 'auto'} | tts_en={'OK' if st['silero_en_ready'] else 'auto'} | "
         f"ffmpeg={'OK' if st['ffmpeg_ready'] else 'MISSING'} | remotion={'OK' if st['remotion_ready'] else 'MISSING'}"
     )
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), ConsoleHandler)
+    server = _DupConsoleServer(("127.0.0.1", args.port), ConsoleHandler)
     url = f"http://127.0.0.1:{args.port}"
     print(f"[console] DUP Presenter Console listening on {url}")
     if args.open:
         webbrowser.open(url)
+    set_approval_renewer(_renew_internet_approval)
+    for err in _sync_internet_approvals(INTERNET_ENABLED):
+        print(f"[console] internet approval: {err}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

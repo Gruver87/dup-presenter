@@ -156,6 +156,43 @@ def symbol_index(facts: dict) -> dict[str, dict]:
     return index
 
 
+# Deck-level settings that assemble_deck does not produce; a revision copies them from the existing deck.
+REVISION_KEPT_KEYS: tuple[str, ...] = (
+    "caption_style", "music", "background", "director_preset", "sfx_enabled", "sfx_volume",
+    "transition_style", "transition_frames",
+)
+
+
+def unsupported_slide_types(deck: dict) -> list[str]:
+    """Slide types in `deck` the planner cannot produce; revising such a deck would destroy those slides."""
+    return sorted({str(s.get("type")) for s in deck.get("slides") or [] if s.get("type") not in SLIDE_TYPES})
+
+
+def facts_from_deck(deck: dict, slug: str) -> dict:
+    """Facts in the regular facts.json schema, built from an existing deck (feedback without facts.json).
+
+    The deck's own slide texts become document D1; there is no code and no images, so the plan can only
+    cite D1 and validation runs exactly as for scanned facts.
+    """
+    parts: list[str] = []
+    for s in deck.get("slides") or []:
+        fields = [str(s.get(k) or "").strip() for k in ("title", "headline", "subtitle", "voice_text")]
+        bullets = [f"{b.get('title', '')}: {b.get('desc', '')}".strip(": ") for b in s.get("bullets") or [] if isinstance(b, dict)]
+        text = " | ".join(x for x in fields + bullets if x)
+        parts.append(f"slide {s.get('id', '?')} ({s.get('type', '?')}): {text}")
+    doc_text = "\n".join(parts)
+    return {
+        "root": str(ROOT),
+        "root_name": slug,
+        "project": {"name": deck.get("brand") or slug, "description": deck.get("subtitle") or ""},
+        "urls": [],
+        "docs": [{"id": "D1", "path": f"decks/{slug}.json", "lines": f"1-{max(1, len(parts))}", "text": doc_text}],
+        "code": [],
+        "images": [],
+        "stats": {},
+    }
+
+
 def render_facts(facts: dict) -> str:
     head = [
         f"PROJECT: {facts['project']['name']}",
@@ -418,7 +455,8 @@ def validate_ui_recording_slide(s: dict, recordings: set[str], tag: str) -> list
     return []
 
 
-def validate_plan(plan: dict, facts: dict, lang: str = "ru", recordings: set[str] | None = None) -> list[str]:
+def validate_plan(plan: dict, facts: dict, lang: str = "ru", recordings: set[str] | None = None,
+                  min_slides: int = 3) -> list[str]:
     if recordings is None:
         recordings = set(list_ui_recordings())
     errors: list[str] = []
@@ -429,8 +467,8 @@ def validate_plan(plan: dict, facts: dict, lang: str = "ru", recordings: set[str
     all_ids = set(code_by_id) | image_ids | doc_ids
 
     slides = plan.get("slides")
-    if not isinstance(slides, list) or not (3 <= len(slides) <= 12):
-        return ["slides must be a list of 3..12 items"]
+    if not isinstance(slides, list) or not (min_slides <= len(slides) <= 12):
+        return [f"slides must be a list of {min_slides}..12 items"]
     if slides[0].get("type") != "hero_3d":
         errors.append("first slide must be hero_3d")
     if slides[-1].get("type") != "outro_3d":
@@ -557,7 +595,8 @@ def example_code_slide(facts: dict) -> str:
 
 
 def ask_plan(facts: dict, model: str, host: str, feedback: str | None, previous: dict | None,
-             slides_n: int | None, raw_dir: Path, provider: str = "ollama", lang: str = "ru") -> dict:
+             slides_n: int | None, raw_dir: Path, provider: str = "ollama", lang: str = "ru",
+             min_slides: int = 3) -> dict:
     raw_dir.mkdir(parents=True, exist_ok=True)
     facts_text = render_facts(facts)
     recordings = list_ui_recordings()
@@ -598,7 +637,7 @@ def ask_plan(facts: dict, model: str, host: str, feedback: str | None, previous:
             last_errors = [f"invalid JSON: {exc}"]
             print(f"[plan] attempt {attempt}: invalid JSON, retrying")
             continue
-        last_errors = validate_plan(plan, facts, lang=lang, recordings=set(recordings))
+        last_errors = validate_plan(plan, facts, lang=lang, recordings=set(recordings), min_slides=min_slides)
         if not last_errors:
             print(f"[plan] attempt {attempt}: valid plan with {len(plan['slides'])} slides")
             return plan
@@ -673,8 +712,10 @@ def assemble_deck(
     aspect: str = "16:9",
     voice_mode: str = "single",
     burn_captions: bool = True,
+    voice_base: dict | None = None,
 ) -> dict:
-    voice_cfg = dict(VOICE_BLOCK_EN if lang == "en" else VOICE_BLOCK_RU)
+    # voice_base: the voice block of an existing deck being revised; it keeps engine and speaker unchanged.
+    voice_cfg = dict(voice_base) if voice_base else dict(VOICE_BLOCK_EN if lang == "en" else VOICE_BLOCK_RU)
     if speaker:
         voice_cfg["speaker"] = speaker
     voice_cfg["mode"] = voice_mode
@@ -786,14 +827,54 @@ def main() -> int:
     versions_dir = work / "versions"
     versions_dir.mkdir(parents=True, exist_ok=True)
     facts_path = Path(args.facts) if args.facts else work / "facts.json"
-    facts = json.loads(facts_path.read_text(encoding="utf-8"))
+    deck_path = ROOT / "decks" / f"{args.slug}.json"
+
+    # A revision edits TEXT only. The deck's own settings (language, theme, voice, aspect, captions, music,
+    # background, transitions) win over CLI defaults, so the UI cannot silently restyle or re-voice the deck.
+    prev_deck: dict | None = None
+    min_slides = 3
+    if args.feedback and deck_path.is_file():
+        prev_deck = json.loads(deck_path.read_text(encoding="utf-8"))
+        prev_slides = len(prev_deck.get("slides") or [])
+        min_slides = 2 if prev_slides < 3 else 3
+        prev_voice = prev_deck.get("voice") or {}
+        args.lang = prev_deck.get("lang") if prev_deck.get("lang") in ("ru", "en") else args.lang
+        args.theme = prev_deck.get("theme") or args.theme
+        args.aspect = prev_deck.get("aspect") or args.aspect
+        args.voice_mode = prev_voice.get("mode") or args.voice_mode
+        args.speaker = prev_voice.get("speaker") or args.speaker
+        if "burn_captions" in prev_deck:
+            args.no_captions = not bool(prev_deck["burn_captions"])
+        print(f"[plan] revision keeps deck settings: lang={args.lang} theme={args.theme} aspect={args.aspect} "
+              f"voice={prev_voice.get('engine', '?')}/{args.speaker or '-'} captions={not args.no_captions}")
+
+    if facts_path.is_file():
+        facts = json.loads(facts_path.read_text(encoding="utf-8"))
+    elif args.feedback and deck_path.is_file():
+        facts = facts_from_deck(json.loads(deck_path.read_text(encoding="utf-8")), args.slug)
+        print(f"[plan] facts.json missing for {args.slug}; using existing deck {deck_path.name}")
+    else:
+        raise PlanError(f"Нет файла {facts_path}. Сначала собери колоду в «01 · Новый ролик».")
 
     previous = None
     if args.feedback:
-        prev_n, previous = latest_plan(versions_dir)
-        print(f"[plan] revising v{prev_n} with feedback (lang={args.lang})")
+        if next_version(versions_dir) > 1:
+            prev_n, previous = latest_plan(versions_dir)
+            print(f"[plan] revising v{prev_n} with feedback (lang={args.lang})")
+        elif deck_path.is_file():
+            previous = json.loads(deck_path.read_text(encoding="utf-8"))
+            print(f"[plan] revising existing deck {deck_path.name} with feedback (lang={args.lang})")
+        else:
+            raise PlanError(f"No previous plan in {versions_dir}; run without --feedback first.")
+        foreign = unsupported_slide_types(previous)
+        if foreign:
+            raise PlanError(
+                f"Колода {args.slug} содержит слайды {', '.join(foreign)}, которые «Правка через ИИ» не умеет менять "
+                "(например, кино-клипы). Правка отменена, колода не изменена. Кино-колоду меняйте в «01 · Новый ролик»."
+            )
     raw_dir = work / "raw" / f"run_{next_version(versions_dir)}"
-    plan = ask_plan(facts, args.model, args.host, args.feedback, previous, args.slides, raw_dir, args.provider, lang=args.lang)
+    plan = ask_plan(facts, args.model, args.host, args.feedback, previous, args.slides, raw_dir, args.provider,
+                    lang=args.lang, min_slides=min_slides)
 
     version = next_version(versions_dir)
     (versions_dir / f"v{version}.json").write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -809,7 +890,12 @@ def main() -> int:
         aspect=args.aspect,
         voice_mode=args.voice_mode,
         burn_captions=not args.no_captions,
+        voice_base=(prev_deck or {}).get("voice") if prev_deck and (prev_deck.get("lang") == args.lang) else None,
     )
+    if prev_deck:
+        for key in REVISION_KEPT_KEYS:
+            if key in prev_deck:
+                deck[key] = prev_deck[key]
     deck_path = ROOT / "decks" / f"{args.slug}.json"
     deck_path.write_text(json.dumps(deck, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[plan] saved version v{version} -> {versions_dir / f'v{version}.json'}")

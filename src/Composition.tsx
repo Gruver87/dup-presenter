@@ -14,6 +14,8 @@ import { slide as slideTransition } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
 import { QuantumWarpBackdrop } from "./CosmosBackdrop";
 import { LedgerLayersSlide, MeshNetworkSlide, ProtocolCosmosSlide, TxJourneySlide } from "./StorySlides";
+import { RadarArenaSlide } from "./RadarArenaSlides";
+import { RadarHeart3DSlide } from "./RadarHeart3D";
 import { BRollCinematicSlide, ChartStorySlide, CinemaClipSlide, StatBurstSlide, VersusSplitSlide, computeSlideLocalDuck } from "./UniversalSlides";
 import { ResolvedSlide } from "./types";
 import { Aurora3DBackdrop } from "./composition/aurora3d";
@@ -111,6 +113,12 @@ export const DupPresenter: React.FC<Props> = () => {
         />
       );
     }
+    if (slide.type === "radar_arena") {
+      return <RadarArenaSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
+    if (slide.type === "radar_heart_3d") {
+      return <RadarHeart3DSlide slide={slide} dur={durationInFrames} theme={THEME} isPortrait={IS_PORTRAIT} />;
+    }
     return null;
   };
 
@@ -123,7 +131,7 @@ export const DupPresenter: React.FC<Props> = () => {
     const slideSfxCues = slide.sfx ?? [];
     return (
       <>
-        {slide.type === "cinema_clip" ? (
+        {slide.type === "cinema_clip" || slide.type === "radar_heart_3d" ? (
           renderSlideBody(slide, durationInFrames)
         ) : (
           <>

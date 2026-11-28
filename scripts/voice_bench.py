@@ -77,6 +77,10 @@ async def edge_slide(voice_name: str, text: str, tmp: Path) -> np.ndarray:
     import aiohttp.resolver
     import edge_tts
 
+    from edge_engine import require_edge_egress
+
+    require_edge_egress(text)
+
     # aiodns (c-ares) cannot reach DNS on this host; use the system resolver instead.
     aiohttp.connector.DefaultResolver = aiohttp.resolver.ThreadedResolver
     await edge_tts.Communicate(text, voice_name, rate="-5%").save(str(tmp))

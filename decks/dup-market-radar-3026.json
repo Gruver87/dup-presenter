@@ -1,0 +1,243 @@
+{
+  "slug": "dup-market-radar-3026",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "theme": "cosmic_radar",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 14,
+  "sfx_enabled": true,
+  "sfx_volume": 0.18,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.11,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "88%",
+    "mode": "single"
+  },
+  "slides": [
+    {
+      "id": "w01",
+      "type": "radar_heart_3d",
+      "tag": "3026 A.D. · СЕРДЦЕ-ЯДРО",
+      "title": "DUP Market Radar — Сердце Святилища",
+      "heart3d": {
+        "scene": "core_birth",
+        "bg_video": "cinema/world3026/bg_01_sanctum.mp4",
+        "bg_tint": "rgba(26, 14, 4, 0.42)",
+        "bg_opacity": 0.84,
+        "world_title": "Мир I · Океан Жидкого Золота",
+        "emblem_label": "Ядро · Живое Сердце в Вихревом Щите",
+        "headline": "За гранью шума рождается ритм",
+        "chips": ["Rust + Python · v0.2.110", "7 артерий · 6 секторов", "R&D · Dry-Run по умолчанию"]
+      },
+      "sfx": [
+        { "name": "riser", "at_sec": 0.4, "volume": 0.22 },
+        { "name": "impact", "at_sec": 7.0, "volume": 0.24 }
+      ],
+      "voice_text": "Загляните на тысячу лет вперед. В эпоху, когда рынки перестали быть сухими таблицами и превратились в океан живого света. В самом центре этого океана бьется гибридное сердце DUP Market Radar на Rust и Python. Скрученный вихревой щит бережет его ритм, а семь светящихся артерий уходят вглубь — к семи уникальным артефактам системы."
+    },
+    {
+      "id": "w02",
+      "type": "radar_heart_3d",
+      "tag": "АРТЕРИЯ I · ПОТОК 6 БИРЖ",
+      "title": "Лотос-Турбина Ингеста",
+      "heart3d": {
+        "scene": "emblem_ingest",
+        "bg_video": "cinema/world3026/bg_02_ingest.mp4",
+        "bg_tint": "rgba(18, 8, 38, 0.44)",
+        "bg_opacity": 0.82,
+        "world_title": "Мир II · Неоновый Тоннель Потоков",
+        "emblem_label": "Артефакт I · Лотос-Турбина Шести Бирж",
+        "headline": "Шесть площадок в одном дыхании",
+        "chips": ["KuCoin · Binance · Bybit · MEXC", "DexScreener · CoinGecko", "4 Rust WS · 512-тик кольцо"]
+      },
+      "sfx": [
+        { "name": "whoosh", "at_sec": 0.3, "volume": 0.2 }
+      ],
+      "voice_text": "Первая артерия пробуждает хрустальный лотос шести бирж. Шесть параллельных воркеров одновременно впитывают потоки KuCoin, восемнадцатимегабайтный фид Binance, Bybit, MEXC, DexScreener и CoinGecko. Четыре нативных WebSocket-кольца на Rust укладывают каждый тик в кольцо на пятьсот двенадцать событий, собирая бары от минуты до четырех часов."
+    },
+    {
+      "id": "w03",
+      "type": "radar_heart_3d",
+      "tag": "АРТЕРИЯ II · ЛИНЗЫ ИСТИНЫ",
+      "title": "Астролябия MTF и Скоринга",
+      "heart3d": {
+        "scene": "emblem_mtf_score",
+        "bg_video": "cinema/world3026/bg_03_mtf.mp4",
+        "bg_tint": "rgba(6, 20, 42, 0.42)",
+        "bg_opacity": 0.86,
+        "world_title": "Мир III · Бриллиантовая Спираль Света",
+        "emblem_label": "Артефакт II · Астролябия 15m · 1h · 4h",
+        "headline": "От тысячи сигналов — к десяти граням",
+        "chips": ["Водопад 15m / 1h / 4h", "Порог полноты ≥ 85%", "Rust radar_native → Top-10"]
+      },
+      "sfx": [
+        { "name": "whoosh", "at_sec": 0.3, "volume": 0.2 },
+        { "name": "ding", "at_sec": 10.5, "volume": 0.22 }
+      ],
+      "voice_text": "Вторая артерия раскрывает оптическую астролябию. Три хрустальные линзы — пятнадцать минут, час и четыре часа — сверяют каскад KuCoin, Binance, Bybit и MEXC. Лишь при заполнении от восьмидесяти пяти процентов и живом стакане нативный движок Rust пропускает луч и гранит десятку сильнейших монет сектора. Призрачные листинги исчезают без следа."
+    },
+    {
+      "id": "w04",
+      "type": "radar_heart_3d",
+      "tag": "АРТЕРИЯ III · БЕЗ ПОТОЛКА",
+      "title": "Изумрудные Обелиски и Трал-Щит",
+      "heart3d": {
+        "scene": "emblem_runners",
+        "bg_video": "cinema/world3026/bg_04_runners.mp4",
+        "bg_tint": "rgba(4, 24, 16, 0.44)",
+        "bg_opacity": 0.82,
+        "world_title": "Мир IV · Изумрудная Волна Импульса",
+        "emblem_label": "Артефакт III · Изумрудные Обелиски и Трал",
+        "headline": "Сильным движениям открыто небо",
+        "chips": ["Нет жесткого потолка TP", "Трал −5.0% от пика · безубыток", "Чистый расчет после 10 bps × 2"]
+      },
+      "sfx": [
+        { "name": "riser", "at_sec": 0.5, "volume": 0.22 }
+      ],
+      "voice_text": "Третья артерия зажигает изумрудные обелиски роста. У этого механизма нет искусственного потолка тейк-профита, который преждевременно обрывает сильный импульс. Сразу под вершинами плывет гексагональный опаловый щит: он подтягивает выход в безубыток и держит трейлинг минус пять процентов от пика — уже с учетом комиссий десять базисных пунктов в обе стороны."
+    },
+    {
+      "id": "w05",
+      "type": "radar_heart_3d",
+      "tag": "АРТЕРИЯ IV · КЛИНОК СТОПА",
+      "title": "Рубиновый Клинок и Печать Паузы",
+      "heart3d": {
+        "scene": "emblem_stop_cut",
+        "bg_video": "cinema/world3026/bg_05_stop.mp4",
+        "bg_tint": "rgba(32, 6, 14, 0.44)",
+        "bg_opacity": 0.84,
+        "world_title": "Мир V · Плазменный Горизонт Риска",
+        "emblem_label": "Артефакт IV · Рубиновый Клинок и Печать",
+        "headline": "Убыток рассекается без колебаний",
+        "chips": ["Жесткий стоп −3.0% KuCoin Mark", "Бан перезахода 3ч после стопа", "45м после fade · 20м прочие"]
+      },
+      "sfx": [
+        { "name": "impact", "at_sec": 5.8, "volume": 0.26 }
+      ],
+      "voice_text": "Четвертая артерия — лезвие холодной дисциплины. Когда волна ломается вниз, рубиновый горизонт на уровне минус три процента по марк-цене KuCoin рассекает убыточную позицию мгновенно и без эмоций. Следом опускается золотая печать запрета: три часа паузы после стопа, сорок пять минут после затухания — никаких импульсивных отыгрышей."
+    },
+    {
+      "id": "w06",
+      "type": "radar_heart_3d",
+      "tag": "АРТЕРИЯ V · БАСТИОН",
+      "title": "Опаловый Купол против Шести Ловушек",
+      "heart3d": {
+        "scene": "emblem_traps",
+        "bg_video": "cinema/world3026/bg_06_traps.mp4",
+        "bg_tint": "rgba(10, 12, 34, 0.48)",
+        "bg_opacity": 0.82,
+        "world_title": "Мир VI · Нейронная Паутина Аномалий",
+        "emblem_label": "Артефакт V · Опаловый Бастион Шести Защит",
+        "headline": "Шесть рыночных ловушек — ни одного прорыва",
+        "chips": ["Anti-Chase ≥ +4%/1ч", "FUTURES_BLOCK → только обзор", "Degraded = 0 покупок · Kill-Switch"]
+      },
+      "sfx": [
+        { "name": "impact", "at_sec": 2.2, "volume": 0.22 },
+        { "name": "tick", "at_sec": 8.2, "volume": 0.18 }
+      ],
+      "voice_text": "Пятая артерия поднимает опаловый бастион против шести главных ловушек. Анти-чейз отбивает перегретые пампы от плюс четырех процентов за час. Пылающее кольцо фьючерсов навечно заблокировано модулем FUTURES_BLOCK и остывает в спокойную линзу наблюдения. Деградированный снимок ставит ноль покупок, три убытка включают часовую паузу, а Kill-Switch мгновенно защелкивает контур."
+    },
+    {
+      "id": "w07",
+      "type": "radar_heart_3d",
+      "tag": "АРТЕРИЯ VI · ЧАСОВАЯ ТОЧНОСТЬ",
+      "title": "Золотая Астролябия Целых Чисел",
+      "heart3d": {
+        "scene": "emblem_integer",
+        "bg_video": "cinema/world3026/bg_07_integer.mp4",
+        "bg_tint": "rgba(24, 18, 6, 0.42)",
+        "bg_opacity": 0.84,
+        "world_title": "Мир VII · Поле Золотых Квантов",
+        "emblem_label": "Артефакт VI · Часовая Астролябия i64 / i128",
+        "headline": "Ноль float-ошибок и равные чаши капитала",
+        "chips": ["PRICE 1e8 · QUOTE 1e6 · bps", "Checked i64 / i128 Rust", "Equal Sleeves: spot · memes · listings"]
+      },
+      "sfx": [
+        { "name": "whoosh", "at_sec": 0.3, "volume": 0.18 },
+        { "name": "ding", "at_sec": 10.2, "volume": 0.2 }
+      ],
+      "voice_text": "Шестая артерия приводит в движение часовую астролябию чистого золота. В ядре нет ни одного числа с плавающей точкой для денег: только проверенная целочисленная арифметика i64 и i128, цены в стомиллионных долях и микро-USDT. Три световых ручья поровну наполняют три хрустальные чаши — spot alts, memes и listings, а DEX-мемы остаются в отдельном списке наблюдения."
+    },
+    {
+      "id": "w08",
+      "type": "radar_heart_3d",
+      "tag": "АРТЕРИЯ VII · ФЕНИКС",
+      "title": "Нейро-Феникс и Три Стеклянных Зеркала",
+      "heart3d": {
+        "scene": "emblem_recovery",
+        "bg_video": "cinema/world3026/bg_08_recovery.mp4",
+        "bg_tint": "rgba(6, 16, 36, 0.38)",
+        "bg_opacity": 0.88,
+        "world_title": "Мир VIII · Биолюминесцентный Океан 4K",
+        "emblem_label": "Артефакт VII · Нейро-Феникс Самовосстановления",
+        "headline": "Самоисцеление контура и контроль в руках",
+        "chips": ["RecoverySupervisor без авто-включения", "Dashboard · Android PWA · Telegram", "auto_trade: OFF · dry_run: TRUE"]
+      },
+      "sfx": [
+        { "name": "ding", "at_sec": 6.0, "volume": 0.22 }
+      ],
+      "voice_text": "Седьмая артерия над биолюминесцентным океаном пробуждает нейро-феникс RecoverySupervisor. После сетевого разрыва он сам сращивает упавшие воркеры и сканирование — и никогда не включает живую торговлю без команды человека. Вся телеметрия отражается в трех стеклянных зеркалах: веб-панели, Android PWA и Telegram-боте."
+    },
+    {
+      "id": "w09",
+      "type": "radar_heart_3d",
+      "tag": "ФИНАЛ I · СОЗВЕЗДИЕ",
+      "title": "DUP Market Radar — Открытый Код",
+      "heart3d": {
+        "scene": "constellation_radar",
+        "bg_video": "cinema/world3026/bg_09_constellation.mp4",
+        "bg_tint": "rgba(6, 14, 34, 0.46)",
+        "bg_opacity": 0.82,
+        "world_title": "Мир IX · Квантовый Храм Света",
+        "emblem_label": "Святилище · Сердце и Семь Артефактов",
+        "headline": "DUP Market Radar · Дисциплина из будущего",
+        "repo_caption": "Исходный код и архитектура проекта на GitHub",
+        "repo_url": "https://github.com/Gruver87/dup-market-radar",
+        "chips": ["Rust + Python · Open Source", "Фьючерсы: только обзор", "Инженерный R&D · Не инвестсовет"],
+        "disclaimer": "R&D software · Not financial advice · Heuristic rankings ≠ profit guarantee · auto_trade off by default (dry_run=true)"
+      },
+      "sfx": [
+        { "name": "riser", "at_sec": 0.4, "volume": 0.2 },
+        { "name": "impact", "at_sec": 7.5, "volume": 0.22 }
+      ],
+      "voice_text": "Теперь видна вся картина целиком. Живое сердце в скрученном щите, семь светящихся артерий и семь безупречных артефактов риска, точности и наблюдения. Это не обещание легкой прибыли и не финансовый совет, а честная инженерная дисциплина, открытая для каждого в репозитории DUP Market Radar на GitHub."
+    },
+    {
+      "id": "w10",
+      "type": "radar_heart_3d",
+      "tag": "ФИНАЛ II · КИНОРЕАКТОР 3026",
+      "title": "Создано движком DUP Presenter",
+      "heart3d": {
+        "scene": "presenter_core",
+        "bg_video": "cinema/world3026/bg_10_presenter.mp4",
+        "bg_tint": "rgba(18, 12, 6, 0.42)",
+        "bg_opacity": 0.84,
+        "world_title": "Мир X · Золотой Вихревой Портал 4K",
+        "emblem_label": "DUP Presenter · Автономный Кинореактор",
+        "headline": "Фантастика, собранная из чистого кода",
+        "repo_caption": "Это видео создано проектом DUP Presenter",
+        "repo_url": "https://github.com/Gruver87/dup-presenter",
+        "chips": ["Three.js PBR + 4K Worlds", "Remotion + Python TTS + Media QA", "DUP Labs · Uladzimir Dabranski"],
+        "disclaimer": "100% programmatic cinema pipeline · Video backgrounds: Pixabay · Built with DUP Presenter"
+      },
+      "sfx": [
+        { "name": "whoosh", "at_sec": 0.3, "volume": 0.2 },
+        { "name": "ding", "at_sec": 7.0, "volume": 0.24 }
+      ],
+      "voice_text": "И каждый кадр, который вы только что увидели — миры, трехмерные артефакты, озвучка, музыка, синхронизация и проверка качества — создан нашим автономным движком DUP Presenter. Забирайте код на GitHub и превращайте свои идеи в кино будущего."
+    }
+  ]
+}

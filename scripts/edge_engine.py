@@ -1,7 +1,8 @@
 """Online Russian TTS via Microsoft Edge neural voices (edge-tts). Requires network access.
 
-Used as the primary RU voice when the internet is reachable; the deck pipeline falls back to the offline
-Silero voice for the WHOLE deck when this engine is unavailable (never mixes voices inside one deck).
+Used as the primary RU voice when the internet is reachable AND an egress grant for EDGE_HOST exists;
+the deck pipeline falls back to the offline Silero voice for the WHOLE deck when this engine is unavailable
+or not approved (never mixes voices inside one deck).
 """
 
 from __future__ import annotations
@@ -14,6 +15,15 @@ import time
 from pathlib import Path
 
 import numpy as np
+
+from secret_guard import (
+    EgressApprovalRequired,
+    SecretLeakError,
+    assert_no_secrets_in_text,
+    consume_egress_approval,
+    ensure_egress_approval,
+    redact_secrets,
+)
 
 EDGE_RU_VOICES = {
     "dmitry": "ru-RU-DmitryNeural",
@@ -33,6 +43,27 @@ def edge_available(timeout: float = 4.0) -> bool:
             return True
     except OSError:
         return False
+
+
+def edge_allowed() -> bool:
+    """True when a valid egress grant for EDGE_HOST exists (or the dashboard renews one: internet toggle ON)."""
+    try:
+        return ensure_egress_approval(EDGE_HOST) is not None
+    except EgressApprovalRequired:
+        return False
+
+
+def require_edge_egress(text: str) -> None:
+    """Gate every Edge TTS request before it leaves the computer.
+
+    edge-tts talks to EDGE_HOST over aiohttp/WebSocket, which the urllib/httpx egress guard does not see,
+    so the text is screened for secrets here and each request spends one use of a grant for EDGE_HOST.
+    """
+    try:
+        assert_no_secrets_in_text(text, context="Edge TTS text")
+        consume_egress_approval(EDGE_HOST)
+    except SecretLeakError as exc:
+        raise EdgeEngineError(f"Edge TTS заблокирован: {redact_secrets(str(exc))}") from exc
 
 
 def edge_rate(rate: str) -> str:
@@ -109,6 +140,7 @@ def synth_edge_with_timings(
         raise EdgeEngineError(f"unknown Edge speaker {speaker!r}; allowed: {sorted(EDGE_RU_VOICES)}")
     if not text.strip():
         raise EdgeEngineError("empty text for Edge TTS")
+    require_edge_egress(text)
 
     import aiohttp.connector
     import aiohttp.resolver

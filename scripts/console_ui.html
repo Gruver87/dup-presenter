@@ -153,6 +153,7 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
       <div id="providerBadge">...</div>
       <div id="sysStatus" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
       <div id="jobBadge">...</div>
+      <button class="btn sm" id="internetToggleBtn" style="width:100%;justify-content:center;font-weight:600;">Интернет: ON</button>
       <button class="btn sm" id="bootstrapBtn" style="width:100%;justify-content:center;" data-i18n="btn_bootstrap">Авто-настройка / Ollama</button>
       <div class="row">
         <button class="btn sm" id="uiLangBtn" style="flex:1;justify-content:center;">EN / RU</button>
@@ -293,6 +294,47 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
         <div id="ideaMsg" style="font-size:0.84rem;color:var(--muted);margin-top:8px;"></div>
         <div id="ideaWebSources" style="font-size:0.78rem;color:var(--muted);margin-top:6px;"></div>
         <div id="ideaCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px;"></div>
+      </div>
+
+      <div class="panel" id="cinemaApiPanel" style="margin-top:12px;">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+          <h2 style="margin:0;">Кинематографический генератор (Runway Dev API + Промпты)</h2>
+          <span id="cinemaApiStatusPill" style="font-size:0.8rem;color:var(--muted);">проверка...</span>
+        </div>
+        <div class="grid3">
+          <div>
+            <label>Тема ролика</label>
+            <input id="cinemaTopicInput" type="text" placeholder="Например: DUP Market Radar — Путь сигнала" />
+          </div>
+          <div style="grid-column:span 2;">
+            <label>Сцены (по одной на строку)</label>
+            <textarea id="cinemaScenesInput" rows="3" placeholder="Holographic radar core awakens&#10;Six cyan data streams converge&#10;Tall amber score column rises"></textarea>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px;gap:10px;flex-wrap:wrap;">
+          <button class="btn" id="cinemaPromptsBtn">Сгенерировать промпты (бесплатно)</button>
+          <button class="btn primary" id="cinemaGenImgBtn">Сгенерировать 1-й кадр через Runway API</button>
+          <label class="check" style="margin:0;"><input type="checkbox" id="cinemaBatchVideoCheck"/><span>Видео 5 с для каждой сцены (25 кредитов/сцену)</span></label>
+          <button class="btn primary" id="cinemaBatchBtn">Сгенерировать всю серию</button>
+          <span id="cinemaBudget" style="font-size:0.8rem;color:var(--muted);"></span>
+          <span id="cinemaMsg" style="font-size:0.82rem;color:var(--muted);"></span>
+        </div>
+        <div id="cinemaPromptsOut" style="margin-top:10px;display:grid;gap:8px;"></div>
+        <details style="margin-top:12px;border:1px solid var(--border);border-radius:8px;padding:10px;">
+          <summary style="cursor:pointer;font-weight:600;">Инструкция по работе: ИИ + Интернет + Кино-видео</summary>
+          <div style="font-size:0.84rem;line-height:1.5;color:var(--muted);margin-top:8px;">
+            <p style="margin:0 0 8px;"><b>1. Генератор идей с ИИ и интернетом (уже подключён):</b><br/>
+            В блоке «Генератор идей» введите тему, выберите <b>Cloud LLM</b> (ключ <code>DUP_LLM_API_KEY</code> уже в системе) или <b>Local Ollama</b>, поставьте галочку <b>«Веб-поиск свежих фактов»</b> (ключ <code>SERPER_API_KEY</code> уже в системе) и нажмите <b>«Придумать 5 идей»</b>. Понравившуюся идею превратите в черновик колоды в 1 клик.</p>
+            <p style="margin:0 0 8px;"><b>2. Бесплатный способ создания кино-кадров и видео (без оплаты API):</b><br/>
+            Введите тему и список сцен (по одной на строку) в блоке выше → нажмите <b>«Сгенерировать промпты (бесплатно)»</b>. Скопируйте готовые промпты <i>Кадр</i> в бесплатный <b>Runway Web</b> (или другой генератор картинок), а промпты <i>Видео</i> — в <b>Krea</b> (бесплатные ежедневные единицы, модель <code>LTX-2 19B</code>, 512p, 5 с, без водяного знака) или <b>Dreamina</b> (есть логотип на бесплатном тарифе). Готовые клипы положите в <code>public/cinema/&lt;папка&gt;/</code> и укажите их в слайдах <code>cinema_clip</code>.</p>
+            <p style="margin:0 0 8px;"><b>3. Полная автоматика через Runway Dev API (по факту, без подписки):</b><br/>
+            1) Создайте ключ API на <code>dev.runwayml.com</code> и пополните баланс кредитов.<br/>
+            2) Добавьте переменную окружения Windows <code>RUNWAYML_API_SECRET</code> (команда PowerShell: <code>[Environment]::SetEnvironmentVariable("RUNWAYML_API_SECRET", "ВАШ_КЛЮЧ", "User")</code>; ключ в файлы и в чат не выкладывать).<br/>
+            3) Дашборд подхватит ключ автоматически (статус станет зелёным) — кнопка <b>«Сгенерировать 1-й кадр через Runway API»</b> и API <code>/api/cinema/generate</code> начнут сохранять кадры и видео сразу в <code>public/cinema/generated/</code>.</p>
+            <p style="margin:0;"><b>4. Сборка и проверка качества (QA):</b><br/>
+            В редакторе колоды проверьте слайды и озвучку (<code>phrasing: true</code> для пауз Silero) → запустите сборку. Итоговый MP4 проверяется автоматическим QA-гейтом (<code>[qa] PASS</code>, громкость −16 LUFS). Для финального релиза используйте клипы без водяных знаков и с проверенными ссылками.</p>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -610,6 +652,7 @@ video { width: 100%; max-height: 460px; border-radius: 12px; background: #000; b
         </div>
       </div>
     </section>
+
   </main>
 </div>
 
@@ -1795,6 +1838,91 @@ async function poll() {
       : "Ключ SERPER_API_KEY / BRAVE_API_KEY не задан (при включении будет fail-closed)";
     syncWebSearchToggle();
   }
+  if ($("cinemaApiStatusPill")) {
+    const ca = sys.cinema_api || {};
+    $("cinemaApiStatusPill").innerHTML = ca.configured
+      ? `<span class="pill ok">Runway Dev API подключён</span>`
+      : `<span class="pill warn">Нет RUNWAYML_API_SECRET в переменных Windows (промпты работают офлайн)</span>`;
+    const b = ca.budget || {};
+    const sg = ca.secret_guard || {};
+    if ($("cinemaBudget")) {
+      const limText = b.ok
+        ? (b.unlimited ? `Без локального лимита (сегодня: ${b.spent_credits} кр.)` : `Лимит: осталось ${b.remaining_credits} из ${b.cap_credits} кр.`)
+        : `Учёт: ${b.error || "недоступен"}`;
+      const guardText = sg.installed ? " · Защита секретов: ВКЛ" : "";
+      $("cinemaBudget").textContent = limText + guardText;
+    }
+  }
+  if ($("cinemaBatchBtn") && !$("cinemaBatchBtn").dataset.bound) {
+    $("cinemaBatchBtn").dataset.bound = "1";
+    $("cinemaBatchBtn").onclick = async () => {
+      const topic = ($("cinemaTopicInput").value || "").trim();
+      const scenes = ($("cinemaScenesInput").value || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      if (!topic || !scenes.length) { $("cinemaMsg").textContent = "Укажите тему и сцены."; return; }
+      const withVideo = $("cinemaBatchVideoCheck").checked;
+      if (!confirm(`Запустить генерацию ${scenes.length} сцен${withVideo ? " с видео" : ""}?`)) return;
+      $("cinemaMsg").textContent = "Генерирую серию... это может занять несколько минут.";
+      const r = await fetch("/api/cinema/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, scenes, make_video: withVideo, slug: "cinema-batch" }),
+      });
+      const d = await r.json();
+      const done = (d.results || []).filter((x) => x.image).length;
+      $("cinemaMsg").textContent = d.ok
+        ? `Готово: ${done} из ${scenes.length} сцен. Файлы в public/cinema/generated/cinema-batch/`
+        : `Остановлено на сцене ${d.stopped_at || "?"}: ${d.error || (d.results && d.results.slice(-1)[0]?.error) || r.status}`;
+      if (d.budget && $("cinemaBudget")) {
+        $("cinemaBudget").textContent = d.budget.unlimited
+          ? `Без локального лимита (сегодня: ${d.budget.spent_credits} кр.) · Защита секретов: ВКЛ`
+          : `Лимит: осталось ${d.budget.remaining_credits} из ${d.budget.cap_credits} кр. · Защита секретов: ВКЛ`;
+      }
+    };
+  }
+
+  if ($("cinemaPromptsBtn") && !$("cinemaPromptsBtn").dataset.bound) {
+    $("cinemaPromptsBtn").dataset.bound = "1";
+    $("cinemaPromptsBtn").onclick = async () => {
+      $("cinemaMsg").textContent = "Готовлю промпты...";
+      const r = await fetch("/api/cinema/prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: $("cinemaTopicInput").value,
+          scenes: $("cinemaScenesInput").value,
+        }),
+      });
+      const d = await r.json();
+      if (!d.ok) { $("cinemaMsg").textContent = "Ошибка: " + (d.error || r.status); return; }
+      $("cinemaMsg").textContent = `Готово: ${d.prompts.length} сцен (можно вставлять в Runway / Krea / Dreamina).`;
+      $("cinemaPromptsOut").innerHTML = d.prompts.map((p) => (
+        `<div style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;">
+          <b>${escapeHtml(p.index)} · ${escapeHtml(p.scene)}</b>
+          <div style="margin-top:4px;color:var(--muted);">Кадр: <code>${escapeHtml(p.image_prompt)}</code></div>
+          <div style="margin-top:4px;color:var(--muted);">Видео: <code>${escapeHtml(p.video_prompt)}</code></div>
+        </div>`
+      )).join("");
+    };
+    $("cinemaGenImgBtn").onclick = async () => {
+      const firstScene = ($("cinemaScenesInput").value || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0] || "";
+      const topic = ($("cinemaTopicInput").value || "").trim();
+      if (!topic || !firstScene) { $("cinemaMsg").textContent = "Укажите тему и хотя бы одну сцену."; return; }
+      $("cinemaMsg").textContent = "Отправляю запрос в Runway Dev API...";
+      const r = await fetch("/api/cinema/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "image",
+          slug: "cinema-gen",
+          name: "scene_00",
+          prompt: `${topic} — ${firstScene}. Style: cinematic, dark observatory hall, volumetric cyan light, floating dust, 35mm film look, shallow depth of field, 16:9, no text, no logos`,
+        }),
+      });
+      const d = await r.json();
+      if (!d.ok) { $("cinemaMsg").textContent = "Отказ (fail-closed): " + (d.error || r.status); return; }
+      $("cinemaMsg").textContent = `Сохранено: ${d.path} (${d.bytes} байт)`;
+    };
+  }
   if ($("ttStatusPill")) {
     $("ttStatusPill").innerHTML = tt.can_auto_refresh
       ? `<span class="pill ok">token + auto-refresh OK</span>`
@@ -2183,6 +2311,79 @@ window.loadGlbInViewport = async (url, label) => {
 
 wire3dDropZones();
 document.querySelector('[data-tab="3d"]').addEventListener("click", () => load3dModels());
+
+
+// ==================== INTERNET ON/OFF TOGGLE ====================
+let INTERNET_STATE = { enabled: true, online: false, effective_mode: "offline_no_net", cloud_model: null };
+
+function renderInternetButton() {
+  const btn = $("internetToggleBtn");
+  if (!btn) return;
+  const s = INTERNET_STATE;
+  if (!s.enabled) {
+    btn.textContent = "Интернет: OFF (локально)";
+    btn.style.borderColor = "rgba(248,113,113,0.55)";
+    btn.style.color = "#f87171";
+    btn.style.background = "rgba(248,113,113,0.08)";
+  } else if (s.effective_mode === "online") {
+    btn.textContent = `Интернет: ON · ${s.cloud_model || "онлайн"}`;
+    btn.style.borderColor = "rgba(0,212,184,0.65)";
+    btn.style.color = "#00d4b8";
+    btn.style.background = "rgba(0,212,184,0.12)";
+  } else if (s.online) {
+    btn.textContent = "Интернет: ON (онлайн)";
+    btn.style.borderColor = "rgba(0,212,184,0.55)";
+    btn.style.color = "#00d4b8";
+    btn.style.background = "rgba(0,212,184,0.08)";
+  } else {
+    btn.textContent = "Интернет: ON (нет сети → офлайн)";
+    btn.style.borderColor = "rgba(251,191,36,0.6)";
+    btn.style.color = "#fbbf24";
+    btn.style.background = "rgba(251,191,36,0.1)";
+  }
+  const badge = $("aiStudioModelBadge");
+  if (badge) {
+    if (s.enabled && s.effective_mode === "online") {
+      badge.textContent = `Онлайн · ${s.cloud_model || "cloud"}`;
+    } else {
+      const loc = ($("aiStudioModelSel") && $("aiStudioModelSel").value) || "qwen2.5:7b";
+      badge.textContent = s.enabled && !s.online ? `Офлайн (нет сети) · ${loc}` : `Офлайн · ${loc}`;
+    }
+  }
+}
+
+async function refreshInternetState(force) {
+  try {
+    const r = await fetch(force ? "/api/internet?force=1" : "/api/internet");
+    const d = await r.json();
+    if (d && d.ok) {
+      INTERNET_STATE = d;
+      renderInternetButton();
+    }
+  } catch (_) {}
+}
+
+$("internetToggleBtn").onclick = async () => {
+  const next = !INTERNET_STATE.enabled;
+  $("internetToggleBtn").disabled = true;
+  try {
+    const r = await fetch("/api/internet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: next }),
+    });
+    const d = await r.json();
+    if (d && d.ok) {
+      INTERNET_STATE = d;
+      renderInternetButton();
+    }
+  } finally {
+    $("internetToggleBtn").disabled = false;
+  }
+};
+
+refreshInternetState(true);
+setInterval(() => refreshInternetState(false), 15000);
 
 applyUiLang();
 poll();

@@ -1,0 +1,311 @@
+{
+  "slug": "dup-market-radar-signal-path",
+  "lang": "ru",
+  "brand": "DUP LABS · DRAFT",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 16,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "90%",
+    "mode": "single"
+  },
+  "width": 1920,
+  "height": 1080,
+  "slides": [
+    {
+      "id": "s01",
+      "type": "cinema_clip",
+      "tag": "АКТ I · ПРОБУЖДЕНИЕ ЯДРА · DRAFT",
+      "title": "DUP Market Radar — Путь сигнала",
+      "cinema": {
+        "badge": "DRAFT · DUP MARKET RADAR · ЯДРО СИСТЕМЫ · RUST + PYTHON",
+        "grade": "vivid",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/00_core.mp4",
+            "duration_sec": 7.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "riser",
+          "at_sec": 0.3,
+          "volume": 0.2
+        }
+      ],
+      "voice_text": "Посреди тёмного зала пробуждается ядро. Оно не спешит. Оно слушает. Сейчас сигнал пройдёт по шести артериям DUP Market Radar.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s02",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ I · СТРАЖ ВОРОТ · 6 БИРЖ",
+      "title": "Шесть площадок в одном потоке",
+      "cinema": {
+        "badge": "АРТЕРИЯ I · KUCOIN · BINANCE · BYBIT · MEXC · DEXSCREENER · COINGECKO",
+        "grade": "vivid",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/01_ingest.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "whoosh",
+          "at_sec": 0.3,
+          "volume": 0.18
+        }
+      ],
+      "voice_text": "Первый страж — Ворота. Через них входят шесть бирж разом: Кукоин, Бинанс, Байбит, Эм-Экс-Си, Декс-Скринер и Коин-Гекко. Четыре нативных вебсокета на Расте сводят их в одно кольцо на пятьсот двенадцать тиков.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s03",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ II · СТРАЖ ЛИНЗ · MTF 15M · 1H · 4H",
+      "title": "Линзы 15m · 1h · 4h и Top-10",
+      "cinema": {
+        "badge": "АРТЕРИЯ II · MTF 15M · 1H · 4H · ПОЛНОТА ≥ 85% · RUST TOP-10",
+        "grade": "vivid",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/02_mtf.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "whoosh",
+          "at_sec": 0.3,
+          "volume": 0.18
+        }
+      ],
+      "voice_text": "Второй страж — Линзы. Пятнадцать минут, час и четыре часа. Полнота данных ниже восьмидесяти пяти процентов — отказ. Нативный скоринг на Расте выбирает десятку сильнейших монет сектора.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s04",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ III · СТРАЖ СВОБОДЫ · БЕЗ ПОТОЛКА TP",
+      "title": "Свободные раннеры и трал −5%",
+      "cinema": {
+        "badge": "DRAFT · АРТЕРИЯ III · БЕЗ ПОТОЛКА TP · ТРЕЙЛИНГ −5.0% ОТ ПИКА · 10 BPS",
+        "grade": "vivid",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/03_score.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "riser",
+          "at_sec": 0.4,
+          "volume": 0.2
+        }
+      ],
+      "voice_text": "Третий страж — Свобода. Тейк-профита больше нет. Позицию прикрывает безубыток и скользящий трейлинг — минус пять процентов от пика. Комиссии учтены: десять базисных пунктов в обе стороны.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s05",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ IV · СТРАЖ КЛИНКА · СТОП −3%",
+      "title": "Жёсткий стоп −3% и печать паузы",
+      "cinema": {
+        "badge": "АРТЕРИЯ IV · СТОП −3.0% KUCOIN MARK · БАН 3Ч / 45М / 20М",
+        "grade": "vivid",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/04_delivery.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "impact",
+          "at_sec": 3.5,
+          "volume": 0.22
+        }
+      ],
+      "voice_text": "Четвёртый страж — Клинок. Жёсткий стоп — минус три процента по марк-цене. Убыток рассекается мгновенно. И сразу опускается печать паузы — никакого перезахода в горячке.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s06",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ V · СТРАЖ ЩИТОВ · 6 ЩИТОВ",
+      "title": "Бастион против шести ловушек",
+      "cinema": {
+        "badge": "DRAFT · АРТЕРИЯ V · ANTI-CHASE · FUTURES_BLOCK · DEGRADED · KILL-SWITCH",
+        "grade": "vivid",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/05_alerts.mp4",
+            "duration_sec": 8.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "impact",
+          "at_sec": 1.8,
+          "volume": 0.2
+        }
+      ],
+      "voice_text": "Пятый страж — Щиты. Их шесть. Анти-Чейз отсекает перегретые пампы. Фьючерс-Блок навсегда запрещает авто-фьючерсы. При деградации данных покупок нет, а Килл-Свитч защёлкивает контур мгновенно.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s07",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ VI · СТРАЖ ТОЧНОСТИ · ЦЕЛЫЕ ЧИСЛА",
+      "title": "Целые числа i64 / i128 и Equal Sleeves",
+      "cinema": {
+        "badge": "DRAFT · АРТЕРИЯ VI · ZERO FLOATS · CHECKED I64/I128 · EQUAL SLEEVES",
+        "grade": "vivid",
+        "crossfade_frames": 12,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/06_trade.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "ding",
+          "at_sec": 5.5,
+          "volume": 0.2
+        }
+      ],
+      "voice_text": "Шестой страж — Точность. Для денег здесь нет чисел с плавающей точкой. Только целые шестьдесят четыре и сто двадцать восемь бит. Свободный капитал делится поровну по рукавам.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s08",
+      "type": "cinema_clip",
+      "tag": "АКТ III · ФИНАЛЬНЫЙ ИМПУЛЬС · ВСЕ 6 АРТЕРИЙ",
+      "title": "Одно сердце · Шесть артерий",
+      "cinema": {
+        "badge": "DRAFT · ALL 6 ARTERIES LIT · OPEN R&D · DRY-RUN DEFAULT",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/radar_signal_path/06_trade.mp4",
+            "duration_sec": 5.0,
+            "playback_rate": 1.0,
+            "zoom": 1.06,
+            "kind": "video"
+          },
+          {
+            "src": "cinema/radar_signal_path/00_core.mp4",
+            "duration_sec": 6.0,
+            "playback_rate": 1.0,
+            "zoom": 1.02,
+            "kind": "video"
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "riser",
+          "at_sec": 0.4,
+          "volume": 0.2
+        },
+        {
+          "name": "impact",
+          "at_sec": 5.0,
+          "volume": 0.22
+        }
+      ],
+      "voice_text": "Ядро посылает финальный импульс. Зал вспыхивает — все шесть артерий работают в одном ритме. Это открытый исследовательский проект без гарантий прибыли, с безопасным режимом без сделок по умолчанию.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "s09",
+      "type": "outro_3d",
+      "tag": "DUP LABS · DRAFT",
+      "title": "DUP Market Radar",
+      "subtitle": "Путь сигнала · Открытый R&D-проект DUP Labs",
+      "url": "github.com/Gruver87/dup-market-radar",
+      "tagline": "Шесть артерий · Одно сердце · Dry-run по умолчанию",
+      "badges": [
+        "DRAFT",
+        "RUST + PYTHON",
+        "ZERO FLOATS",
+        "DRY-RUN DEFAULT"
+      ],
+      "voice_text": "DUP Market Radar. Проверьте каждую строку кода на ГитХаб.",
+      "phrasing": true
+    }
+  ]
+}

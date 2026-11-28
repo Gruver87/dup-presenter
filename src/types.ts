@@ -215,6 +215,46 @@ export interface StockMedia {
   query: string;
 }
 
+export type RadarArenaMode = "core_army" | "live_candles" | "trap_gauntlet" | "integer_vault";
+
+export interface RadarArenaData {
+  mode: RadarArenaMode;
+  badge?: string;
+  headline?: string;
+  subline?: string;
+  footer_note?: string;
+}
+
+export type RadarHeartScene =
+  | "core_birth"
+  | "emblem_ingest"
+  | "emblem_mtf_score"
+  | "emblem_runners"
+  | "emblem_stop_cut"
+  | "emblem_traps"
+  | "emblem_integer"
+  | "emblem_recovery"
+  | "constellation_radar"
+  | "presenter_core";
+
+export interface RadarHeartData {
+  scene: RadarHeartScene;
+  emblem_label?: string;
+  headline?: string;
+  chips?: string[];
+  repo_url?: string;
+  repo_caption?: string;
+  disclaimer?: string;
+  /** Optional relative path under public/ for a looping futuristic video world behind the transparent 3D WebGL stage. */
+  bg_video?: string;
+  /** Optional CSS hex/rgba tint layered gently over bg_video for color harmony with the 3D artifact. */
+  bg_tint?: string;
+  /** Optional opacity (0.1..1.0) for bg_video layer (defaults to 0.72). */
+  bg_opacity?: number;
+  /** Optional short poetic world subtitle rendered in the top-right telemetry visor. */
+  world_title?: string;
+}
+
 export interface ResolvedSlide {
   id: string;
   num: string;
@@ -238,7 +278,9 @@ export interface ResolvedSlide {
     | "chart_story"
     | "stat_burst"
     | "broll_cinematic"
-    | "cinema_clip";
+    | "cinema_clip"
+    | "radar_arena"
+    | "radar_heart_3d";
   // quote: title = the quote text (<= 220 chars), subtitle = attribution (optional)
   // ui_recording: MP4 from scripts/record_ui.py under public/ui_recordings/ (played muted inside the 3D frame)
   recording?: { src: string; caption?: string; focus?: ScreenFocus; duration_sec?: number };
@@ -276,6 +318,8 @@ export interface ResolvedSlide {
   stat_burst?: StatBurstData;
   broll?: BRollCinematicData;
   cinema?: CinemaClipData;
+  arena?: RadarArenaData;
+  heart3d?: RadarHeartData;
   sfx?: SlideSfxCue[];
   captions?: CaptionCue[];
 }

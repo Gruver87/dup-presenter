@@ -1,0 +1,346 @@
+{
+  "slug": "dup-market-radar-3026-cinema",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 18,
+  "sfx_enabled": true,
+  "sfx_volume": 0.16,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "86%",
+    "mode": "single"
+  },
+  "width": 1920,
+  "height": 1080,
+  "slides": [
+    {
+      "id": "r0",
+      "type": "cinema_clip",
+      "tag": "ПРОЛОГ · СЕРДЦЕ РАДАРА",
+      "title": "Сердце радара",
+      "cinema": {
+        "badge": "ПРОЛОГ · DUP MARKET RADAR · ГИБРИД RUST + PYTHON",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_00_solar_intro_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/u_00_genesis_pulse.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "Представьте тысячу лет вперёд. Рынок перестал быть таблицей и стал живым светом. В центре этого света бьётся сердце DUP Market Radar: гибрид Раст и Питон, который сканирует рынки без пауз и без иллюзий.",
+      "subtitle": ""
+    },
+    {
+      "id": "r1",
+      "type": "cinema_clip",
+      "tag": "АРТЕФАКТ I · ПОТОК ШЕСТИ БИРЖ",
+      "title": "Лотос шести бирж",
+      "cinema": {
+        "badge": "АРТЕФАКТ I · KUCOIN · BINANCE · BYBIT · MEXC · DEXSCREENER · COINGECKO",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_05_lab_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/dup_05_dup_lab_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "Хрустальный лотос раскрывается шестью лепестками: шесть площадок собираются в один поток. Четыре потока Раст по WebSocket складывают тики в кольцевой буфер на пятьсот двенадцать записей и строят бары от минуты до четырёх часов.",
+      "subtitle": ""
+    },
+    {
+      "id": "r2",
+      "type": "cinema_clip",
+      "tag": "АРТЕФАКТ II · АСТРОЛЯБИЯ MTF",
+      "title": "Астролябия 15 минут, час и четыре часа",
+      "cinema": {
+        "badge": "АРТЕФАКТ II · 15M · 1H · 4H · ПОРОГ ПОЛНОТЫ 85%",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_08_evidence_graph_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/u_08_evidence_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "Три линзы сверяют свечи на пятнадцати минутах, часе и четырёх часах. Если заполнение данных ниже восьмидесяти пяти процентов, луч не проходит. Только полный и живой стакан даёт право на оценку, а десять сильнейших монет сектора отбирает нативное ядро Раст.",
+      "subtitle": ""
+    },
+    {
+      "id": "r3",
+      "type": "cinema_clip",
+      "tag": "АРТЕФАКТ III · ИМПУЛЬС БЕЗ ПОТОЛКА",
+      "title": "Изумрудные обелиски без потолка",
+      "cinema": {
+        "badge": "АРТЕФАКТ III · ТРЕЙЛИНГ 5% ОТ ПИКА · КОМИССИЯ 10 BPS",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_03_radar_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/dup_03_market_radar_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "У сильного импульса нет искусственного потолка тейк-профита. После безубытка трейлинг отступает на пять процентов от пика. Комиссия десять базисных пунктов на сторону учитывается в каждом расчёте, а не прячется.",
+      "subtitle": ""
+    },
+    {
+      "id": "r4",
+      "type": "cinema_clip",
+      "tag": "АРТЕФАКТ IV · РУБИНОВЫЙ КЛИНОК",
+      "title": "Клинок стопа и печать паузы",
+      "cinema": {
+        "badge": "АРТЕФАКТ IV · СТОП −3.0% ПО MARK KUCOIN · БАН 3Ч",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_06_policy_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/dup_01_protocol_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "Когда волна ломается вниз, рубиновый горизонт на минус три процента по марк-цене KuCoin рассекает убыток мгновенно. После стопа бан на повторный вход три часа. Это правило, а не эмоция.",
+      "subtitle": ""
+    },
+    {
+      "id": "r5",
+      "type": "cinema_clip",
+      "tag": "АРТЕФАКТ V · БАСТИОН ЛОВУШЕК",
+      "title": "Бастион против ловушек",
+      "cinema": {
+        "badge": "АРТЕФАКТ V · ANTI-CHASE · FUTURES_BLOCK · KILL-SWITCH",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_06_policy_gate_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/dup_07_experimental_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "Античейз не покупает пампы выше четырёх процентов за час. Фьючерсы заблокированы архитектурой: авто-торговли фьючерсами нет, только наблюдение. Деградированный снимок даёт ноль покупок, три убытка подряд ставят паузу на час, а Kill-Switch выключает всё одним вызовом.",
+      "subtitle": ""
+    },
+    {
+      "id": "r6",
+      "type": "cinema_clip",
+      "tag": "АРТЕФАКТ VI · ЦЕЛОЧИСЛЕННЫЕ ШЕСТЕРНИ",
+      "title": "Шестерни целых чисел",
+      "cinema": {
+        "badge": "АРТЕФАКТ VI · I64 / I128 · 1E8 · 1E6 · EQUAL SLEEVES",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_04_trust_plane_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/u_04_trust_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "Деньги здесь только целые числа. Цена в стомиллионных долях, USDT в микро-единицах, проверка переполнения i64 и i128 в каждой операции. Свободный USDT делится поровну между секторами spot, memes и listings.",
+      "subtitle": ""
+    },
+    {
+      "id": "r7",
+      "type": "cinema_clip",
+      "tag": "АРТЕФАКТ VII · ФЕНИКС ВОССТАНОВЛЕНИЯ",
+      "title": "Феникс самовосстановления",
+      "cinema": {
+        "badge": "АРТЕФАКТ VII · RECOVERYSUPERVISOR · DASHBOARD · PWA · TELEGRAM",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u_07_experimental_action.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/dup_02_presenter_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "После сетевого сбоя RecoverySupervisor поднимает упавшие воркеры и фоновое сканирование. Но живую торговлю он никогда не включает сам. Дашборд, Android PWA и Telegram показывают одну и ту же правду.",
+      "subtitle": ""
+    },
+    {
+      "id": "r8",
+      "type": "cinema_clip",
+      "tag": "ФИНАЛ · СОЗВЕЗДИЕ",
+      "title": "Созвездие DUP Market Radar",
+      "cinema": {
+        "badge": "ФИНАЛ · R&D SOFTWARE · НЕ ФИНСОВЕТ · DRY-RUN ПО УМОЛЧАНИЮ",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/dup_09_finale_hd.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          },
+          {
+            "src": "cinema/u_09_convergence_supernova.mp4",
+            "duration_sec": 12.0,
+            "playback_rate": 1.0,
+            "zoom": 1.03,
+            "kind": "video",
+            "clip_duration_sec": 12.04
+          }
+        ]
+      },
+      "voice_text": "Все части складываются в одну систему: ядро, потоки, астролябия, фильтры, защита и доказательства. Это R и D программа с открытым кодом. Не финансовый совет и не обещание прибыли. Автоторговля выключена по умолчанию, а ссылка на исходный код указана в описании ролика.",
+      "subtitle": ""
+    },
+    {
+      "id": "r9",
+      "type": "cinema_clip",
+      "tag": "СОЗДАНО С ПОМОЩЬЮ DUP PRESENTER",
+      "title": "github.com/Gruver87/dup-presenter",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 15,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/u11_created_with_presenter.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0,
+            "kind": "video",
+            "clip_duration_sec": 9.0
+          }
+        ]
+      },
+      "voice_text": "Весь этот фильм — сценарий, голос, монтаж и контроль качества — создан автономно проектом DUP Presenter. Ссылка на исходный код в описании.",
+      "subtitle": ""
+    }
+  ]
+}

@@ -20,6 +20,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from credstore import MEDIA_KEY_NAMES, available as credstore_available, get_secret
+
 ROOT = Path(__file__).resolve().parent.parent
 SECRETS_ENV = ROOT / "secrets" / "media_keys.env"
 CACHE_DIR = ROOT / "work" / "stock"
@@ -37,6 +39,7 @@ class StockMediaError(RuntimeError):
 
 
 def load_media_keys() -> dict[str, str]:
+    """Media keys; priority: process env > Windows Credential Manager > secrets/media_keys.env (legacy)."""
     keys: dict[str, str] = {}
     if SECRETS_ENV.is_file():
         for raw in SECRETS_ENV.read_text(encoding="utf-8-sig", errors="replace").splitlines():
@@ -47,7 +50,11 @@ def load_media_keys() -> dict[str, str]:
             v = v.strip().strip('"').strip("'")
             if k.strip() in {"PEXELS_API_KEY", "PIXABAY_API_KEY"} and v:
                 keys[k.strip()] = v
-    for name in ("PEXELS_API_KEY", "PIXABAY_API_KEY"):
+    for name in MEDIA_KEY_NAMES:
+        if credstore_available():
+            stored = get_secret(name)
+            if stored:
+                keys[name] = stored
         if os.environ.get(name, "").strip():
             keys[name] = os.environ[name].strip()
     return keys

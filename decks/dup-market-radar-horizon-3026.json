@@ -1,0 +1,464 @@
+{
+  "slug": "dup-market-radar-horizon-3026",
+  "lang": "ru",
+  "brand": "DUP LABS",
+  "director_preset": "cinema_cosmos",
+  "theme": "quantum_ledger",
+  "aspect": "16:9",
+  "burn_captions": true,
+  "caption_style": "karaoke",
+  "transition_style": "fade",
+  "transition_frames": 18,
+  "sfx_enabled": true,
+  "sfx_volume": 0.17,
+  "background": {
+    "enabled": false,
+    "provider": "pixabay"
+  },
+  "music": {
+    "enabled": true,
+    "file": "atlasaudio-epic-emotional-640150.mp3",
+    "volume": 0.12,
+    "duck_db": -10.5
+  },
+  "voice": {
+    "lang": "ru",
+    "speaker": "eugene",
+    "rate": "88%",
+    "mode": "single"
+  },
+  "width": 1920,
+  "height": 1080,
+  "slides": [
+    {
+      "id": "h01",
+      "type": "cinema_clip",
+      "tag": "ПРОЛОГ · ГОРИЗОНТ 3026",
+      "title": "DUP Market Radar — Горизонт 3026",
+      "cinema": {
+        "badge": "ПРОЛОГ · DUP MARKET RADAR · ГОРИЗОНТ 3026 · RUST + PYTHON",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_01_sanctum.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_01_core.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 10.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "riser",
+          "at_sec": 0.4,
+          "volume": 0.22
+        },
+        {
+          "name": "impact",
+          "at_sec": 7.5,
+          "volume": 0.22
+        }
+      ],
+      "voice_text": "Три тысячи двадцать шестой год. Рынок больше не таблица. Это океан живого света. Посреди него бьётся сердце. Оно не спешит. Оно слушает. У сердца семь артерий, и каждая — страж с одной обязанностью. Мир называется Горизонт. Система называется DUP Market Radar.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h02",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ I · СТРАЖ ВОРОТ · 6 БИРЖ",
+      "title": "Шесть площадок в одном потоке",
+      "cinema": {
+        "badge": "АРТЕРИЯ I · KUCOIN · BINANCE · BYBIT · MEXC · DEXSCREENER · COINGECKO",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_02_ingest.mp4",
+            "duration_sec": 8.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_02_streams.mp4",
+            "duration_sec": 8.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 10.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "whoosh",
+          "at_sec": 0.3,
+          "volume": 0.2
+        }
+      ],
+      "voice_text": "Первый страж — Ворота. Через них входят шесть бирж разом: Кукоин, Бинанс, Байбит, Эм-Экс-Си, Декс-Скринер и Коин-Гекко. Ни один поток не теряет ни тика. Четыре нативных вебсокета на Расте сводят их в одно кольцо на пятьсот двенадцать тиков. Из кольца рождаются свечи — от минуты до четырёх часов.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h03",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ II · СТРАЖ ЛИНЗ · MTF 15M · 1H · 4H",
+      "title": "Астролябия 15m · 1h · 4h и Top-10",
+      "cinema": {
+        "badge": "АРТЕРИЯ II · MTF 15M · 1H · 4H · ПОЛНОТА ≥ 85% · RUST TOP-10",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_03_mtf.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_03_diamond.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 8.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "whoosh",
+          "at_sec": 0.3,
+          "volume": 0.2
+        },
+        {
+          "name": "ding",
+          "at_sec": 8.0,
+          "volume": 0.22
+        }
+      ],
+      "voice_text": "Второй страж — Линзы. Он смотрит на рынок сразу тремя глазами: пятнадцать минут, час и четыре часа. Если картина неполная, линза молчит. Полнота данных ниже восьмидесяти пяти процентов — отказ. Призрачные листинги отсекает живой стакан. А нативный скоринг на Расте выбирает десятку сильнейших монет сектора.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h04",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ III · СТРАЖ СВОБОДЫ · БЕЗ ПОТОЛКА TP",
+      "title": "Свободные раннеры и трал −5%",
+      "cinema": {
+        "badge": "АРТЕРИЯ III · БЕЗ ПОТОЛКА TP · ТРЕЙЛИНГ −5.0% ОТ ПИКА · 10 BPS",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_04_runners.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_04_surge.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 15.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "riser",
+          "at_sec": 0.5,
+          "volume": 0.22
+        }
+      ],
+      "voice_text": "Третий страж — Свобода. Он снимает с сильного импульса искусственный потолок. Тейк-профита больше нет. Сильная монета может расти, сколько захочет. Позицию прикрывает безубыток и скользящий трейлинг — минус пять процентов от пика. Комиссии учтены: десять базисных пунктов в обе стороны.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h05",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ IV · СТРАЖ КЛИНКА · СТОП −3%",
+      "title": "Жёсткий стоп −3% и печать паузы",
+      "cinema": {
+        "badge": "АРТЕРИЯ IV · СТОП −3.0% KUCOIN MARK · БАН 3Ч / 45М / 20М",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_05_stop.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_05_blade.mp4",
+            "duration_sec": 8.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 10.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "impact",
+          "at_sec": 4.2,
+          "volume": 0.26
+        }
+      ],
+      "voice_text": "Четвёртый страж — Клинок. Он холоден. Жёсткий стоп — минус три процента по марк-цене. Убыток рассекается мгновенно, без эмоций и без раздумий. И сразу опускается печать. Три часа после стопа. Сорок пять минут после затухания. Никакого перезахода в горячке.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h06",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ V · СТРАЖ ЩИТОВ · 6 ЩИТОВ",
+      "title": "Бастион против шести ловушек",
+      "cinema": {
+        "badge": "АРТЕРИЯ V · ANTI-CHASE · FUTURES_BLOCK · DEGRADED · KILL-SWITCH",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_06_traps.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_06_radar.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 15.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "impact",
+          "at_sec": 2.0,
+          "volume": 0.22
+        },
+        {
+          "name": "tick",
+          "at_sec": 9.0,
+          "volume": 0.18
+        }
+      ],
+      "voice_text": "Пятый страж — Щиты. Их шесть. Анти-Чейз не даёт догонять перегретые пампы от плюс четырёх процентов за час. Фьючерс-Блок навсегда запрещает авто-фьючерсы. Только наблюдение. При деградации данных покупок нет вообще. Три убытка подряд — пауза на час. А Килл-Свитч защёлкивает контур мгновенно.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h07",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ VI · СТРАЖ ТОЧНОСТИ · ЦЕЛЫЕ ЧИСЛА",
+      "title": "Целые числа i64 / i128 и Equal Sleeves",
+      "cinema": {
+        "badge": "АРТЕРИЯ VI · ZERO FLOATS · CHECKED I64/I128 · EQUAL SLEEVES",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_07_integer.mp4",
+            "duration_sec": 8.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_07_clockwork.mp4",
+            "duration_sec": 8.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 8.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "whoosh",
+          "at_sec": 0.3,
+          "volume": 0.18
+        },
+        {
+          "name": "ding",
+          "at_sec": 8.5,
+          "volume": 0.2
+        }
+      ],
+      "voice_text": "Шестой страж — Точность. Для денег здесь нет чисел с плавающей точкой. Ни одного. Только целые: шестьдесят четыре и сто двадцать восемь бит, цены в стомиллионных долях. Часы идут ровно. Свободный капитал делится поровну между спот-альтами, мемами и листингами.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h08",
+      "type": "cinema_clip",
+      "tag": "АРТЕРИЯ VII · СТРАЖ ФЕНИКСА · САМОВОССТАНОВЛЕНИЕ",
+      "title": "RecoverySupervisor и три зеркала контроля",
+      "cinema": {
+        "badge": "АРТЕРИЯ VII · RECOVERYSUPERVISOR · DASHBOARD · PWA · TELEGRAM",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_08_recovery.mp4",
+            "duration_sec": 8.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_08_phoenix.mp4",
+            "duration_sec": 8.5,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 14.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "ding",
+          "at_sec": 6.5,
+          "volume": 0.22
+        }
+      ],
+      "voice_text": "Седьмой страж — Феникс. Сеть рвётся, воркеры падают. Супервизор поднимает их сам, без паники. Но живую торговлю он не включит никогда без команды человека. Вся телеметрия открыта: в Дашборде, в приложении на Андроид и в Телеграме.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h09",
+      "type": "cinema_clip",
+      "tag": "ФИНАЛ I · ОТКРЫТЫЙ КОД",
+      "title": "DUP Market Radar · GitHub",
+      "cinema": {
+        "badge": "ФИНАЛ I · GITHUB.COM/GRUVER87/DUP-MARKET-RADAR · R&D · DRY-RUN DEFAULT",
+        "grade": "vivid",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_09_constellation.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 12.0
+          },
+          {
+            "src": "cinema/world3026/macro_09_sanctum.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.04,
+            "kind": "video",
+            "clip_duration_sec": 15.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "riser",
+          "at_sec": 0.4,
+          "volume": 0.2
+        },
+        {
+          "name": "impact",
+          "at_sec": 8.5,
+          "volume": 0.22
+        }
+      ],
+      "voice_text": "Семь стражей. Одно сердце. Они не спорят между собой. Они дышат в одном ритме. Это открытый исследовательский проект, а не финансовый совет, и без гарантий прибыли. Безопасный режим без сделок включён по умолчанию. Проверьте каждую строку кода на ГитХаб: Грувер восемьдесят семь, дап-маркет-радар.",
+      "subtitle": "",
+      "phrasing": true
+    },
+    {
+      "id": "h10",
+      "type": "cinema_clip",
+      "tag": "ФИНАЛ II · СОЗДАНО В DUP PRESENTER",
+      "title": "github.com/Gruver87/dup-presenter",
+      "cinema": {
+        "badge": "",
+        "grade": "none",
+        "crossfade_frames": 16,
+        "loop": true,
+        "shots": [
+          {
+            "src": "cinema/world3026/bg_10_presenter.mp4",
+            "duration_sec": 4.5,
+            "playback_rate": 1.0,
+            "zoom": 1.05,
+            "kind": "video",
+            "clip_duration_sec": 10.0
+          },
+          {
+            "src": "cinema/u11_created_with_presenter.mp4",
+            "duration_sec": 9.0,
+            "playback_rate": 1.0,
+            "zoom": 1.0,
+            "kind": "video",
+            "clip_duration_sec": 9.0
+          }
+        ]
+      },
+      "sfx": [
+        {
+          "name": "whoosh",
+          "at_sec": 0.3,
+          "volume": 0.2
+        },
+        {
+          "name": "ding",
+          "at_sec": 4.6,
+          "volume": 0.24
+        }
+      ],
+      "voice_text": "Весь этот фильм — от сценария и голоса до монтажа, звука и контроля качества — создан автономным движком ДАП Презентер. Ссылка на репозиторий прямо перед вами.",
+      "subtitle": "",
+      "phrasing": true
+    }
+  ]
+}

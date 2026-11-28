@@ -31,3 +31,6 @@ public/visual/
 public/uploads/
 # 3D Studio generated/uploaded .glb models (large binaries, per-machine)
 public/models3d/
+
+# Hypothesis test cache
+.hypothesis/
